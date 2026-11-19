@@ -1,9 +1,16 @@
-import { Bell, ChevronDown, ChevronRight, Menu } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  PanelLeft,
+} from "lucide-react";
 
 export default function Header({
   sectionLabel = "Quản lý tiệc",
   pageLabel,
   onOpenMobileMenu,
+  onToggleSidebar,
   onGoHome,
   onGoServices,
   onBellClick,
@@ -11,9 +18,9 @@ export default function Header({
   userInitials = "LB",
 }) {
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-[#EAE3D8] bg-[#FCFBF8]/90 px-4 backdrop-blur-md sm:px-8">
-      {/* Left: Mobile menu + Breadcrumb */}
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-[#EAE3D8] bg-[#FCFBF8]/90 px-4 backdrop-blur-md sm:px-6">
+      {/* Left: Sidebar toggle + Breadcrumb */}
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={onOpenMobileMenu}
@@ -22,6 +29,18 @@ export default function Header({
         >
           <Menu size={20} />
         </button>
+
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="hidden rounded-lg p-1.5 text-[#7D6D5E] transition hover:bg-[#F3ECE1] hover:text-[#2C2117] lg:inline-flex"
+            aria-label="Thu gọn hoặc mở rộng menu"
+            title="Thu gọn / mở rộng menu"
+          >
+            <PanelLeft size={18} />
+          </button>
+        )}
 
         <nav
           aria-label="Breadcrumb"

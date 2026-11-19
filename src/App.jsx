@@ -2,9 +2,13 @@ import { useState } from "react";
 import { useToast } from "./components/common";
 import DashboardLayout from "./layouts/DashboardLayout";
 import { DASHBOARD_NAV_ITEMS, SAMPLE_WEDDINGS } from "./layouts/navItems";
-import DashboardOverview from "./pages/dashboard/DashboardOverview";
+import DashboardOverview from "./pages/dashboard/overview/DashboardOverview";
 import SeatingPlanPage from "./pages/dashboard/SeatingPlanPage";
-import AlbumQrPage from "./pages/dashboard/AlbumQrPage";
+import AlbumQrPage from "./pages/dashboard/album/AlbumQrPage";
+import BudgetPage from "./pages/dashboard/budget/BudgetPage";
+import GuestsPage from "./pages/dashboard/guests/GuestsPage";
+import ServicesPage from "./pages/dashboard/services/ServicesPage";
+import SchedulePage from "./pages/dashboard/schedule/SchedulePage";
 import LandingPage from "./pages/LandingPage";
 
 function App() {
@@ -50,10 +54,21 @@ function App() {
           selectedWedding={selectedWedding}
           onOpenBudget={() => setActiveKey("budget")}
         />
+      ) : activeKey === "budget" ? (
+        <BudgetPage selectedWedding={selectedWedding} />
+      ) : activeKey === "guests" ? (
+        <GuestsPage selectedWedding={selectedWedding} />
+      ) : activeKey === "services" ? (
+        <ServicesPage selectedWedding={selectedWedding} />
+      ) : activeKey === "schedule" ? (
+        <SchedulePage selectedWedding={selectedWedding} />
       ) : activeKey === "album" ? (
         <AlbumQrPage selectedWedding={selectedWedding} />
       ) : activeKey === "overview" ? (
-        <DashboardOverview selectedWedding={selectedWedding} />
+        <DashboardOverview
+          selectedWedding={selectedWedding}
+          onNavigate={setActiveKey}
+        />
       ) : (
         <div className="rounded-2xl border border-[#EAE3D8] bg-white p-10 text-center">
           <h2 className="text-2xl font-bold text-[#2C2117]">

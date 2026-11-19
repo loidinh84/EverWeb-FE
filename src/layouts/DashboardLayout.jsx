@@ -30,7 +30,6 @@ export default function DashboardLayout({
         selectedWeddingId={selectedWeddingId}
         onSelectWedding={onSelectWedding}
         collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((prev) => !prev)}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />
@@ -40,6 +39,7 @@ export default function DashboardLayout({
           sectionLabel="Quản lý tiệc"
           pageLabel={currentNav?.label || "Tổng quan"}
           onOpenMobileMenu={() => setMobileOpen(true)}
+          onToggleSidebar={() => setCollapsed((prev) => !prev)}
           onGoHome={onGoHome}
           onGoServices={() => onNavigate?.("services")}
           onBellClick={onBellClick}

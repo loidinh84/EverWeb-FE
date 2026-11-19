@@ -1,7 +1,7 @@
-import heroWedding from "../assets/hero-wedding.jpg";
-import galleryCeremony from "../assets/gallery-ceremony.jpg";
-import galleryBouquet from "../assets/gallery-bouquet.jpg";
-import galleryDining from "../assets/gallery-dining.jpg";
+import heroWedding from "../assets/image/hero-wedding.jpg";
+import galleryCeremony from "../assets/image/gallery-ceremony.jpg";
+import galleryBouquet from "../assets/image/gallery-bouquet.jpg";
+import galleryDining from "../assets/image/gallery-dining.jpg";
 
 export const CHAPTER_NAV = [
   { id: "cover", label: "Bìa", href: "#cover" },

@@ -17,8 +17,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import everwebLogo from "../assets/everweb-logo.jpg";
-import heroWedding from "../assets/hero-wedding.jpg";
+import everwebLogo from "../assets/image/everweb-logo.jpg";
+import heroWedding from "../assets/image/hero-wedding.jpg";
 import {
   AiConciergePreview,
   BudgetRingPreview,

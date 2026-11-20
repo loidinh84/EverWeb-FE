@@ -1,4 +1,4 @@
-import { CheckSquare, Square } from "lucide-react";
+import { CheckSquare, Square, Info } from "lucide-react";
 
 /**
  * Component hiển thị nội dung Markdown chuẩn cho Chatbot Én Hỷ.
@@ -203,12 +203,13 @@ export default function MarkdownContent({ content }) {
     // 5. TRÍCH DẪN / LƯU Ý (> text)
     if (trimmed.startsWith("> ")) {
       elements.push(
-        <blockquote
+        <div
           key={`quote-${i}`}
-          className="my-2 border-l-3 border-[#C5A059] bg-[#FAF6EE] px-3 py-1.5 rounded-r-lg text-xs italic text-[#5D4936]"
+          className="my-2 flex items-start gap-2 border-l-3 border-[#C5A059] bg-[#FAF6EE] px-3 py-2 rounded-r-lg text-xs italic text-[#5D4936]"
         >
-          {renderInline(trimmed.slice(2), `quote-${i}`)}
-        </blockquote>
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C5A059] not-italic" />
+          <div className="flex-1">{renderInline(trimmed.slice(2), `quote-${i}`)}</div>
+        </div>
       );
       i++;
       continue;

@@ -61,16 +61,16 @@ const INITIAL_MESSAGES = [
   {
     id: "welcome",
     role: "assistant",
-    content: `### 🕊️ Chào hai bạn! Mình là Én Hỷ - Trợ lý Kế hoạch Cưới EverWeb
+    content: `### Chào hai bạn, mình là Én Hỷ - Trợ lý Kế hoạch Cưới EverWeb
 
-Mình ở đây để giúp hai bạn chuẩn bị ngày cưới trọn vẹn, nhẹ nhàng và tiết kiệm thời gian nhất:
+Mình ở đây để đồng hành cùng hai bạn chuẩn bị ngày cưới trọn vẹn, khoa học và tối ưu chi phí:
 
-- 💰 **Kiểm soát ngân sách:** Phân bổ chi phí hợp lý, tránh phát sinh.
-- 📋 **Lộ trình chuẩn bị:** Checklist việc cần làm từng tháng, từng tuần.
-- 💍 **Nghi lễ trọn vẹn:** Tư vấn thủ tục Dạm ngõ, Ăn hỏi, Gia tiên chuẩn phong tục.
-- 💌 **Truyền thông cưới:** Gợi ý lời mời thiệp online, sơ đồ bàn tiệc.
+- **Kiểm soát ngân sách:** Phân bổ chi phí hợp lý, hạn chế phát sinh ngoài dự kiến.
+- **Lộ trình chuẩn bị:** Danh sách việc cần làm (Checklist) chi tiết theo từng mốc thời gian.
+- **Nghi lễ truyền thống:** Hướng dẫn đầy đủ thủ tục Dạm ngõ, Ăn hỏi, Gia tiên đúng chuẩn văn hoá.
+- **Truyền thông cưới:** Gợi ý nội dung thiệp mời online, sơ đồ bàn tiệc thông minh.
 
-> *Hai bạn có thể bấm chọn một chủ đề bên trên hoặc gõ câu hỏi bất kỳ phía dưới nhé!*`,
+> *Bạn có thể chọn nhanh một chủ đề phía trên hoặc đặt câu hỏi bất kỳ để bắt đầu.*`,
     createdAt: new Date(),
   },
 ];

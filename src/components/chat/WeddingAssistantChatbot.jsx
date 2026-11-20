@@ -9,6 +9,11 @@ import {
   AlertCircle,
   Check,
   Copy,
+  ClipboardList,
+  Wallet,
+  Gem,
+  Mail,
+  LayoutGrid,
 } from "lucide-react";
 import aiApi from "../../services/aiApi";
 import MarkdownContent from "./MarkdownContent";
@@ -20,11 +25,31 @@ function createMessageId(prefix = "msg") {
 }
 
 const QUICK_PROMPTS = [
-  "📋 Lập checklist cưới 6 tháng",
-  "💰 Phân bổ ngân sách 200 triệu",
-  "💍 Quy trình Lễ Ăn hỏi & Gia tiên",
-  "💌 Gợi ý lời mời thiệp cưới ý nghĩa",
-  "🪑 Cách sắp xếp sơ đồ bàn tiệc",
+  {
+    label: "Lập checklist cưới 6 tháng",
+    icon: ClipboardList,
+    prompt: "Lập danh sách việc cần làm (Checklist) trước ngày cưới 6 tháng",
+  },
+  {
+    label: "Phân bổ ngân sách 200 triệu",
+    icon: Wallet,
+    prompt: "Gợi ý cho mình cách phân bổ ngân sách cưới 200 triệu đồng hợp lý nhất",
+  },
+  {
+    label: "Quy trình Lễ Ăn hỏi & Gia tiên",
+    icon: Gem,
+    prompt: "Quy trình Lễ Ăn hỏi và Lễ Gia tiên ngày cưới gồm những bước nào?",
+  },
+  {
+    label: "Gợi ý lời mời thiệp cưới",
+    icon: Mail,
+    prompt: "Gợi ý các mẫu lời mời thiệp cưới online trang trọng và ý nghĩa",
+  },
+  {
+    label: "Cách sắp xếp sơ đồ bàn tiệc",
+    icon: LayoutGrid,
+    prompt: "Hướng dẫn nguyên tắc sắp xếp sơ đồ bàn tiệc đám cưới hợp lý",
+  },
 ];
 
 const INITIAL_MESSAGES = [
@@ -32,7 +57,7 @@ const INITIAL_MESSAGES = [
     id: "welcome-1",
     role: "assistant",
     content:
-      "Chào bạn! Mình là **Én Hỷ** - Trợ lý Kế hoạch Cưới thông minh của EverWeb 🕊️✨\n\nMình có thể giúp hai bạn:\n- Lập **tiến độ & checklist** chuẩn bị cưới từ 6-12 tháng\n- Tư vấn **phân bổ ngân sách** chi tiết và tối ưu chi phí\n- Hướng dẫn các nghi lễ phong tục (Dạm ngõ, Ăn hỏi, Gia tiên)\n- Lên kịch bản ngày cưới và gợi ý nội dung thiệp mời online\n\nHãy chọn nhanh gợi ý bên dưới hoặc đặt câu hỏi bất kỳ cho mình nhé!",
+      "Chào bạn, mình là **Én Hỷ** - Trợ lý Kế hoạch Cưới của EverWeb.\n\nMình có thể đồng hành cùng hai bạn trong các công việc:\n- Lập **tiến độ & danh sách việc cần làm (Checklist)** từ 6 - 12 tháng\n- Tư vấn **phân bổ ngân sách** chi tiết và kiểm soát chi phí\n- Hướng dẫn các nghi lễ cưới hỏi truyền thống (Dạm ngõ, Ăn hỏi, Gia tiên)\n- Lên kịch bản ngày cưới và gợi ý nội dung thiệp mời online\n\nHãy chọn các mục gợi ý bên dưới hoặc đặt câu hỏi bất kỳ để bắt đầu.",
     createdAt: new Date(),
   },
 ];
@@ -89,13 +114,11 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
     setIsLoading(true);
 
     try {
-      // Chuẩn bị lịch sử trò chuyện gửi lên backend
       const historyToSend = [...messages, userMessage].map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
-      // Gọi API backend (mặc định dùng OpenAI/Groq)
       const response = await aiApi.chat({
         messages: historyToSend,
         provider: "openai",
@@ -134,7 +157,7 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
         {
           id: createMessageId("err"),
           role: "assistant",
-          content: `⚠️ **Thông báo:** ${serverError}\n\n*Gợi ý: Hãy kiểm tra file \`EverWeb-BE/.env\` và đảm bảo server Backend đang chạy (\`npm run dev\` ở thư mục EverWeb-BE).*`,
+          content: `**Thông báo:** ${serverError}\n\n*Gợi ý: Hãy kiểm tra file \`EverWeb-BE/.env\` và đảm bảo server Backend đang chạy (\`npm run dev\` ở thư mục EverWeb-BE).*`,
           createdAt: new Date(),
           isError: true,
         },
@@ -330,20 +353,24 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* GỢI Ý NHANH (PROMPT CHIPS) */}
+          {/* GỢI Ý NHANH (PROMPT CHIPS - DÙNG LUCIDE SVG ICON, KHÔNG DÙNG ICON TEXT) */}
           <div className="bg-white border-t border-[#F0EAE1] px-3 py-2 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
-              {QUICK_PROMPTS.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => handleSend(prompt)}
-                  className="rounded-full bg-[#FAF5EE] border border-[#E6DCBF] px-3 py-1 text-xs text-[#5D4632] hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition active:scale-95 disabled:opacity-50"
-                >
-                  {prompt}
-                </button>
-              ))}
+              {QUICK_PROMPTS.map((item, idx) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => handleSend(item.prompt)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#FAF5EE] border border-[#E6DCBF] px-3 py-1.5 text-xs text-[#5D4632] hover:bg-[#3B2A1A] hover:text-white hover:border-[#3B2A1A] transition active:scale-95 disabled:opacity-50"
+                  >
+                    <IconComponent className="h-3.5 w-3.5 text-[#C5A059]" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

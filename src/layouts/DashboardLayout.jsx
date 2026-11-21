@@ -12,6 +12,7 @@ export default function DashboardLayout({
   weddings,
   selectedWeddingId,
   onSelectWedding,
+  onCreateWeddingClick,
   onGoHome,
   onBellClick,
   children,
@@ -29,6 +30,7 @@ export default function DashboardLayout({
         weddings={weddings}
         selectedWeddingId={selectedWeddingId}
         onSelectWedding={onSelectWedding}
+        onCreateWeddingClick={onCreateWeddingClick}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}

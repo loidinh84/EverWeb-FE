@@ -1,4 +1,4 @@
-import { ChevronDown, Flower2, Heart, X } from "lucide-react";
+import { ChevronDown, Flower2, Heart, Plus, X } from "lucide-react";
 import { DASHBOARD_NAV_ITEMS } from "./navItems";
 
 function SidebarContent({
@@ -7,6 +7,7 @@ function SidebarContent({
   weddings,
   selectedWeddingId,
   onSelectWedding,
+  onCreateWeddingClick,
   collapsed,
   onCloseMobile,
 }) {
@@ -52,30 +53,69 @@ function SidebarContent({
       </div>
 
       {/* Wedding selector */}
-      {!collapsed && weddings?.length > 0 && (
+      {!collapsed ? (
         <div className="border-b border-white/10 px-4 py-3.5">
-          <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-[#B6A38E] uppercase">
-            Tiệc cưới của bạn
-          </p>
-          <div className="relative">
-            <select
-              value={selectedWeddingId}
-              onChange={(e) => onSelectWedding?.(e.target.value)}
-              aria-label="Chọn tiệc cưới"
-              className="w-full appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pr-8 pl-3 text-sm font-medium text-white transition outline-none hover:border-[#C5A059]/60 focus:border-[#C5A059]"
-            >
-              {weddings.map((w) => (
-                <option key={w.id} value={w.id} className="bg-[#3B2A1A] text-white">
-                  {w.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={15}
-              className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#CBBBA8]"
-            />
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-semibold tracking-wider text-[#B6A38E] uppercase">
+              Tiệc cưới của bạn
+            </p>
+            {onCreateWeddingClick && (
+              <button
+                type="button"
+                onClick={() => {
+                  onCreateWeddingClick();
+                  onCloseMobile?.();
+                }}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-[#E8CD94] transition hover:bg-white/10 hover:text-white"
+              >
+                <Plus size={12} />
+                Tạo mới
+              </button>
+            )}
           </div>
+          {weddings?.length > 0 ? (
+            <div className="relative">
+              <select
+                value={selectedWeddingId}
+                onChange={(e) => onSelectWedding?.(e.target.value)}
+                aria-label="Chọn tiệc cưới"
+                className="w-full appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pr-8 pl-3 text-sm font-medium text-white transition outline-none hover:border-[#C5A059]/60 focus:border-[#C5A059]"
+              >
+                {weddings.map((w) => (
+                  <option
+                    key={w.id}
+                    value={w.id}
+                    className="bg-[#3B2A1A] text-white"
+                  >
+                    {w.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={15}
+                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#CBBBA8]"
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-xs text-[#CBBBA8]">
+              Chưa có hồ sơ nào
+            </div>
+          )}
         </div>
+      ) : (
+        onCreateWeddingClick && (
+          <div className="flex justify-center border-b border-white/10 py-3">
+            <button
+              type="button"
+              onClick={onCreateWeddingClick}
+              title="Tạo hồ sơ cưới mới"
+              aria-label="Tạo hồ sơ cưới mới"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-[#E8CD94] transition hover:border-[#C5A059]/60 hover:bg-white/10 hover:text-white"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        )
       )}
 
       {/* Main navigation */}
@@ -162,6 +202,7 @@ export default function Sidebar({
   weddings,
   selectedWeddingId,
   onSelectWedding,
+  onCreateWeddingClick,
   collapsed,
   mobileOpen,
   onCloseMobile,
@@ -179,6 +220,7 @@ export default function Sidebar({
           weddings={weddings}
           selectedWeddingId={selectedWeddingId}
           onSelectWedding={onSelectWedding}
+          onCreateWeddingClick={onCreateWeddingClick}
           collapsed={collapsed}
         />
       </aside>
@@ -197,6 +239,7 @@ export default function Sidebar({
               weddings={weddings}
               selectedWeddingId={selectedWeddingId}
               onSelectWedding={onSelectWedding}
+              onCreateWeddingClick={onCreateWeddingClick}
               collapsed={false}
               onCloseMobile={onCloseMobile}
             />

@@ -125,16 +125,7 @@ function DashboardApp() {
   return (
     <>
       {view === "landing" ? (
-        <div className="relative">
-          <LandingPage onOpenDashboard={() => setView("dashboard")} />
-          <button
-            type="button"
-            onClick={() => setView("dashboard")}
-            className="fixed left-5 bottom-5 z-40 rounded-full bg-[#3B2A1A] px-4 py-2.5 text-xs font-semibold text-white shadow-xl ring-2 ring-[#C5A059] transition hover:bg-[#4E3824]"
-          >
-            ← Quay lại Dashboard
-          </button>
-        </div>
+        <LandingPage onOpenDashboard={() => setView("dashboard")} />
       ) : (
         <DashboardLayout
           activeKey={activeKey}

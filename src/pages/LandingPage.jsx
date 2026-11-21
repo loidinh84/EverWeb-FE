@@ -181,16 +181,13 @@ export default function LandingPage({ onOpenDashboard }) {
 
             {/* Right actions */}
             <div className="flex items-center gap-4 text-white/90 shrink-0">
-              {onOpenDashboard && (
-                <button
-                  type="button"
-                  onClick={onOpenDashboard}
-                  className="hidden sm:flex items-center gap-1.5 hover:text-white transition cursor-pointer"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                  <span>Vào Dashboard</span>
-                </button>
-              )}
+              <a
+                href="#lookbook"
+                className="hidden sm:flex items-center gap-1.5 hover:text-white transition cursor-pointer"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span>Tìm sự kiện</span>
+              </a>
               <div className="flex items-center gap-1 text-white">
                 <Globe className="h-3.5 w-3.5" />
                 <span>Tiếng Việt</span>
@@ -327,18 +324,6 @@ export default function LandingPage({ onOpenDashboard }) {
                     >
                       Bảng giá
                     </a>
-                    {onOpenDashboard && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          onOpenDashboard();
-                        }}
-                        className="mt-2 text-left font-semibold text-[#C5A059]"
-                      >
-                        ← Mở Bảng điều khiển (Dashboard)
-                      </button>
-                    )}
                   </div>
                 </motion.div>
               )}
@@ -379,24 +364,13 @@ export default function LandingPage({ onOpenDashboard }) {
                 <ChevronRight className="h-4 w-4" />
               </a>
 
-              {onOpenDashboard ? (
-                <button
-                  type="button"
-                  onClick={onOpenDashboard}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition cursor-pointer"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Tìm kiếm sự kiện / Vào Dashboard</span>
-                </button>
-              ) : (
-                <a
-                  href="#pillars"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Khám phá công cụ</span>
-                </a>
-              )}
+              <a
+                href="#lookbook"
+                className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition"
+              >
+                <Search className="h-4 w-4" />
+                <span>Tìm kiếm đám cưới</span>
+              </a>
             </motion.div>
           </div>
 

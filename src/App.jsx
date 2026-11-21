@@ -12,7 +12,7 @@ import GuestsPage from "./pages/dashboard/guests/GuestsPage";
 import ServicesPage from "./pages/dashboard/services/ServicesPage";
 import SchedulePage from "./pages/dashboard/schedule/SchedulePage";
 import AssistantPage from "./pages/dashboard/assistant/AssistantPage";
-import LandingPage from "./pages/LandingPage";
+import Landing from "./pages/Landing";
 import InvitationPreview from "./pages/InvitationPreview";
 import WeddingAssistantChatbot from "./components/chat/WeddingAssistantChatbot";
 import { extractApiError } from "./services/api";
@@ -20,7 +20,12 @@ import weddingApi from "./services/weddingApi";
 
 function DashboardApp() {
   const toast = useToast();
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => {
+    if (typeof window !== "undefined" && window.location.hash.includes("dashboard")) {
+      return "dashboard";
+    }
+    return "landing";
+  });
   const [activeKey, setActiveKey] = useState("profile");
   const [weddings, setWeddings] = useState([]);
   const [selectedWeddingId, setSelectedWeddingId] = useState("");
@@ -125,7 +130,7 @@ function DashboardApp() {
   return (
     <>
       {view === "landing" ? (
-        <LandingPage onOpenDashboard={() => setView("dashboard")} />
+        <Landing onOpenDashboard={() => setView("dashboard")} />
       ) : (
         <DashboardLayout
           activeKey={activeKey}
@@ -135,7 +140,7 @@ function DashboardApp() {
           onSelectWedding={setSelectedWeddingId}
           onCreateWeddingClick={() => setIsCreateModalOpen(true)}
           onGoHome={() => setView("landing")}
-          onBellClick={() => toast.info("Bạn có 2 xác nhận RSVP mới")}
+          onBellClick={() => toast.info("Bạn có 2 xác nhận tham dự mới")}
         >
           {activeKey === "profile" ? (
             <WeddingProfilePage
@@ -205,8 +210,10 @@ function DashboardApp() {
         onCreate={handleCreateWedding}
       />
 
-      {/* Trợ lý Kế hoạch Cưới Én Hỷ - Floating Chatbot */}
-      <WeddingAssistantChatbot selectedWedding={selectedWedding} />
+      {/* Trợ lý Kế hoạch Cưới Én Hỷ - Chỉ hiển thị trong trang quản trị Dashboard */}
+      {view === "dashboard" && (
+        <WeddingAssistantChatbot selectedWedding={selectedWedding} />
+      )}
     </>
   );
 }

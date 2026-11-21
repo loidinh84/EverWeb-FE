@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   AnimatePresence,
   MotionConfig,
@@ -10,19 +10,14 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  ChevronDown,
-  ChevronRight,
-  Globe,
-  Menu,
   MessageSquare,
-  Search,
   Store,
   Users,
   Wallet,
   X,
 } from "lucide-react";
 import everwebLogo from "../assets/image/everweb-logo.jpg";
-import heroWedding from "../assets/image/hero-wedding.jpg";
+import ScrollHero from "../components/landing/ScrollHero";
 import {
   AiConciergePreview,
   BudgetRingPreview,
@@ -32,11 +27,9 @@ import {
 import {
   EditorialMarquee,
   Reveal,
-  ScrollProgressBar,
   StackingFolioCard,
 } from "../components/MotionPrimitives";
 import {
-  CHAPTER_NAV,
   JOURNEY_MILESTONES,
   LOOKBOOK_SLIDES,
   MARQUEE_ITEMS,
@@ -84,10 +77,8 @@ const FOLIOS = [
   },
 ];
 
-export default function LandingPage({ onOpenDashboard }) {
-  const [activeChapter, setActiveChapter] = useState(CHAPTER_NAV[0].id);
+export default function Landing({ onOpenDashboard }) {
   const [lightboxItem, setLightboxItem] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const lookbookRef = useRef(null);
   const journeyRef = useRef(null);
@@ -103,287 +94,18 @@ export default function LandingPage({ onOpenDashboard }) {
     offset: ["start 0.75", "end 0.75"],
   });
 
-  useEffect(() => {
-    const sections = CHAPTER_NAV.map((c) => document.getElementById(c.id)).filter(Boolean);
-    if (sections.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveChapter(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-38% 0px -45% 0px" }
-    );
-
-    sections.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen overflow-x-clip bg-[#FAF8F5] text-[#231F1C]">
-        <ScrollProgressBar />
+        <ScrollHero onOpenDashboard={onOpenDashboard} />
 
-        {/* Top Royal Blue Utility Bar (chuẩn WithJoy) */}
-        <div className="bg-[#3446EB] text-white text-xs font-medium relative z-40">
-          <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-4 sm:px-8">
-            {/* Left service pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto ew-no-scrollbar">
-              <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white whitespace-nowrap">
-                EverWeb Cưới
-              </span>
-              <a
-                href="#pillars"
-                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Thiệp số
-              </a>
-              <a
-                href="#pillars"
-                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Xác nhận tham dự
-              </a>
-              <a
-                href="#pillars"
-                className="hidden sm:inline-block rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Trợ lý AI
-              </a>
-            </div>
-
-            {/* Center Promo */}
-            <div className="hidden lg:flex items-center gap-2 text-white/95">
-              <span>Ưu đãi mùa cưới: Giảm 25% các mẫu thiệp số & website cưới cao cấp</span>
-              <a
-                href="#pricing"
-                className="inline-flex items-center gap-1 underline underline-offset-4 font-semibold text-white hover:text-white/90"
-              >
-                <span>Khám phá ngay</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </a>
-            </div>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-4 text-white/90 shrink-0">
-              <a
-                href="#lookbook"
-                className="hidden sm:flex items-center gap-1.5 hover:text-white transition cursor-pointer"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span>Tìm sự kiện</span>
-              </a>
-              <div className="flex items-center gap-1 text-white">
-                <Globe className="h-3.5 w-3.5" />
-                <span>Tiếng Việt</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Section with Full-Bleed Photo & Overlaid Navigation (chuẩn WithJoy) */}
-        <section id="cover" className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden">
-          {/* Background Image with Dark Vignette Overlay */}
-          <div className="absolute inset-0 z-0">
-            <img
-              src={heroWedding}
-              alt="EverWeb Wedding Background"
-              className="h-full w-full object-cover object-center scale-105 will-change-transform"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black/75" />
-          </div>
-
-          {/* Overlaid Main Header */}
-          <header className="relative z-30 w-full border-b border-white/10 transition-all">
-            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-8">
-              {/* Logo (WithJoy-style elegant cursive/serif wordmark) */}
-              <a href="#cover" className="flex items-center gap-2 group">
-                <span className="font-display text-3xl sm:text-4xl font-normal tracking-tight text-white">
-                  Ever<span className="italic font-light text-[#E8D5CE]">Web</span>
-                </span>
-              </a>
-
-              {/* Center Menu Links with dropdown chevrons */}
-              <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-white/90">
-                <a
-                  href="#pillars"
-                  className="flex items-center gap-1 hover:text-white transition"
-                >
-                  <span>Kế hoạch & Thiệp cưới</span>
-                  <ChevronDown className="h-4 w-4 opacity-70" />
-                </a>
-                <a
-                  href="#lookbook"
-                  className="flex items-center gap-1 hover:text-white transition"
-                >
-                  <span>Bộ sưu tập Mẫu</span>
-                  <ChevronDown className="h-4 w-4 opacity-70" />
-                </a>
-                <a
-                  href="#journey"
-                  className="flex items-center gap-1 hover:text-white transition"
-                >
-                  <span>Cố vấn cưới AI</span>
-                  <ChevronDown className="h-4 w-4 opacity-70" />
-                </a>
-                <a
-                  href="#pricing"
-                  className="hover:text-white transition"
-                >
-                  Bảng giá
-                </a>
-              </nav>
-
-              {/* Right User Actions */}
-              <div className="flex items-center gap-4">
-                {onOpenDashboard ? (
-                  <button
-                    type="button"
-                    onClick={onOpenDashboard}
-                    className="hidden sm:inline-block text-sm font-medium text-white hover:text-white/80 transition cursor-pointer"
-                  >
-                    Đăng nhập
-                  </button>
-                ) : (
-                  <a
-                    href="#pricing"
-                    className="hidden sm:inline-block text-sm font-medium text-white hover:text-white/80 transition"
-                  >
-                    Đăng nhập
-                  </a>
-                )}
-                <a
-                  href="#pricing"
-                  className="rounded-full bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#1C1917] shadow-md transition hover:bg-neutral-100"
-                >
-                  Bắt đầu ngay
-                </a>
-
-                {/* Mobile Menu Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="rounded-lg p-2 text-white hover:bg-white/10 md:hidden cursor-pointer"
-                  aria-label="Mở menu"
-                >
-                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Dropdown */}
-            <AnimatePresence>
-              {isMobileMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="border-b border-white/10 bg-black/85 backdrop-blur-md px-6 py-4 md:hidden"
-                >
-                  <div className="flex flex-col gap-3 text-sm font-medium text-white/90">
-                    <a
-                      href="#pillars"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="py-1.5 hover:text-white"
-                    >
-                      Kế hoạch & Thiệp cưới
-                    </a>
-                    <a
-                      href="#lookbook"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="py-1.5 hover:text-white"
-                    >
-                      Bộ sưu tập Mẫu
-                    </a>
-                    <a
-                      href="#journey"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="py-1.5 hover:text-white"
-                    >
-                      Cố vấn cưới AI
-                    </a>
-                    <a
-                      href="#pricing"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="py-1.5 hover:text-white"
-                    >
-                      Bảng giá
-                    </a>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </header>
-
-          {/* Hero Center Text Content (chuẩn WithJoy: Plan your forever, better) */}
-          <div className="relative z-20 mx-auto my-auto max-w-4xl px-4 py-16 text-center sm:px-8 sm:py-24">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE }}
-              className="font-display text-4xl sm:text-6xl md:text-7xl font-normal leading-[1.08] tracking-tight text-white"
-            >
-              Lập kế hoạch cho ngày hạnh phúc, trọn vẹn hơn.
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12, ease: EASE }}
-              className="mt-6 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed text-white/90 font-light"
-            >
-              Thiết kế website cưới mang dấu ấn riêng, tạo sổ mừng cưới đa năng và tận hưởng trọn vẹn từng khoảnh khắc chuẩn bị theo cách nhẹ nhàng nhất.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.22, ease: EASE }}
-              className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
-            >
-              <a
-                href="#pricing"
-                className="inline-flex items-center gap-2 rounded-full bg-[#5239D8] hover:bg-[#432BC2] px-7 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02]"
-              >
-                <span>Bắt đầu ngay</span>
-                <ChevronRight className="h-4 w-4" />
-              </a>
-
-              <a
-                href="#lookbook"
-                className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition"
-              >
-                <Search className="h-4 w-4" />
-                <span>Tìm kiếm đám cưới</span>
-              </a>
-            </motion.div>
-          </div>
-
-          {/* Bottom Organic Wave Transition (luôn full màn hình 100% chiều ngang) */}
-          <div className="relative z-20 w-full overflow-hidden leading-none pointer-events-none -mb-1">
-            <svg
-              viewBox="0 0 1440 100"
-              preserveAspectRatio="none"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-14 sm:h-20 md:h-28 text-[#FAF8F5] block"
-            >
-              <path
-                d="M0,60 C360,110 720,20 1080,70 C1260,95 1380,45 1440,30 L1440,100 L0,100 Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-        </section>
-
-        <main className="relative z-20 bg-[#FAF8F5]">
+        <main className="relative z-10 bg-[#FAF8F5]">
           <EditorialMarquee items={MARQUEE_ITEMS} />
 
-          {/* Chương 1: 4 Stacking Folio Cards (Nền Trắng Hồng, 2 thẻ đầu Trắng Hồng + 2 thẻ sau Đen Hồng) */}
-          <section id="pillars" className="bg-[#FFF5F8] py-20 text-[#23111B] lg:py-28">
+          <section
+            id="pillars"
+            className="bg-[#FFF5F8] py-20 text-[#23111B] lg:py-28"
+          >
             <div className="mx-auto max-w-6xl px-4 sm:px-8">
               <Reveal className="mb-12 flex flex-col justify-between gap-4 border-b border-rose-200 pb-8 sm:flex-row sm:items-end">
                 <div>
@@ -395,55 +117,64 @@ export default function LandingPage({ onOpenDashboard }) {
                   </h2>
                 </div>
                 <p className="max-w-sm text-sm leading-relaxed text-[#6E4758]">
-                  Cuộn xuống để khám phá từng bảng điều khiển tương tác: khách mời, ngân sách, nhà
-                  cung cấp và trợ lý Chatbot AI.
+                  Cuộn xuống để khám phá từng tính năng chuyên sâu: khách mời,
+                  ngân sách, nhà cung cấp và cố vấn cưới AI.
                 </p>
               </Reveal>
 
               <div>
-                {FOLIOS.map(({ num, icon: Icon, title, desc, dark, surface, preview }, idx) => (
-                  <StackingFolioCard key={num} index={idx} total={FOLIOS.length}>
-                    <article
-                      className={`rounded-3xl border p-6 shadow-[0_20px_50px_rgba(35,17,27,0.12)] sm:p-8 lg:p-10 ${surface}`}
+                {FOLIOS.map(
+                  (
+                    { num, icon: Icon, title, desc, dark, surface, preview },
+                    idx,
+                  ) => (
+                    <StackingFolioCard
+                      key={num}
+                      index={idx}
+                      total={FOLIOS.length}
                     >
-                      <div className="grid items-center gap-8 lg:grid-cols-12">
-                        <div className="lg:col-span-5">
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`font-mono-num text-xs font-medium ${
-                                dark ? "text-[#F472B6]" : "text-[#BE185D]"
+                      <article
+                        className={`rounded-3xl border p-6 shadow-[0_20px_50px_rgba(35,17,27,0.12)] sm:p-8 lg:p-10 ${surface}`}
+                      >
+                        <div className="grid items-center gap-8 lg:grid-cols-12">
+                          <div className="lg:col-span-5">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`font-mono-num text-xs font-medium ${
+                                  dark ? "text-[#F472B6]" : "text-[#BE185D]"
+                                }`}
+                              >
+                                Folio {num}
+                              </span>
+                              <span
+                                className={`h-px flex-1 ${
+                                  dark ? "bg-pink-400/20" : "bg-rose-200"
+                                }`}
+                              />
+                              <Icon
+                                className={`h-4 w-4 ${dark ? "text-[#F472B6]" : "text-[#BE185D]"}`}
+                                strokeWidth={1.5}
+                              />
+                            </div>
+
+                            <h3 className="mt-5 font-display text-3xl font-medium sm:text-4xl">
+                              {title}
+                            </h3>
+                            <p
+                              className={`mt-4 text-sm leading-relaxed sm:text-base ${
+                                dark ? "text-[#C4A7B7]" : "text-[#6E4758]"
                               }`}
                             >
-                              Folio {num}
-                            </span>
-                            <span
-                              className={`h-px flex-1 ${
-                                dark ? "bg-pink-400/20" : "bg-rose-200"
-                              }`}
-                            />
-                            <Icon
-                              className={`h-4 w-4 ${dark ? "text-[#F472B6]" : "text-[#BE185D]"}`}
-                              strokeWidth={1.5}
-                            />
+                              {desc}
+                            </p>
                           </div>
 
-                          <h3 className="mt-5 font-display text-3xl font-medium sm:text-4xl">
-                            {title}
-                          </h3>
-                          <p
-                            className={`mt-4 text-sm leading-relaxed sm:text-base ${
-                              dark ? "text-[#C4A7B7]" : "text-[#6E4758]"
-                            }`}
-                          >
-                            {desc}
-                          </p>
+                          <div className="lg:col-span-7">{preview}</div>
                         </div>
-
-                        <div className="lg:col-span-7">{preview}</div>
-                      </div>
-                    </article>
-                  </StackingFolioCard>
-                ))}
+                      </article>
+                    </StackingFolioCard>
+                  ),
+                )}
               </div>
             </div>
           </section>
@@ -463,7 +194,8 @@ export default function LandingPage({ onOpenDashboard }) {
                     </h2>
                   </div>
                   <p className="max-w-xs text-right text-xs text-[#C4A7B7]">
-                    Cuộn dọc để trượt ngang bộ sưu tập, nhấn vào từng khung hình để phóng lớn
+                    Cuộn dọc để trượt ngang bộ sưu tập, nhấn vào từng khung hình
+                    để phóng lớn
                   </p>
                 </div>
 
@@ -489,14 +221,19 @@ export default function LandingPage({ onOpenDashboard }) {
                             {slide.index} · {slide.meta}
                           </span>
                           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EC4899] text-[#0D0A0C] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                            <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
+                            <ArrowUpRight
+                              className="h-4 w-4"
+                              strokeWidth={1.5}
+                            />
                           </span>
                         </div>
                         <div>
                           <p className="font-display text-3xl font-medium text-white">
                             {slide.title}
                           </p>
-                          <p className="mt-1.5 text-sm text-[#FCE7F3]">{slide.caption}</p>
+                          <p className="mt-1.5 text-sm text-[#FCE7F3]">
+                            {slide.caption}
+                          </p>
                         </div>
                       </div>
                     </button>
@@ -535,7 +272,9 @@ export default function LandingPage({ onOpenDashboard }) {
                       <p className="mt-1 font-display text-2xl font-medium text-white">
                         {slide.title}
                       </p>
-                      <p className="mt-1 text-xs text-[#FCE7F3]">{slide.caption}</p>
+                      <p className="mt-1 text-xs text-[#FCE7F3]">
+                        {slide.caption}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -544,7 +283,11 @@ export default function LandingPage({ onOpenDashboard }) {
           </section>
 
           {/* Chương 3A: Pink Thread Journey (Nền Đen Nhung) */}
-          <section id="journey" ref={journeyRef} className="bg-[#141013] py-20 text-[#FCE7F3] lg:py-28">
+          <section
+            id="journey"
+            ref={journeyRef}
+            className="bg-[#141013] py-20 text-[#FCE7F3] lg:py-28"
+          >
             <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-8 lg:grid-cols-12">
               <Reveal className="lg:col-span-5">
                 <p className="font-mono-num text-xs font-medium text-[#F472B6]">
@@ -554,8 +297,8 @@ export default function LandingPage({ onOpenDashboard }) {
                   Ba chặng chuẩn bị khoa học
                 </h2>
                 <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#C4A7B7]">
-                  Quy trình tinh giản giúp hai bạn kiểm soát mọi đầu việc mà không bị quá tải thông
-                  tin.
+                  Quy trình tinh giản giúp hai bạn kiểm soát mọi đầu việc mà
+                  không bị quá tải thông tin.
                 </p>
               </Reveal>
 
@@ -572,7 +315,11 @@ export default function LandingPage({ onOpenDashboard }) {
 
                 <div className="space-y-12">
                   {JOURNEY_MILESTONES.map((item, idx) => (
-                    <Reveal key={item.step} delay={idx * 0.08} className="relative">
+                    <Reveal
+                      key={item.step}
+                      delay={idx * 0.08}
+                      className="relative"
+                    >
                       <span
                         aria-hidden="true"
                         className="absolute -left-[29px] top-1.5 h-3 w-3 rounded-full border-2 border-[#EC4899] bg-[#141013]"
@@ -594,7 +341,10 @@ export default function LandingPage({ onOpenDashboard }) {
           </section>
 
           {/* Chương 3B: Asymmetric Atelier Pricing (Nền Trắng Hồng + Gói Chính Đen Hồng + 2 Gói Phụ Trắng Hồng) */}
-          <section id="pricing" className="bg-[#FFF5F8] py-20 text-[#23111B] lg:py-28">
+          <section
+            id="pricing"
+            className="bg-[#FFF5F8] py-20 text-[#23111B] lg:py-28"
+          >
             <div className="mx-auto max-w-6xl px-4 sm:px-8">
               <Reveal className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
@@ -606,7 +356,8 @@ export default function LandingPage({ onOpenDashboard }) {
                   </h2>
                 </div>
                 <p className="max-w-xs text-sm text-[#6E4758]">
-                  Bắt đầu miễn phí hoặc nâng cấp trọn gói một lần duy nhất cho cả tiệc cưới.
+                  Bắt đầu miễn phí hoặc nâng cấp trọn gói một lần duy nhất cho
+                  cả tiệc cưới.
                 </p>
               </Reveal>
 
@@ -639,7 +390,10 @@ export default function LandingPage({ onOpenDashboard }) {
 
                       <ul className="mt-8 grid gap-3.5 border-t border-pink-400/20 pt-7 text-sm sm:grid-cols-2">
                         {PRICING_TIERS.featured.features.map((feat) => (
-                          <li key={feat} className="flex items-start gap-2.5 text-[#FCE7F3]">
+                          <li
+                            key={feat}
+                            className="flex items-start gap-2.5 text-[#FCE7F3]"
+                          >
                             <Check
                               className="mt-0.5 h-4 w-4 shrink-0 text-[#F472B6]"
                               strokeWidth={1.5}
@@ -663,7 +417,11 @@ export default function LandingPage({ onOpenDashboard }) {
                 {/* Two Stacked Companion Cards (Trắng - Hồng) */}
                 <div className="flex flex-col gap-6 lg:col-span-5">
                   {PRICING_TIERS.companions.map((tier, idx) => (
-                    <Reveal key={tier.name} delay={(idx + 1) * 0.08} className="flex-1">
+                    <Reveal
+                      key={tier.name}
+                      delay={(idx + 1) * 0.08}
+                      className="flex-1"
+                    >
                       <div className="flex h-full flex-col justify-between rounded-3xl border border-rose-200 bg-white p-7 shadow-[0_10px_28px_rgba(190,24,93,0.06)]">
                         <div>
                           <div className="flex items-baseline justify-between gap-2">
@@ -674,10 +432,15 @@ export default function LandingPage({ onOpenDashboard }) {
                               {tier.price}
                             </span>
                           </div>
-                          <p className="mt-2 text-xs leading-relaxed text-[#6E4758]">{tier.desc}</p>
+                          <p className="mt-2 text-xs leading-relaxed text-[#6E4758]">
+                            {tier.desc}
+                          </p>
                           <ul className="mt-5 space-y-2.5 border-t border-rose-100 pt-4 text-xs sm:text-sm">
                             {tier.features.map((feat) => (
-                              <li key={feat} className="flex items-start gap-2 text-[#23111B]">
+                              <li
+                                key={feat}
+                                className="flex items-start gap-2 text-[#23111B]"
+                              >
                                 <Check
                                   className="mt-0.5 h-4 w-4 shrink-0 text-[#BE185D]"
                                   strokeWidth={1.5}
@@ -713,47 +476,21 @@ export default function LandingPage({ onOpenDashboard }) {
             <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-pink-400/15 pt-6 text-xs text-[#C4A7B7] sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
                 <div className="rounded-md bg-white p-1">
-                  <img src={everwebLogo} alt="EverWeb" className="h-6 w-6 object-contain" />
+                  <img
+                    src={everwebLogo}
+                    alt="EverWeb"
+                    className="h-6 w-6 object-contain"
+                  />
                 </div>
                 <span>
-                  Website lập kế hoạch tiệc cưới · Khách mời · Ngân sách · Nhà cung cấp · Chatbot AI
+                  Website lập kế hoạch tiệc cưới · Khách mời · Ngân sách · Nhà
+                  cung cấp · Chatbot AI
                 </span>
               </div>
               <p>© {new Date().getFullYear()} EverWeb</p>
             </div>
           </div>
         </footer>
-
-        {/* Floating Bottom Chapter Dock */}
-        <nav
-          aria-label="Điều hướng theo chương"
-          className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full border border-[#EAE3DB] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(35,31,28,0.1)] backdrop-blur-md"
-        >
-          <ul className="flex items-center gap-1">
-            {CHAPTER_NAV.map((item) => {
-              const isActive = activeChapter === item.id;
-              return (
-                <li key={item.id}>
-                  <a
-                    href={item.href}
-                    className={`relative block rounded-full px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-4 ${
-                      isActive ? "text-[#FAF8F5]" : "text-[#70665D] hover:text-[#231F1C]"
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.span
-                        layoutId="dockActive"
-                        transition={{ duration: 0.25, ease: EASE }}
-                        className="absolute inset-0 rounded-full bg-[#231F1C]"
-                      />
-                    )}
-                    <span className="relative z-10">{item.label}</span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
 
         {/* Lookbook Lightbox Modal */}
         <AnimatePresence>
@@ -794,7 +531,9 @@ export default function LandingPage({ onOpenDashboard }) {
                   <p className="mt-1 font-display text-2xl font-medium text-white">
                     {lightboxItem.title}
                   </p>
-                  <p className="mt-1 text-sm text-[#C4A7B7]">{lightboxItem.caption}</p>
+                  <p className="mt-1 text-sm text-[#C4A7B7]">
+                    {lightboxItem.caption}
+                  </p>
                 </div>
               </motion.div>
             </motion.div>

@@ -13,11 +13,12 @@ import ServicesPage from "./pages/dashboard/services/ServicesPage";
 import SchedulePage from "./pages/dashboard/schedule/SchedulePage";
 import AssistantPage from "./pages/dashboard/assistant/AssistantPage";
 import LandingPage from "./pages/LandingPage";
+import InvitationPreview from "./pages/InvitationPreview";
 import WeddingAssistantChatbot from "./components/chat/WeddingAssistantChatbot";
 import { extractApiError } from "./services/api";
 import weddingApi from "./services/weddingApi";
 
-function App() {
+function DashboardApp() {
   const toast = useToast();
   const [view, setView] = useState("dashboard");
   const [activeKey, setActiveKey] = useState("profile");
@@ -217,6 +218,18 @@ function App() {
       <WeddingAssistantChatbot selectedWedding={selectedWedding} />
     </>
   );
+}
+
+function App() {
+  const isInvitation =
+    window.location.search.includes("token") ||
+    window.location.pathname.includes("invitation");
+
+  if (isInvitation) {
+    return <InvitationPreview />;
+  }
+
+  return <DashboardApp />;
 }
 
 export default App;

@@ -126,7 +126,7 @@ function DashboardApp() {
     <>
       {view === "landing" ? (
         <div className="relative">
-          <LandingPage />
+          <LandingPage onOpenDashboard={() => setView("dashboard")} />
           <button
             type="button"
             onClick={() => setView("dashboard")}

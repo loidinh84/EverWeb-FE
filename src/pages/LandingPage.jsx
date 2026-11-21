@@ -10,6 +10,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  Menu,
   MessageSquare,
   Sparkles,
   Store,
@@ -81,10 +82,11 @@ const FOLIOS = [
   },
 ];
 
-export default function LandingPage() {
+export default function LandingPage({ onOpenDashboard }) {
   const [presetId, setPresetId] = useState(COVER_PRESETS[0].id);
   const [activeChapter, setActiveChapter] = useState(CHAPTER_NAV[0].id);
   const [lightboxItem, setLightboxItem] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const heroRef = useRef(null);
   const lookbookRef = useRef(null);
@@ -134,36 +136,145 @@ export default function LandingPage() {
       <div className="min-h-screen overflow-x-clip bg-[#0D0A0C] text-[#FCE7F3]">
         <ScrollProgressBar />
 
-        {/* Editorial Top Masthead */}
-        <header className="sticky top-0 z-40 border-b border-pink-400/15 bg-[#0D0A0C]/85 backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-8">
-            <a href="#cover" className="flex items-center gap-3">
-              <div className="rounded-lg bg-white p-1">
+        {/* Joy Wedding-Inspired Luxury Editorial Masthead */}
+        <header className="sticky top-0 z-40 border-b border-[#EAE3DB] bg-[#FAF8F5]/90 backdrop-blur-md transition-all">
+          <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4 sm:px-8">
+            <a href="#cover" className="flex items-center gap-3 group">
+              <div className="rounded-xl border border-[#EAE3DB] bg-white p-1.5 shadow-xs transition-transform duration-200 group-hover:scale-105">
                 <img src={everwebLogo} alt="EverWeb" className="h-8 w-8 object-contain" />
               </div>
-              <div className="flex items-baseline gap-2.5">
-                <span className="font-display text-2xl font-medium tracking-tight text-white">
-                  EverWeb
+              <div className="flex flex-col">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-2xl font-semibold tracking-tight text-[#231F1C]">
+                    EverWeb
+                  </span>
+                  <span className="font-display text-xs italic text-[#C5A059] hidden sm:inline">
+                    Atelier
+                  </span>
+                </div>
+                <span className="hidden text-[10px] tracking-wider uppercase text-[#8C7A68] sm:inline">
+                  Nền tảng cưới thông minh
                 </span>
-                <span className="hidden text-xs text-[#C4A7B7] sm:inline">Atelier 2026</span>
               </div>
             </a>
 
-            <div className="flex items-center gap-5">
+            {/* Desktop Center Navigation Links */}
+            <nav className="hidden items-center gap-7 lg:flex">
               <a
                 href="#pillars"
-                className="hidden text-xs font-medium text-[#FCE7F3] transition-colors hover:text-[#F472B6] sm:inline"
+                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
               >
-                Khám phá 4 công cụ
+                Công cụ cưới
+              </a>
+              <a
+                href="#lookbook"
+                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+              >
+                Mẫu Lookbook
+              </a>
+              <a
+                href="#journey"
+                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+              >
+                Hành trình
               </a>
               <a
                 href="#pricing"
-                className="rounded-full bg-[#EC4899] px-4 py-2 text-xs font-semibold text-[#0D0A0C] transition-colors duration-150 hover:bg-[#F472B6]"
+                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
               >
-                Lập kế hoạch
+                Gói trải nghiệm
               </a>
+            </nav>
+
+            {/* Right Action CTAs */}
+            <div className="flex items-center gap-3">
+              {onOpenDashboard && (
+                <button
+                  type="button"
+                  onClick={onOpenDashboard}
+                  className="rounded-full px-3.5 py-2 text-xs font-semibold text-[#574B40] transition hover:bg-[#F2ECE3] hover:text-[#231F1C]"
+                >
+                  Vào Dashboard
+                </button>
+              )}
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#231F1C] px-5 py-2.5 text-xs font-semibold text-[#FAF8F5] shadow-xs transition hover:bg-[#3B332E] hover:shadow-sm"
+              >
+                <span>Tạo website cưới</span>
+                <ArrowRight className="h-3.5 w-3.5 text-[#C5A059]" strokeWidth={2} />
+              </a>
+
+              {/* Mobile menu toggle button */}
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="rounded-lg p-2 text-[#574B40] hover:bg-[#F2ECE3] lg:hidden"
+                aria-label="Mở menu điều hướng"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
             </div>
           </div>
+
+          {/* Mobile Navigation Dropdown */}
+          <AnimatePresence>
+            {isMobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="border-b border-[#EAE3DB] bg-[#FAF8F5] px-6 py-4 lg:hidden"
+              >
+                <div className="flex flex-col gap-3 text-sm font-medium text-[#574B40]">
+                  <a
+                    href="#pillars"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-1.5 hover:text-[#231F1C]"
+                  >
+                    Công cụ cưới
+                  </a>
+                  <a
+                    href="#lookbook"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-1.5 hover:text-[#231F1C]"
+                  >
+                    Mẫu Lookbook
+                  </a>
+                  <a
+                    href="#journey"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-1.5 hover:text-[#231F1C]"
+                  >
+                    Hành trình
+                  </a>
+                  <a
+                    href="#pricing"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-1.5 hover:text-[#231F1C]"
+                  >
+                    Gói trải nghiệm
+                  </a>
+                  {onOpenDashboard && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenDashboard();
+                      }}
+                      className="mt-2 text-left font-semibold text-[#C5A059]"
+                    >
+                      ← Mở Bảng điều khiển (Dashboard)
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </header>
 
         <main>
@@ -663,7 +774,7 @@ export default function LandingPage() {
         {/* Floating Bottom Chapter Dock */}
         <nav
           aria-label="Điều hướng theo chương"
-          className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full border border-pink-400/25 bg-[#151014]/90 p-1.5 shadow-[0_14px_36px_rgba(0,0,0,0.5)] backdrop-blur-md"
+          className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full border border-[#EAE3DB] bg-white/95 p-1.5 shadow-[0_12px_32px_rgba(35,31,28,0.1)] backdrop-blur-md"
         >
           <ul className="flex items-center gap-1">
             {CHAPTER_NAV.map((item) => {
@@ -672,15 +783,15 @@ export default function LandingPage() {
                 <li key={item.id}>
                   <a
                     href={item.href}
-                    className={`relative block rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors sm:px-4 sm:text-xs ${
-                      isActive ? "text-[#0D0A0C]" : "text-[#FCE7F3] hover:text-[#F472B6]"
+                    className={`relative block rounded-full px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-4 ${
+                      isActive ? "text-[#FAF8F5]" : "text-[#70665D] hover:text-[#231F1C]"
                     }`}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="dockActive"
                         transition={{ duration: 0.25, ease: EASE }}
-                        className="absolute inset-0 rounded-full bg-[#EC4899]"
+                        className="absolute inset-0 rounded-full bg-[#231F1C]"
                       />
                     )}
                     <span className="relative z-10">{item.label}</span>

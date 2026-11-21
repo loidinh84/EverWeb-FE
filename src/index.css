@@ -76,3 +76,11 @@
     animation: none;
   }
 }
+
+.ew-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.ew-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

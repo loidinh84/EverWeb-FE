@@ -10,8 +10,12 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronDown,
+  ChevronRight,
+  Globe,
   Menu,
   MessageSquare,
+  Search,
   Sparkles,
   Store,
   Users,
@@ -133,301 +137,287 @@ export default function LandingPage({ onOpenDashboard }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen overflow-x-clip bg-[#0D0A0C] text-[#FCE7F3]">
+      <div className="min-h-screen overflow-x-clip bg-[#FAF8F5] text-[#231F1C]">
         <ScrollProgressBar />
 
-        {/* Joy Wedding-Inspired Luxury Editorial Masthead */}
-        <header className="sticky top-0 z-40 border-b border-[#EAE3DB] bg-[#FAF8F5]/90 backdrop-blur-md transition-all">
-          <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4 sm:px-8">
-            <a href="#cover" className="flex items-center gap-3 group">
-              <div className="rounded-xl border border-[#EAE3DB] bg-white p-1.5 shadow-xs transition-transform duration-200 group-hover:scale-105">
-                <img src={everwebLogo} alt="EverWeb" className="h-8 w-8 object-contain" />
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-semibold tracking-tight text-[#231F1C]">
-                    EverWeb
-                  </span>
-                  <span className="font-display text-xs italic text-[#C5A059] hidden sm:inline">
-                    Atelier
-                  </span>
-                </div>
-                <span className="hidden text-[10px] tracking-wider uppercase text-[#8C7A68] sm:inline">
-                  Nền tảng cưới thông minh
-                </span>
-              </div>
-            </a>
-
-            {/* Desktop Center Navigation Links */}
-            <nav className="hidden items-center gap-7 lg:flex">
+        {/* Top Royal Blue Utility Bar (chuẩn WithJoy) */}
+        <div className="bg-[#3446EB] text-white text-xs font-medium relative z-40">
+          <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-4 sm:px-8">
+            {/* Left service pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto ew-no-scrollbar">
+              <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white whitespace-nowrap">
+                EverWeb Cưới
+              </span>
               <a
                 href="#pillars"
-                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
               >
-                Công cụ cưới
+                Thiệp số
               </a>
               <a
-                href="#lookbook"
-                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+                href="#pillars"
+                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
               >
-                Mẫu Lookbook
+                Khách mời & RSVP
               </a>
               <a
-                href="#journey"
-                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+                href="#pillars"
+                className="hidden sm:inline-block rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
               >
-                Hành trình
+                Trợ lý AI
               </a>
+            </div>
+
+            {/* Center Promo */}
+            <div className="hidden lg:flex items-center gap-2 text-white/95">
+              <span>Ưu đãi mùa cưới: Giảm 25% các mẫu thiệp số & website cưới cao cấp</span>
               <a
                 href="#pricing"
-                className="text-xs font-medium text-[#6B5E52] transition hover:text-[#231F1C]"
+                className="underline underline-offset-4 font-semibold text-white hover:text-white/90"
               >
-                Gói trải nghiệm
+                Khám phá ngay →
               </a>
-            </nav>
+            </div>
 
-            {/* Right Action CTAs */}
-            <div className="flex items-center gap-3">
+            {/* Right actions */}
+            <div className="flex items-center gap-4 text-white/90 shrink-0">
               {onOpenDashboard && (
                 <button
                   type="button"
                   onClick={onOpenDashboard}
-                  className="rounded-full px-3.5 py-2 text-xs font-semibold text-[#574B40] transition hover:bg-[#F2ECE3] hover:text-[#231F1C]"
+                  className="hidden sm:flex items-center gap-1.5 hover:text-white transition cursor-pointer"
                 >
-                  Vào Dashboard
+                  <Search className="h-3.5 w-3.5" />
+                  <span>Vào Dashboard</span>
                 </button>
               )}
-              <a
-                href="#pricing"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#231F1C] px-5 py-2.5 text-xs font-semibold text-[#FAF8F5] shadow-xs transition hover:bg-[#3B332E] hover:shadow-sm"
-              >
-                <span>Tạo website cưới</span>
-                <ArrowRight className="h-3.5 w-3.5 text-[#C5A059]" strokeWidth={2} />
-              </a>
-
-              {/* Mobile menu toggle button */}
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="rounded-lg p-2 text-[#574B40] hover:bg-[#F2ECE3] lg:hidden"
-                aria-label="Mở menu điều hướng"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </button>
+              <div className="flex items-center gap-1 text-white">
+                <Globe className="h-3.5 w-3.5" />
+                <span>Tiếng Việt</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Mobile Navigation Dropdown */}
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="border-b border-[#EAE3DB] bg-[#FAF8F5] px-6 py-4 lg:hidden"
-              >
-                <div className="flex flex-col gap-3 text-sm font-medium text-[#574B40]">
-                  <a
-                    href="#pillars"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5 hover:text-[#231F1C]"
+        {/* Hero Section with Full-Bleed Photo & Overlaid Navigation (chuẩn WithJoy) */}
+        <section id="cover" ref={heroRef} className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden">
+          {/* Background Image with Dark Vignette Overlay */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src={heroWedding}
+              alt="EverWeb Wedding Background"
+              className="h-full w-full object-cover object-center scale-105 will-change-transform"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black/75" />
+          </div>
+
+          {/* Overlaid Main Header */}
+          <header className="relative z-30 w-full border-b border-white/10 transition-all">
+            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-8">
+              {/* Logo (WithJoy-style elegant cursive/serif wordmark) */}
+              <a href="#cover" className="flex items-center gap-2 group">
+                <span className="font-display text-3xl sm:text-4xl font-normal tracking-tight text-white">
+                  Ever<span className="italic font-light text-[#E8D5CE]">Web</span>
+                </span>
+              </a>
+
+              {/* Center Menu Links with dropdown chevrons */}
+              <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-white/90">
+                <a
+                  href="#pillars"
+                  className="flex items-center gap-1 hover:text-white transition"
+                >
+                  <span>Kế hoạch & Thiệp cưới</span>
+                  <ChevronDown className="h-4 w-4 opacity-70" />
+                </a>
+                <a
+                  href="#lookbook"
+                  className="flex items-center gap-1 hover:text-white transition"
+                >
+                  <span>Bộ sưu tập Mẫu</span>
+                  <ChevronDown className="h-4 w-4 opacity-70" />
+                </a>
+                <a
+                  href="#journey"
+                  className="flex items-center gap-1 hover:text-white transition"
+                >
+                  <span>Cố vấn cưới AI</span>
+                  <ChevronDown className="h-4 w-4 opacity-70" />
+                </a>
+                <a
+                  href="#pricing"
+                  className="hover:text-white transition"
+                >
+                  Bảng giá
+                </a>
+              </nav>
+
+              {/* Right User Actions */}
+              <div className="flex items-center gap-4">
+                {onOpenDashboard ? (
+                  <button
+                    type="button"
+                    onClick={onOpenDashboard}
+                    className="hidden sm:inline-block text-sm font-medium text-white hover:text-white/80 transition cursor-pointer"
                   >
-                    Công cụ cưới
-                  </a>
-                  <a
-                    href="#lookbook"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5 hover:text-[#231F1C]"
-                  >
-                    Mẫu Lookbook
-                  </a>
-                  <a
-                    href="#journey"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5 hover:text-[#231F1C]"
-                  >
-                    Hành trình
-                  </a>
+                    Đăng nhập
+                  </button>
+                ) : (
                   <a
                     href="#pricing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5 hover:text-[#231F1C]"
+                    className="hidden sm:inline-block text-sm font-medium text-white hover:text-white/80 transition"
                   >
-                    Gói trải nghiệm
+                    Đăng nhập
                   </a>
-                  {onOpenDashboard && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        onOpenDashboard();
-                      }}
-                      className="mt-2 text-left font-semibold text-[#C5A059]"
-                    >
-                      ← Mở Bảng điều khiển (Dashboard)
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </header>
-
-        <main>
-          {/* Chương 0: Magazine Cover Hero (Đen - Hồng) */}
-          <section id="cover" ref={heroRef} className="relative bg-[#0D0A0C] pt-10 lg:pt-14">
-            <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 sm:px-8 lg:grid-cols-12 lg:gap-8 lg:pb-20">
-              {/* Left Editorial Typography */}
-              <div className="lg:col-span-5">
-                <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, ease: EASE }}
-                  className="font-mono-num text-xs font-medium text-[#F472B6]"
+                )}
+                <a
+                  href="#pricing"
+                  className="rounded-full bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#1C1917] shadow-md transition hover:bg-neutral-100"
                 >
-                  Nền tảng lập kế hoạch tiệc cưới
-                </motion.p>
+                  Bắt đầu ngay
+                </a>
 
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.08, ease: EASE }}
-                  className="mt-4 font-display text-5xl font-normal leading-[0.98] tracking-[-0.02em] text-white sm:text-6xl lg:text-[68px]"
+                {/* Mobile Menu Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="rounded-lg p-2 text-white hover:bg-white/10 md:hidden cursor-pointer"
+                  aria-label="Mở menu"
                 >
-                  Nghệ thuật tổ chức ngày trọng đại
-                </motion.h1>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: 0.16, ease: EASE }}
-                  className="mt-6 max-w-md text-sm leading-relaxed text-[#C4A7B7] sm:text-base"
-                >
-                  EverWeb kết nối danh sách khách mời, ngân sách chi tiết, nhà cung cấp chọn lọc
-                  và trợ lý Chatbot AI trên một không gian tinh giản.
-                </motion.p>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.24, ease: EASE }}
-                  className="mt-8 flex flex-wrap items-center gap-4"
-                >
-                  <a
-                    href="#pillars"
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[#EC4899] px-6 text-sm font-semibold text-[#0D0A0C] transition-colors duration-150 hover:bg-[#F472B6]"
-                  >
-                    <span>Trải nghiệm công cụ</span>
-                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-                  </a>
-                  <a
-                    href="#lookbook"
-                    className="inline-flex h-11 items-center rounded-full border border-pink-400/30 px-6 text-sm font-medium text-[#FCE7F3] transition-colors duration-150 hover:border-pink-400/60 hover:bg-pink-400/10"
-                  >
-                    Xem Lookbook
-                  </a>
-                </motion.div>
+                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
               </div>
-
-              {/* Center Architectural Arch Frame */}
-              <div className="lg:col-span-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 26 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.7, delay: 0.14, ease: EASE }}
-                  className="relative mx-auto max-w-sm overflow-hidden rounded-t-[180px] rounded-b-2xl border border-pink-400/35 bg-[#191217] p-2 shadow-[0_24px_48px_rgba(236,72,153,0.12)]"
-                >
-                  <div className="overflow-hidden rounded-t-[172px] rounded-b-xl">
-                    <motion.img
-                      src={heroWedding}
-                      alt="Không gian lễ cưới sang trọng EverWeb"
-                      style={{ y: archY, scale: archScale }}
-                      className="h-[380px] w-full object-cover will-change-transform sm:h-[440px]"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between px-3 py-3 text-xs text-[#C4A7B7]">
-                    <span className="font-display text-base italic text-white">
-                      EverWeb Atelier
-                    </span>
-                    <span className="font-mono-num text-[11px] font-medium text-[#F472B6]">
-                      04 Trụ cột
-                    </span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Right Interactive Scale Configurator (Thẻ Trắng Hồng nổi bật trên nền Đen) */}
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.65, delay: 0.22, ease: EASE }}
-                className="lg:col-span-3"
-              >
-                <div className="rounded-2xl border border-rose-200 bg-[#FFF5F8] p-5 text-[#23111B] shadow-[0_20px_44px_rgba(0,0,0,0.45)]">
-                  <p className="text-xs font-semibold text-[#BE185D]">Ước tính nhanh theo quy mô</p>
-                  <div className="mt-3 flex flex-col gap-1.5">
-                    {COVER_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setPresetId(preset.id)}
-                        className={`cursor-pointer rounded-lg px-3 py-2 text-left text-xs transition-colors duration-150 ${
-                          presetId === preset.id
-                            ? "bg-[#23111B] font-semibold text-[#FCE7F3]"
-                            : "bg-white text-[#6E4758] hover:bg-rose-100/70"
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentPreset.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2, ease: EASE }}
-                      className="mt-5 space-y-3 border-t border-rose-200 pt-4 text-xs"
-                    >
-                      <div className="flex justify-between">
-                        <span className="text-[#6E4758]">Số bàn dự kiến</span>
-                        <span className="font-mono-num font-semibold text-[#23111B]">
-                          {currentPreset.tables} bàn
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#6E4758]">Ngân sách gợi ý</span>
-                        <span className="font-mono-num font-semibold text-[#BE185D]">
-                          {currentPreset.budget}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#6E4758]">Đối tác đề xuất</span>
-                        <span className="font-mono-num font-semibold text-[#23111B]">
-                          {currentPreset.vendors}
-                        </span>
-                      </div>
-                      <div className="rounded-xl border border-rose-200/80 bg-white p-3 text-[11px] leading-relaxed text-[#6E4758]">
-                        <p className="mb-1 flex items-center gap-1.5 font-semibold text-[#BE185D]">
-                          <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-                          Gợi ý AI
-                        </p>
-                        <p>{currentPreset.aiTip}</p>
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </motion.div>
             </div>
 
-            <EditorialMarquee items={MARQUEE_ITEMS} />
-          </section>
+            {/* Mobile Dropdown */}
+            <AnimatePresence>
+              {isMobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="border-b border-white/10 bg-black/85 backdrop-blur-md px-6 py-4 md:hidden"
+                >
+                  <div className="flex flex-col gap-3 text-sm font-medium text-white/90">
+                    <a
+                      href="#pillars"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-1.5 hover:text-white"
+                    >
+                      Kế hoạch & Thiệp cưới
+                    </a>
+                    <a
+                      href="#lookbook"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-1.5 hover:text-white"
+                    >
+                      Bộ sưu tập Mẫu
+                    </a>
+                    <a
+                      href="#journey"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-1.5 hover:text-white"
+                    >
+                      Cố vấn cưới AI
+                    </a>
+                    <a
+                      href="#pricing"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-1.5 hover:text-white"
+                    >
+                      Bảng giá
+                    </a>
+                    {onOpenDashboard && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenDashboard();
+                        }}
+                        className="mt-2 text-left font-semibold text-[#C5A059]"
+                      >
+                        ← Mở Bảng điều khiển (Dashboard)
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </header>
+
+          {/* Hero Center Text Content (chuẩn WithJoy: Plan your forever, better) */}
+          <div className="relative z-20 mx-auto my-auto max-w-4xl px-4 py-16 text-center sm:px-8 sm:py-24">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: EASE }}
+              className="font-display text-4xl sm:text-6xl md:text-7xl font-normal leading-[1.08] tracking-tight text-white"
+            >
+              Lập kế hoạch cho ngày hạnh phúc, trọn vẹn hơn.
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.12, ease: EASE }}
+              className="mt-6 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed text-white/90 font-light"
+            >
+              Thiết kế website cưới mang dấu ấn riêng, tạo sổ mừng cưới đa năng và tận hưởng trọn vẹn từng khoảnh khắc chuẩn bị theo cách nhẹ nhàng nhất.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.22, ease: EASE }}
+              className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
+            >
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2 rounded-full bg-[#5239D8] hover:bg-[#432BC2] px-7 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02]"
+              >
+                <span>Bắt đầu ngay</span>
+                <ChevronRight className="h-4 w-4" />
+              </a>
+
+              {onOpenDashboard ? (
+                <button
+                  type="button"
+                  onClick={onOpenDashboard}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition cursor-pointer"
+                >
+                  <Search className="h-4 w-4" />
+                  <span>Tìm kiếm sự kiện / Vào Dashboard</span>
+                </button>
+              ) : (
+                <a
+                  href="#pillars"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-white/80 transition"
+                >
+                  <Search className="h-4 w-4" />
+                  <span>Khám phá công cụ</span>
+                </a>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Bottom Organic Wave Transition (cắt mượt mà xuống nền #FAF8F5) */}
+          <div className="relative z-20 w-full overflow-hidden leading-none pointer-events-none -mb-1">
+            <svg
+              viewBox="0 0 1440 90"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full h-12 sm:h-16 md:h-24 text-[#FAF8F5] preserve-3d"
+            >
+              <path
+                d="M0,45 C280,90 520,10 760,50 C1000,90 1240,20 1440,60 L1440,90 L0,90 Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+        </section>
+
+        <main className="relative z-20 bg-[#FAF8F5]">
+          <EditorialMarquee items={MARQUEE_ITEMS} />
 
           {/* Chương 1: 4 Stacking Folio Cards (Nền Trắng Hồng, 2 thẻ đầu Trắng Hồng + 2 thẻ sau Đen Hồng) */}
           <section id="pillars" className="bg-[#FFF5F8] py-20 text-[#23111B] lg:py-28">

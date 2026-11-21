@@ -46,7 +46,7 @@ export const MARQUEE_ITEMS = [
   "Dự toán ngân sách theo thời gian thực",
   "Tuyển chọn nhà cung cấp uy tín",
   "Trợ lý Chatbot AI đồng hành 24/7",
-  "Kiểm soát RSVP hai họ minh bạch",
+  "Kiểm soát phản hồi tham dự hai họ minh bạch",
   "Đồng bộ kế hoạch cô dâu & chú rể",
 ];
 
@@ -84,7 +84,7 @@ export const GUEST_TABLES = [
     group: "Đồng nghiệp chú rể",
     confirmed: 7,
     capacity: 10,
-    note: "Cánh phải sảnh · Đã gửi nhắc RSVP",
+    note: "Cánh phải sảnh · Đã gửi nhắc xác nhận tham dự",
   },
   {
     id: "Bàn 06",
@@ -140,7 +140,7 @@ export const AI_SCENARIOS = [
     prompt: "6 tuần cuối cần ưu tiên gì?",
     question: "Còn 6 tuần nữa đến ngày cưới, tụi mình cần chốt gấp những đầu việc nào trước?",
     answer:
-      "Ưu tiên theo thứ tự: (1) Gửi nhắc RSVP để khóa danh sách bàn trong 7 ngày tới, (2) Chốt thực đơn và sơ đồ âm thanh với sảnh tiệc vào tuần thứ 4, (3) Thử váy lần cuối và duyệt kịch bản MC trước ngày cưới 10 ngày.",
+      "Ưu tiên theo thứ tự: (1) Gửi nhắc xác nhận tham dự để khóa danh sách bàn trong 7 ngày tới, (2) Chốt thực đơn và sơ đồ âm thanh với sảnh tiệc vào tuần thứ 4, (3) Thử váy lần cuối và duyệt kịch bản MC trước ngày cưới 10 ngày.",
   },
   {
     id: "budget",
@@ -203,7 +203,7 @@ export const JOURNEY_MILESTONES = [
   {
     step: "03",
     title: "AI đồng hành đến ngày lễ",
-    desc: "Theo dõi RSVP theo ngày, kiểm soát khoản đặt cọc và hỏi đáp trợ lý Chatbot AI bất kỳ lúc nào.",
+    desc: "Theo dõi xác nhận tham dự theo ngày, kiểm soát khoản đặt cọc và hỏi đáp trợ lý Chatbot AI bất kỳ lúc nào.",
   },
 ];
 

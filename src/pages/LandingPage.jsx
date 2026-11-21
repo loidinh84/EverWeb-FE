@@ -16,7 +16,6 @@ import {
   Menu,
   MessageSquare,
   Search,
-  Sparkles,
   Store,
   Users,
   Wallet,
@@ -38,7 +37,6 @@ import {
 } from "../components/MotionPrimitives";
 import {
   CHAPTER_NAV,
-  COVER_PRESETS,
   JOURNEY_MILESTONES,
   LOOKBOOK_SLIDES,
   MARQUEE_ITEMS,
@@ -52,7 +50,7 @@ const FOLIOS = [
     num: "01",
     icon: Users,
     title: "Quản lý khách mời",
-    desc: "Sắp xếp danh sách nhà trai, nhà gái và bạn bè theo từng cụm bàn. Cập nhật trạng thái RSVP trực tiếp để chốt số bàn không sai lệch.",
+    desc: "Sắp xếp danh sách nhà trai, nhà gái và bạn bè theo từng cụm bàn. Cập nhật trạng thái xác nhận tham dự trực tuyến để chốt số bàn không sai lệch.",
     dark: false,
     surface: "bg-white text-[#23111B] border-rose-200/80",
     preview: <GuestSeatingPreview />,
@@ -87,21 +85,12 @@ const FOLIOS = [
 ];
 
 export default function LandingPage({ onOpenDashboard }) {
-  const [presetId, setPresetId] = useState(COVER_PRESETS[0].id);
   const [activeChapter, setActiveChapter] = useState(CHAPTER_NAV[0].id);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const heroRef = useRef(null);
   const lookbookRef = useRef(null);
   const journeyRef = useRef(null);
-
-  const { scrollYProgress: heroScroll } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const archY = useTransform(heroScroll, [0, 1], ["0%", "14%"]);
-  const archScale = useTransform(heroScroll, [0, 1], [1, 1.08]);
 
   const { scrollYProgress: lookbookScroll } = useScroll({
     target: lookbookRef,
@@ -133,8 +122,6 @@ export default function LandingPage({ onOpenDashboard }) {
     return () => observer.disconnect();
   }, []);
 
-  const currentPreset = COVER_PRESETS.find((p) => p.id === presetId) ?? COVER_PRESETS[0];
-
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen overflow-x-clip bg-[#FAF8F5] text-[#231F1C]">
@@ -158,7 +145,7 @@ export default function LandingPage({ onOpenDashboard }) {
                 href="#pillars"
                 className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
               >
-                Khách mời & RSVP
+                Xác nhận tham dự
               </a>
               <a
                 href="#pillars"
@@ -173,9 +160,10 @@ export default function LandingPage({ onOpenDashboard }) {
               <span>Ưu đãi mùa cưới: Giảm 25% các mẫu thiệp số & website cưới cao cấp</span>
               <a
                 href="#pricing"
-                className="underline underline-offset-4 font-semibold text-white hover:text-white/90"
+                className="inline-flex items-center gap-1 underline underline-offset-4 font-semibold text-white hover:text-white/90"
               >
-                Khám phá ngay →
+                <span>Khám phá ngay</span>
+                <ArrowRight className="h-3.5 w-3.5" />
               </a>
             </div>
 
@@ -197,7 +185,7 @@ export default function LandingPage({ onOpenDashboard }) {
         </div>
 
         {/* Hero Section with Full-Bleed Photo & Overlaid Navigation (chuẩn WithJoy) */}
-        <section id="cover" ref={heroRef} className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden">
+        <section id="cover" className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden">
           {/* Background Image with Dark Vignette Overlay */}
           <div className="absolute inset-0 z-0">
             <img

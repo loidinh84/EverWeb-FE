@@ -114,7 +114,9 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
     setIsLoading(true);
 
     try {
-      const historyToSend = [...messages, userMessage].map((m) => ({
+      // Giữ tối đa 6 tin nhắn gần nhất để tối ưu dung lượng và không chạm giới hạn token
+      const recentMessages = [...messages, userMessage].slice(-6);
+      const historyToSend = recentMessages.map((m) => ({
         role: m.role,
         content: m.content,
       }));
@@ -145,19 +147,30 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
       ]);
     } catch (err) {
       console.error("Chat error:", err);
-      const serverError =
+      const rawError =
         err.response?.data?.message ||
         err.message ||
         "Không thể kết nối đến máy chủ Backend.";
 
-      setErrorMsg(serverError);
+      let friendlyMsg = rawError;
+      if (
+        rawError.toLowerCase().includes("tokens per minute") ||
+        rawError.toLowerCase().includes("request too large") ||
+        rawError.toLowerCase().includes("tpm") ||
+        rawError.toLowerCase().includes("rate limit")
+      ) {
+        friendlyMsg =
+          "Hệ thống nhận nhiều yêu cầu cùng lúc hoặc nội dung quá dài (vượt giới hạn xử lý tạm thời trong 1 phút). Bạn vui lòng bấm nút 'Đặt lại trò chuyện' hoặc rút ngắn câu hỏi và thử lại sau ít giây nhé!";
+      }
+
+      setErrorMsg(friendlyMsg);
 
       setMessages((prev) => [
         ...prev,
         {
           id: createMessageId("err"),
           role: "assistant",
-          content: `**Thông báo:** ${serverError}\n\n*Gợi ý: Hãy kiểm tra file \`EverWeb-BE/.env\` và đảm bảo server Backend đang chạy (\`npm run dev\` ở thư mục EverWeb-BE).*`,
+          content: `**Thông báo:** ${friendlyMsg}\n\n*Gợi ý: Hãy bấm nút làm mới ở góc phải để bắt đầu lượt trò chuyện mới, hoặc kiểm tra file \`EverWeb-BE/.env\` nếu server chưa chạy.*`,
           createdAt: new Date(),
           isError: true,
         },

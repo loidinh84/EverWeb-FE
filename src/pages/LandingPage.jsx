@@ -362,16 +362,17 @@ export default function LandingPage({ onOpenDashboard }) {
             </motion.div>
           </div>
 
-          {/* Bottom Organic Wave Transition (cắt mượt mà xuống nền #FAF8F5) */}
+          {/* Bottom Organic Wave Transition (luôn full màn hình 100% chiều ngang) */}
           <div className="relative z-20 w-full overflow-hidden leading-none pointer-events-none -mb-1">
             <svg
-              viewBox="0 0 1440 90"
+              viewBox="0 0 1440 100"
+              preserveAspectRatio="none"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-12 sm:h-16 md:h-24 text-[#FAF8F5] preserve-3d"
+              className="w-full h-14 sm:h-20 md:h-28 text-[#FAF8F5] block"
             >
               <path
-                d="M0,45 C280,90 520,10 760,50 C1000,90 1240,20 1440,60 L1440,90 L0,90 Z"
+                d="M0,60 C360,110 720,20 1080,70 C1260,95 1380,45 1440,30 L1440,100 L0,100 Z"
                 fill="currentColor"
               />
             </svg>

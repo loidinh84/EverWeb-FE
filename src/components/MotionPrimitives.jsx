@@ -15,7 +15,7 @@ export function ScrollProgressBar() {
     <motion.div
       aria-hidden="true"
       style={{ scaleX }}
-      className="fixed inset-x-0 top-0 z-50 h-[2px] origin-left bg-[#EC4899]"
+      className="fixed inset-x-0 top-0 z-50 h-[2px] origin-left bg-[#C5A059]"
     />
   );
 }
@@ -36,7 +36,7 @@ export function Reveal({ children, className = "", delay = 0, y = 20 }) {
 
 export function EditorialMarquee({ items }) {
   return (
-    <div className="overflow-hidden border-y border-pink-400/15 bg-[#141013] py-3.5">
+    <div className="overflow-hidden border-y border-[#EAE3DB] bg-[#F7F3EE] py-3">
       <div className="animate-everweb-marquee items-center">
         {[0, 1].map((dup) => (
           <div
@@ -47,10 +47,10 @@ export function EditorialMarquee({ items }) {
             {items.map((text) => (
               <span
                 key={`${dup}-${text}`}
-                className="flex items-center gap-8 px-6 text-xs font-medium tracking-[0.14em] text-[#F9A8D4] uppercase"
+                className="flex items-center gap-8 px-6 text-xs font-medium tracking-[0.16em] text-[#786B60] uppercase"
               >
                 <span>{text}</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-[#EC4899]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C5A059]" />
               </span>
             ))}
           </div>

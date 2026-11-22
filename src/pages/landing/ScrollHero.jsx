@@ -1,28 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AnimatePresence,
   motion,
   useMotionValueEvent,
   useScroll,
   useTransform,
 } from "framer-motion";
 import {
-  ArrowRight,
   Calendar,
   Check,
-  ChevronDown,
   ChevronRight,
   Gift,
-  Globe,
   Heart,
   MapPin,
-  Menu,
   Music,
   Plane,
   Search,
   Sparkles,
   Users,
-  X,
 } from "lucide-react";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
@@ -31,18 +25,13 @@ import weddingCouple from "../../assets/image/wedding-couple.jpg";
 export default function ScrollHero({ onOpenDashboard }) {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isHeroScrolled, setIsHeroScrolled] = useState(false);
 
-  // Directly track page scroll (scrollY in px) for 100% rock-solid, monotonic progression
-  // Completely eliminates target-offset miscalculations, view-timeline glitches, or scroll-back bugs
   const { scrollY } = useScroll();
 
   useEffect(() => {
     const handleScroll = () => {
       const y = window.scrollY || 0;
-      setIsScrolled(y > 20);
       setIsHeroScrolled(y > 170);
     };
 
@@ -51,7 +40,6 @@ export default function ScrollHero({ onOpenDashboard }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Sync with scroll to pause video once cross-faded (> 380px)
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (videoRef.current) {
       if (latest > 380 && !videoRef.current.paused) {
@@ -62,277 +50,31 @@ export default function ScrollHero({ onOpenDashboard }) {
     }
   });
 
-  // ================= SCENE 1 & 2: Video -> Photo Cross-fade (Dissolve) =================
-  // Video dissolves leisurely from 90px to 380px, couple photo fades in from 110px to 400px
   const videoOpacity = useTransform(scrollY, [90, 380], [1, 0]);
   const photoOpacity = useTransform(scrollY, [110, 400], [0, 1]);
-
-  // ================= TOP VIGNETTE OVERLAY =================
+  ``;
   const vignetteOpacity = useTransform(scrollY, [0, 180], [1, 0]);
 
-  // ================= INITIAL HEADLINE & CTA (Step 1): Fades out & lifts away EARLY =================
-  // Completely gone by 170px. Zero overlap with card shrink or constellation cards!
   const titleOpacity = useTransform(scrollY, [0, 170], [1, 0]);
   const titleY = useTransform(scrollY, [0, 170], [0, -36]);
 
-  // ================= CENTRAL HERO CONTAINER: Starts 100% full-bleed, scales down to 0.44 =================
-  // Scales down smoothly and cinematically between 180px and 720px, then stays firmly locked at 0.44 & 24px radius
   const heroScale = useTransform(scrollY, [180, 720], [1, 0.44]);
   const heroRadius = useTransform(scrollY, [180, 720], [0, 24]);
   const heroY = useTransform(scrollY, [180, 720], [0, -32]);
 
-  // ================= UI MAGIC CONSTELLATION: Fly in from 4 directions and STAY PERMANENTLY =================
-  // Cards glide in gracefully between 400px and 800px, then STAY PERMANENTLY locked at opacity 1
   const constellationOpacity = useTransform(scrollY, [400, 800], [0, 1]);
   const leftX = useTransform(scrollY, [400, 800], ["-28vw", "0vw"]);
   const rightX = useTransform(scrollY, [400, 800], ["28vw", "0vw"]);
   const bottomY = useTransform(scrollY, [400, 800], ["6vh", "0vh"]);
   const topY = useTransform(scrollY, [400, 800], ["-6vh", "0vh"]);
 
-  // Step 2 Tagline & Seating Pill directly underneath the scaled-down card: Arrives and STAYS permanently
   const step2TextOpacity = useTransform(scrollY, [450, 800], [0, 1]);
   const step2TextY = useTransform(scrollY, [450, 800], [22, 0]);
 
   return (
-    <div ref={containerRef} id="cover" className="relative w-full h-[190vh]">
+    <div ref={containerRef} id="cover" className="relative w-full h-[200vh]">
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#FAF8F5] select-none">
-        <div className="bg-[#3446EB] text-white text-xs font-medium relative z-40 w-full h-10 shrink-0">
-          <div className="w-full flex h-10 items-center justify-between px-4 sm:px-8 lg:px-12">
-            <div className="flex items-center gap-1.5 overflow-x-auto ew-no-scrollbar">
-              <span className="rounded-full bg-white/20 px-3 py-1 font-semibold text-white whitespace-nowrap">
-                EverWeb Cưới
-              </span>
-              <a
-                href="#pillars"
-                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Thiệp số
-              </a>
-              <a
-                href="#pillars"
-                className="rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Xác nhận tham dự
-              </a>
-              <a
-                href="#pillars"
-                className="hidden sm:inline-block rounded-full px-2.5 py-1 text-white/80 hover:text-white hover:bg-white/10 transition whitespace-nowrap"
-              >
-                Trợ lý AI
-              </a>
-            </div>
-
-            <div className="hidden lg:flex items-center gap-2 text-white/95">
-              <span>
-                Ưu đãi mùa cưới: Giảm 25% các mẫu thiệp số & website cưới cao
-                cấp
-              </span>
-              <a
-                href="#pricing"
-                className="inline-flex items-center gap-1 underline underline-offset-4 font-semibold text-white hover:text-white/90"
-              >
-                <span>Khám phá ngay</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </a>
-            </div>
-
-            <div className="flex items-center gap-4 text-white/90 shrink-0">
-              <a
-                href="#pricing"
-                className="hidden sm:flex items-center gap-1.5 hover:text-white transition cursor-pointer"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span>Tìm sự kiện</span>
-              </a>
-              <div className="flex items-center gap-1 text-white">
-                <Globe className="h-3.5 w-3.5" />
-                <span>Tiếng Việt</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <header
-          className={`absolute top-10 left-0 right-0 z-30 w-full transition-all duration-300 ${
-            isScrolled
-              ? "bg-white/95 backdrop-blur-md border-b border-[#EAE3DB] shadow-xs"
-              : "bg-transparent border-b border-white/10"
-          }`}
-        >
-          <div className="w-full flex h-18 items-center justify-between px-4 sm:px-8 lg:px-12">
-            <a href="#cover" className="flex items-center gap-2 group">
-              <span
-                className={`font-display text-3xl sm:text-4xl font-normal tracking-tight transition-colors duration-300 ${
-                  isScrolled
-                    ? "text-[#231F1C]"
-                    : "text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                Ever
-                <span
-                  className={`italic font-light transition-colors duration-300 ${
-                    isScrolled ? "text-[#C5A059]" : "text-[#F5E6D3]"
-                  }`}
-                >
-                  Web
-                </span>
-              </span>
-            </a>
-
-            <nav
-              className={`hidden md:flex items-center gap-8 text-sm font-medium transition-colors duration-300 ${
-                isScrolled ? "text-[#231F1C]" : "text-white"
-              }`}
-            >
-              <a
-                href="#pillars"
-                className={`flex items-center gap-1 transition ${
-                  isScrolled
-                    ? "hover:text-[#5239D8]"
-                    : "hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                <span>Kế hoạch & Thiệp cưới</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </a>
-              <a
-                href="#lookbook"
-                className={`flex items-center gap-1 transition ${
-                  isScrolled
-                    ? "hover:text-[#5239D8]"
-                    : "hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                <span>Bộ sưu tập Mẫu</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </a>
-              <a
-                href="#journey"
-                className={`flex items-center gap-1 transition ${
-                  isScrolled
-                    ? "hover:text-[#5239D8]"
-                    : "hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                <span>Cố vấn cưới AI</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </a>
-              <a
-                href="#pricing"
-                className={`transition ${
-                  isScrolled
-                    ? "hover:text-[#5239D8]"
-                    : "hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                Bảng giá
-              </a>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              {onOpenDashboard ? (
-                <button
-                  type="button"
-                  onClick={onOpenDashboard}
-                  className={`hidden sm:inline-block text-sm font-medium transition cursor-pointer ${
-                    isScrolled
-                      ? "text-[#231F1C] hover:text-[#5239D8]"
-                      : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                  }`}
-                >
-                  Đăng nhập
-                </button>
-              ) : (
-                <a
-                  href="#pricing"
-                  className={`hidden sm:inline-block text-sm font-medium transition ${
-                    isScrolled
-                      ? "text-[#231F1C] hover:text-[#5239D8]"
-                      : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                  }`}
-                >
-                  Đăng nhập
-                </a>
-              )}
-              <a
-                href="#pricing"
-                className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 ${
-                  isScrolled
-                    ? "bg-[#5239D8] text-white hover:bg-[#432BC2]"
-                    : "bg-white text-[#231F1C] hover:bg-neutral-100"
-                }`}
-              >
-                Bắt đầu ngay
-              </a>
-
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`rounded-lg p-2 transition md:hidden cursor-pointer ${
-                  isScrolled
-                    ? "text-[#231F1C] hover:bg-[#EAE3DB]"
-                    : "text-white hover:bg-white/10"
-                }`}
-                aria-label="Mở menu"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Dropdown */}
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`border-b px-6 py-4 md:hidden backdrop-blur-md ${
-                  isScrolled
-                    ? "border-[#EAE3DB] bg-white text-[#231F1C]"
-                    : "border-white/10 bg-black/90 text-white"
-                }`}
-              >
-                <div className="flex flex-col gap-3 text-sm font-medium">
-                  <a
-                    href="#pillars"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5"
-                  >
-                    Kế hoạch & Thiệp cưới
-                  </a>
-                  <a
-                    href="#lookbook"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5"
-                  >
-                    Bộ sưu tập Mẫu
-                  </a>
-                  <a
-                    href="#journey"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5"
-                  >
-                    Cố vấn cưới AI
-                  </a>
-                  <a
-                    href="#pricing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="py-1.5"
-                  >
-                    Bảng giá
-                  </a>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </header>
-
-        <div className="absolute top-10 bottom-0 left-0 right-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
           <motion.div
             style={{
               scale: heroScale,
@@ -406,13 +148,24 @@ export default function ScrollHero({ onOpenDashboard }) {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              <a
-                href="#pricing"
-                className="inline-flex items-center gap-2 rounded-full bg-[#5239D8] hover:bg-[#432BC2] px-7 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02]"
-              >
-                <span>Bắt đầu ngay</span>
-                <ChevronRight className="h-4 w-4" />
-              </a>
+              {onOpenDashboard ? (
+                <button
+                  type="button"
+                  onClick={onOpenDashboard}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#5239D8] hover:bg-[#432BC2] px-7 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                >
+                  <span>Bắt đầu ngay</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <a
+                  href="#pricing"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#5239D8] hover:bg-[#432BC2] px-7 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-200 hover:scale-[1.02]"
+                >
+                  <span>Bắt đầu ngay</span>
+                  <ChevronRight className="h-4 w-4" />
+                </a>
+              )}
 
               <a
                 href="#pricing"

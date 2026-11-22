@@ -32,6 +32,7 @@ import WeddingAssistantChatbot from "./components/chat/WeddingAssistantChatbot";
 import {
   ADMIN_ALLOWED_ROLES,
   DASHBOARD_ALLOWED_ROLES,
+  getDefaultRouteByRole,
   ROUTE_PATHS,
 } from "./constants/roles";
 import { useAuth } from "./hooks/useAuth";
@@ -266,6 +267,8 @@ function DashboardWorkspace() {
 function HomeRoute() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   if (searchParams.has("token")) {
     return <InvitationPreview />;
@@ -275,7 +278,15 @@ function HomeRoute() {
     return <Navigate to={ROUTE_PATHS.DASHBOARD_DEFAULT} replace />;
   }
 
-  return <Landing />;
+  return (
+    <Landing
+      onOpenDashboard={() =>
+        navigate(
+          isAuthenticated ? getDefaultRouteByRole(user?.role) : ROUTE_PATHS.LOGIN
+        )
+      }
+    />
+  );
 }
 
 function App() {

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {
   AnimatePresence,
   motion,
@@ -16,7 +15,6 @@ import {
   Gift,
   Globe,
   Heart,
-  LogOut,
   MapPin,
   Menu,
   Music,
@@ -26,32 +24,16 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { getDefaultRouteByRole, ROLES, ROUTE_PATHS } from "../../constants/roles";
-import { useAuth } from "../../hooks/useAuth";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
 import weddingCouple from "../../assets/image/wedding-couple.jpg";
 
 export default function ScrollHero({ onOpenDashboard }) {
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHeroScrolled, setIsHeroScrolled] = useState(false);
-
-  const workspaceRoute = getDefaultRouteByRole(user?.role);
-  const workspaceLabel =
-    user?.role === ROLES.ADMIN ? "Vào quản trị" : "Quản lý tiệc cưới";
-
-  const handleOpenWorkspace = () => {
-    if (onOpenDashboard) {
-      onOpenDashboard();
-      return;
-    }
-    navigate(workspaceRoute);
-  };
 
   // Directly track page scroll (scrollY in px) for 100% rock-solid, monotonic progression
   // Completely eliminates target-offset miscalculations, view-timeline glitches, or scroll-back bugs
@@ -248,58 +230,40 @@ export default function ScrollHero({ onOpenDashboard }) {
             </nav>
 
             <div className="flex items-center gap-4">
-              {isAuthenticated ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleOpenWorkspace}
-                    className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 cursor-pointer ${
-                      isScrolled
-                        ? "bg-[#5239D8] text-white hover:bg-[#432BC2]"
-                        : "bg-white text-[#231F1C] hover:bg-neutral-100"
-                    }`}
-                  >
-                    {workspaceLabel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => logout()}
-                    title="Đăng xuất"
-                    aria-label="Đăng xuất"
-                    className={`hidden sm:inline-flex items-center gap-1.5 text-sm font-medium transition cursor-pointer ${
-                      isScrolled
-                        ? "text-[#231F1C] hover:text-rose-600"
-                        : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                    }`}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Đăng xuất</span>
-                  </button>
-                </>
+              {onOpenDashboard ? (
+                <button
+                  type="button"
+                  onClick={onOpenDashboard}
+                  className={`hidden sm:inline-block text-sm font-medium transition cursor-pointer ${
+                    isScrolled
+                      ? "text-[#231F1C] hover:text-[#5239D8]"
+                      : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                  }`}
+                >
+                  Đăng nhập
+                </button>
               ) : (
-                <>
-                  <Link
-                    to={ROUTE_PATHS.LOGIN}
-                    className={`hidden sm:inline-block text-sm font-medium transition ${
-                      isScrolled
-                        ? "text-[#231F1C] hover:text-[#5239D8]"
-                        : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                    }`}
-                  >
-                    Đăng nhập
-                  </Link>
-                  <Link
-                    to={ROUTE_PATHS.REGISTER}
-                    className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 ${
-                      isScrolled
-                        ? "bg-[#5239D8] text-white hover:bg-[#432BC2]"
-                        : "bg-white text-[#231F1C] hover:bg-neutral-100"
-                    }`}
-                  >
-                    Bắt đầu ngay
-                  </Link>
-                </>
+                <a
+                  href="#pricing"
+                  className={`hidden sm:inline-block text-sm font-medium transition ${
+                    isScrolled
+                      ? "text-[#231F1C] hover:text-[#5239D8]"
+                      : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                  }`}
+                >
+                  Đăng nhập
+                </a>
               )}
+              <a
+                href="#pricing"
+                className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 ${
+                  isScrolled
+                    ? "bg-[#5239D8] text-white hover:bg-[#432BC2]"
+                    : "bg-white text-[#231F1C] hover:bg-neutral-100"
+                }`}
+              >
+                Bắt đầu ngay
+              </a>
 
               <button
                 type="button"
@@ -362,49 +326,6 @@ export default function ScrollHero({ onOpenDashboard }) {
                   >
                     Bảng giá
                   </a>
-                  <div className="mt-1 flex flex-col gap-2 border-t border-current/15 pt-3">
-                    {isAuthenticated ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            handleOpenWorkspace();
-                          }}
-                          className="py-1.5 text-left font-semibold"
-                        >
-                          {workspaceLabel}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            logout();
-                          }}
-                          className="py-1.5 text-left text-rose-400"
-                        >
-                          Đăng xuất
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          to={ROUTE_PATHS.LOGIN}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="py-1.5"
-                        >
-                          Đăng nhập
-                        </Link>
-                        <Link
-                          to={ROUTE_PATHS.REGISTER}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="py-1.5 font-semibold"
-                        >
-                          Đăng ký tài khoản
-                        </Link>
-                      </>
-                    )}
-                  </div>
                 </div>
               </motion.div>
             )}

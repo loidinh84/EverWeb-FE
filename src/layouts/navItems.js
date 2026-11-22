@@ -10,18 +10,19 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { DASHBOARD_ALLOWED_ROLES } from "../constants/roles";
 
 export const DASHBOARD_NAV_ITEMS = [
-  { key: "overview", label: "Tổng quan", icon: LayoutGrid, group: "workspace" },
-  { key: "profile", label: "Hồ sơ cặp đôi", icon: Heart, group: "workspace" },
-  { key: "assistant", label: "Trợ lý cưới AI", icon: Bot, group: "workspace" },
-  { key: "seating", label: "Sơ đồ sảnh", icon: LayoutTemplate, group: "workspace" },
-  { key: "budget", label: "Ngân sách", icon: Wallet, group: "workspace" },
-  { key: "guests", label: "Khách mời", icon: Users, group: "workspace" },
-  { key: "services", label: "Dịch vụ", icon: Sparkles, group: "workspace" },
-  { key: "schedule", label: "Lịch trình", icon: CalendarDays, group: "workspace" },
-  { key: "album", label: "Album ảnh", icon: Image, group: "workspace" },
-  { key: "settings", label: "Cài đặt", icon: Settings, group: "footer" },
+  { key: "overview", label: "Tổng quan", icon: LayoutGrid, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "profile", label: "Hồ sơ cặp đôi", icon: Heart, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "assistant", label: "Trợ lý cưới AI", icon: Bot, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "seating", label: "Sơ đồ sảnh", icon: LayoutTemplate, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "budget", label: "Ngân sách", icon: Wallet, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "guests", label: "Khách mời", icon: Users, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "services", label: "Dịch vụ", icon: Sparkles, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "schedule", label: "Lịch trình", icon: CalendarDays, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "album", label: "Album ảnh", icon: Image, group: "workspace", roles: DASHBOARD_ALLOWED_ROLES },
+  { key: "settings", label: "Cài đặt", icon: Settings, group: "footer", roles: DASHBOARD_ALLOWED_ROLES },
 ];
 
 export const SAMPLE_WEDDINGS = [

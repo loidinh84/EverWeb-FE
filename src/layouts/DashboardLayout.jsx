@@ -15,6 +15,9 @@ export default function DashboardLayout({
   onCreateWeddingClick,
   onGoHome,
   onBellClick,
+  user,
+  onLogout,
+  onGoAdmin,
   children,
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -31,6 +34,8 @@ export default function DashboardLayout({
         selectedWeddingId={selectedWeddingId}
         onSelectWedding={onSelectWedding}
         onCreateWeddingClick={onCreateWeddingClick}
+        user={user}
+        onGoAdmin={onGoAdmin}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
@@ -45,6 +50,10 @@ export default function DashboardLayout({
           onGoHome={onGoHome}
           onGoServices={() => onNavigate?.("services")}
           onBellClick={onBellClick}
+          user={user}
+          onLogout={onLogout}
+          onGoAdmin={onGoAdmin}
+          onGoProfile={() => onNavigate?.("profile")}
         />
 
         <main className="flex-1 overflow-y-auto p-5 sm:p-7 lg:px-8">

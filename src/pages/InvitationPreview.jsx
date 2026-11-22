@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
   Heart,
   Calendar,
@@ -34,14 +35,10 @@ const DEMO_DATA = {
   },
 };
 
-// Đọc token từ URL
-const getUrlToken = () => {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("token");
-};
-
 export default function InvitationPreview() {
-  const token = getUrlToken();
+  const { token: paramToken } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = paramToken || searchParams.get("token");
 
   const [invitation, setInvitation] = useState(token ? null : DEMO_DATA);
   const [loading, setLoading] = useState(Boolean(token));

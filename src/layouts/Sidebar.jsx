@@ -1,4 +1,13 @@
-import { ChevronDown, Flower2, Heart, Plus, X } from "lucide-react";
+import {
+  ChevronDown,
+  Flower2,
+  Heart,
+  Plus,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { ADMIN_ALLOWED_ROLES, hasRequiredRole } from "../constants/roles";
+import RoleGate from "../routes/RoleGate";
 import { DASHBOARD_NAV_ITEMS } from "./navItems";
 
 function SidebarContent({
@@ -8,14 +17,21 @@ function SidebarContent({
   selectedWeddingId,
   onSelectWedding,
   onCreateWeddingClick,
+  user,
+  onGoAdmin,
   collapsed,
   onCloseMobile,
 }) {
+  const canAccessNavItem = (item) => {
+    if (!user || !item.roles) return true;
+    return hasRequiredRole(user, item.roles);
+  };
+
   const workspaceItems = DASHBOARD_NAV_ITEMS.filter(
-    (item) => item.group === "workspace"
+    (item) => item.group === "workspace" && canAccessNavItem(item)
   );
   const footerItems = DASHBOARD_NAV_ITEMS.filter(
-    (item) => item.group === "footer"
+    (item) => item.group === "footer" && canAccessNavItem(item)
   );
 
   return (
@@ -155,7 +171,7 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Quote card + Settings footer */}
+      {/* Quote card + Admin shortcut + Settings footer */}
       <div className="space-y-3 border-t border-white/10 p-3">
         {!collapsed && (
           <div className="rounded-xl border border-white/10 bg-white/5 p-3.5 text-xs leading-relaxed text-[#DFD3C3]">
@@ -168,6 +184,25 @@ function SidebarContent({
             </p>
           </div>
         )}
+
+        <RoleGate allowedRoles={ADMIN_ALLOWED_ROLES}>
+          {onGoAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                onGoAdmin();
+                onCloseMobile?.();
+              }}
+              title={collapsed ? "Quản trị hệ thống" : undefined}
+              className={`flex w-full items-center gap-3 rounded-xl border border-[#C5A059]/30 bg-[#C5A059]/10 px-3 py-2 text-sm font-medium text-[#E8CD94] transition hover:bg-[#C5A059]/20 hover:text-white ${
+                collapsed ? "justify-center" : ""
+              }`}
+            >
+              <ShieldCheck size={17} className="shrink-0 text-[#E8CD94]" />
+              {!collapsed && <span className="truncate">Quản trị hệ thống</span>}
+            </button>
+          )}
+        </RoleGate>
 
         {footerItems.map(({ key, label, icon: Icon }) => {
           const isActive = activeKey === key;
@@ -203,6 +238,8 @@ export default function Sidebar({
   selectedWeddingId,
   onSelectWedding,
   onCreateWeddingClick,
+  user,
+  onGoAdmin,
   collapsed,
   mobileOpen,
   onCloseMobile,
@@ -221,6 +258,8 @@ export default function Sidebar({
           selectedWeddingId={selectedWeddingId}
           onSelectWedding={onSelectWedding}
           onCreateWeddingClick={onCreateWeddingClick}
+          user={user}
+          onGoAdmin={onGoAdmin}
           collapsed={collapsed}
         />
       </aside>
@@ -240,6 +279,8 @@ export default function Sidebar({
               selectedWeddingId={selectedWeddingId}
               onSelectWedding={onSelectWedding}
               onCreateWeddingClick={onCreateWeddingClick}
+              user={user}
+              onGoAdmin={onGoAdmin}
               collapsed={false}
               onCloseMobile={onCloseMobile}
             />

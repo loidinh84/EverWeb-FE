@@ -269,13 +269,16 @@ function HomeRoute() {
   }
 
   return (
-    <Landing
-      onOpenDashboard={() =>
-        navigate(
-          isAuthenticated ? getDefaultRouteByRole(user?.role) : ROUTE_PATHS.LOGIN
-        )
-      }
-    />
+    <>
+      <Landing
+        onOpenDashboard={() =>
+          navigate(
+            isAuthenticated ? getDefaultRouteByRole(user?.role) : ROUTE_PATHS.LOGIN
+          )
+        }
+      />
+      <WeddingAssistantChatbot />
+    </>
   );
 }
 

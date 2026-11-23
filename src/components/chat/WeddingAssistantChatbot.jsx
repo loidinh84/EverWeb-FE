@@ -1,52 +1,53 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Sparkles,
+  ArrowUp,
   X,
-  Send,
   RotateCcw,
-  Bot,
-  User,
-  AlertCircle,
+  Loader2,
   Check,
   Copy,
   ClipboardList,
   Wallet,
-  Gem,
+  Calendar,
   Mail,
   LayoutGrid,
+  AlertCircle,
 } from "lucide-react";
+import everwebLogo from "../../assets/image/everweb-logo.jpg";
 import aiApi from "../../services/aiApi";
 import MarkdownContent from "./MarkdownContent";
+
+const STORAGE_KEY = "everweb_ai_widget_chat";
 
 let idCounter = 0;
 function createMessageId(prefix = "msg") {
   idCounter += 1;
-  return `${prefix}-${idCounter}`;
+  return `${prefix}-${Date.now()}-${idCounter}`;
 }
 
 const QUICK_PROMPTS = [
   {
-    label: "Lập checklist cưới 6 tháng",
+    label: "Checklist 6 tháng",
     icon: ClipboardList,
     prompt: "Lập danh sách việc cần làm (Checklist) trước ngày cưới 6 tháng",
   },
   {
-    label: "Phân bổ ngân sách 200 triệu",
+    label: "Ngân sách 200tr",
     icon: Wallet,
     prompt: "Gợi ý cho mình cách phân bổ ngân sách cưới 200 triệu đồng hợp lý nhất",
   },
   {
-    label: "Quy trình Lễ Ăn hỏi & Gia tiên",
-    icon: Gem,
-    prompt: "Quy trình Lễ Ăn hỏi và Lễ Gia tiên ngày cưới gồm những bước nào?",
+    label: "Lịch trình ngày cưới",
+    icon: Calendar,
+    prompt: "Gợi ý lịch trình ngày cưới chính thức gồm: Lễ Gia Tiên lúc 09:00 tại Nhà gái, Tiệc mừng thân mật lúc 11:30 và Tiệc cưới lúc 18:00 tại Riverside Palace",
   },
   {
-    label: "Gợi ý lời mời thiệp cưới",
+    label: "Mẫu thiệp mời",
     icon: Mail,
     prompt: "Gợi ý các mẫu lời mời thiệp cưới online trang trọng và ý nghĩa",
   },
   {
-    label: "Cách sắp xếp sơ đồ bàn tiệc",
+    label: "Sắp xếp bàn tiệc",
     icon: LayoutGrid,
     prompt: "Hướng dẫn nguyên tắc sắp xếp sơ đồ bàn tiệc đám cưới hợp lý",
   },
@@ -57,14 +58,26 @@ const INITIAL_MESSAGES = [
     id: "welcome-1",
     role: "assistant",
     content:
-      "Chào bạn, mình là **Én Hỷ** - Trợ lý Kế hoạch Cưới của EverWeb.\n\nMình có thể đồng hành cùng hai bạn trong các công việc:\n- Lập **tiến độ & danh sách việc cần làm (Checklist)** từ 6 - 12 tháng\n- Tư vấn **phân bổ ngân sách** chi tiết và kiểm soát chi phí\n- Hướng dẫn các nghi lễ cưới hỏi truyền thống (Dạm ngõ, Ăn hỏi, Gia tiên)\n- Lên kịch bản ngày cưới và gợi ý nội dung thiệp mời online\n\nHãy chọn các mục gợi ý bên dưới hoặc đặt câu hỏi bất kỳ để bắt đầu.",
-    createdAt: new Date(),
+      "Chào bạn, mình là **Trợ lý EverWeb AI**.\n\nMình có thể hỗ trợ bạn thiết kế website cưới, lên lịch trình sự kiện, lập checklist việc cần làm, tính toán phân bổ ngân sách và giải đáp mọi thắc mắc ngày cưới.\n\nChỉ cần đưa ra yêu cầu — đơn giản như một cuộc trò chuyện.",
+    createdAt: new Date().toISOString(),
   },
 ];
 
 export default function WeddingAssistantChatbot({ selectedWedding }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to load saved chat:", e);
+    }
+    return INITIAL_MESSAGES;
+  });
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -76,6 +89,14 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.error("Failed to save chat:", e);
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (isOpen) {
@@ -94,6 +115,11 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
     if (window.confirm("Bạn có chắc muốn đặt lại cuộc trò chuyện này không?")) {
       setMessages(INITIAL_MESSAGES);
       setErrorMsg("");
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.error("Failed to clear chat storage:", e);
+      }
     }
   };
 
@@ -106,7 +132,7 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
       id: createMessageId("user"),
       role: "user",
       content: textToSend,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -140,7 +166,7 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
           role: "assistant",
           content: replyText,
           model: response.data?.model,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         },
       ]);
     } catch (err) {
@@ -157,8 +183,8 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
         {
           id: createMessageId("err"),
           role: "assistant",
-          content: `**Thông báo:** ${serverError}\n\n*Gợi ý: Hãy kiểm tra file \`EverWeb-BE/.env\` và đảm bảo server Backend đang chạy (\`npm run dev\` ở thư mục EverWeb-BE).*`,
-          createdAt: new Date(),
+          content: `**Thông báo:** ${serverError}\n\n*Gợi ý: Hãy kiểm tra kết nối mạng và đảm bảo máy chủ Backend đang hoạt động.*`,
+          createdAt: new Date().toISOString(),
           isError: true,
         },
       ]);
@@ -168,184 +194,178 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* 1. NÚT NỔI (FLOATING BUTTON) */}
+    <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[999] font-sans">
+      {/* 1. NÚT NỔI (FLOATING LAUNCHER BUTTON) */}
       {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-3 rounded-full bg-gradient-to-r from-[#3B2A1A] to-[#5A3F27] p-3.5 text-white shadow-2xl ring-2 ring-[#C5A059]/50 transition-all duration-300 hover:scale-105 hover:ring-[#C5A059] active:scale-95"
-          aria-label="Mở Trợ lý Cưới Én Hỷ"
+          className="group relative flex items-center gap-2.5 rounded-full bg-white pl-2 pr-4 py-2 text-[#231F1C] shadow-[0_12px_36px_rgba(0,0,0,0.12)] border border-stone-200/90 hover:shadow-[0_16px_44px_rgba(0,0,0,0.18)] hover:scale-[1.02] active:scale-95 transition-all duration-300"
+          aria-label="Mở Trợ lý EverWeb AI"
         >
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#C5A059] text-white shadow-inner">
-            <Sparkles className="h-5 w-5 animate-pulse text-[#3B2A1A]" />
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+          {/* Logo Avatar */}
+          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-stone-200/80 bg-white flex items-center justify-center shrink-0 shadow-2xs">
+            <img
+              src={everwebLogo}
+              alt="EverWeb"
+              className="w-full h-full object-cover"
+            />
+            <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white"></span>
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 border border-white"></span>
             </span>
           </div>
 
-          <div className="hidden pr-2 text-left sm:block">
-            <p className="text-xs font-bold tracking-wide uppercase text-[#EAD8B1]">
-              Trợ lý cưới Én Hỷ
-            </p>
-            <p className="text-[11px] text-[#F3EADB]/80">Hỏi đáp & Lập kế hoạch AI</p>
+          {/* Labels */}
+          <div className="text-left">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-[#231F1C]">
+                EverWeb AI
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <p className="text-[11px] text-stone-400">Hỏi bất kỳ điều gì...</p>
           </div>
         </button>
       )}
 
-      {/* 2. CỬA SỔ CHATBOT (CHAT MODAL WINDOW) */}
+      {/* 2. CỬA SỔ CHATBOT (CHUẨN SHOWCASE CARD DESIGN) */}
       {isOpen && (
-        <div className="flex flex-col w-[94vw] sm:w-[480px] h-[660px] max-h-[88vh] rounded-3xl bg-white shadow-2xl border border-[#EAE3D8] overflow-hidden transition-all duration-300 animate-in fade-in zoom-in-95">
-          {/* HEADER */}
-          <div className="relative flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-[#3B2A1A] via-[#4A3522] to-[#3B2A1A] text-white shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#C5A059] to-[#E7CE9B] text-[#3B2A1A] shadow-md ring-2 ring-white/20">
-                <Bot className="h-6 w-6" />
-                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-[#3B2A1A]"></span>
+        <div className="relative w-[94vw] sm:w-[480px] h-[640px] max-h-[88vh] bg-white rounded-[28px] border border-stone-200/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.14)] p-5 sm:p-6 flex flex-col justify-between overflow-hidden transition-all duration-300 animate-in fade-in zoom-in-95">
+          {/* TOP BAR / HEADER TINH TẾ */}
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg overflow-hidden border border-stone-200/60 bg-white flex items-center justify-center shrink-0">
+                <img
+                  src={everwebLogo}
+                  alt="EverWeb"
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-bold tracking-wide text-white">
-                    Én Hỷ • Trợ Lý Cưới
+                  <h3 className="text-xs font-semibold text-[#231F1C] truncate">
+                    EverWeb AI
                   </h3>
-                  <span className="rounded-full bg-[#C5A059]/30 px-2 py-0.5 text-[10px] font-medium text-[#F4E3C1] ring-1 ring-[#C5A059]/40">
-                    AI
-                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                 </div>
-                <p className="text-[11px] text-[#D8C7B5]">
+                <p className="text-[10px] text-stone-400 truncate">
                   {selectedWedding?.label
-                    ? `Ngữ cảnh: Đám cưới ${selectedWedding.label}`
-                    : "Đồng hành cùng ngày hạnh phúc"}
+                    ? `Tiệc: ${selectedWedding.label}`
+                    : "Trợ lý cưới thông minh"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={handleReset}
                 title="Làm mới cuộc trò chuyện"
-                className="rounded-lg p-1.5 text-[#D8C7B5] hover:bg-white/10 hover:text-white transition"
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
-
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                title="Đóng hộp chat"
-                className="rounded-lg p-1.5 text-[#D8C7B5] hover:bg-white/10 hover:text-white transition"
+                title="Thu nhỏ"
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
               >
-                <X className="h-5 w-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* CẢNH BÁO NẾU CÓ LỖI */}
+          {/* CẢNH BÁO LỖI (NẾU CÓ) */}
           {errorMsg && (
-            <div className="flex items-center justify-between gap-2 bg-amber-50 px-4 py-2 border-b border-amber-200 text-xs text-amber-800">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+            <div className="flex items-center justify-between gap-2 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200/80 text-xs text-amber-800 mb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span className="truncate">{errorMsg}</span>
               </div>
               <button
                 onClick={() => setErrorMsg("")}
-                className="text-amber-700 hover:text-amber-900 font-bold"
+                className="text-amber-700 hover:text-amber-900 font-bold p-0.5"
               >
                 ✕
               </button>
             </div>
           )}
 
-          {/* NỘI DUNG CUỘC TRÒ CHUYỆN */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-[#FAF8F5]">
+          {/* DANH SÁCH TIN NHẮN (MESSAGE STREAM) */}
+          <div className="flex-1 overflow-y-auto space-y-4 my-2 pr-1 ew-no-scrollbar">
             {messages.map((msg) => {
               const isAssistant = msg.role === "assistant";
+
+              if (!isAssistant) {
+                // Tin nhắn người dùng: Khối xám nhạt bo cong như Showcase
+                return (
+                  <div key={msg.id} className="flex justify-end">
+                    <div className="max-w-[85%] bg-[#F3F4F6] text-[#1E1E24] text-xs sm:text-sm rounded-2xl rounded-tr-sm px-4 py-3 leading-relaxed shadow-2xs whitespace-pre-wrap">
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Tin nhắn AI: Avatar logo EverWeb + Nội dung tự nhiên
               return (
-                <div
-                  key={msg.id}
-                  className={`flex gap-2.5 ${
-                    isAssistant ? "justify-start" : "justify-end"
-                  }`}
-                >
-                  {isAssistant && (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C5A059] text-white shadow-sm mt-0.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[#3B2A1A]" />
-                    </div>
-                  )}
+                <div key={msg.id} className="flex items-start gap-2.5 group">
+                  <div className="w-6 h-6 rounded-lg overflow-hidden border border-stone-200/60 bg-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                    <img
+                      src={everwebLogo}
+                      alt="EverWeb"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                  <div className={`group relative max-w-[88%] rounded-2xl px-4 py-3 shadow-sm ${
-                    isAssistant
-                      ? msg.isError
-                        ? "bg-rose-50 border border-rose-200 text-rose-900 rounded-tl-sm"
-                        : "bg-white border border-[#EAE3D8] text-[#2C2117] rounded-tl-sm"
-                      : "bg-gradient-to-r from-[#3B2A1A] to-[#4F3925] text-white rounded-tr-sm"
-                  }`}>
-                    {/* Render nội dung tin nhắn */}
-                    <div className="space-y-1">
-                      {isAssistant ? (
-                        <MarkdownContent content={msg.content} />
-                      ) : (
-                        <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">
-                          {msg.content}
-                        </p>
-                      )}
+                  <div className="flex-1 space-y-2 min-w-0">
+                    <div className="text-xs sm:text-sm text-[#1E1E24] leading-relaxed">
+                      <MarkdownContent content={msg.content} />
                     </div>
 
-                    {/* Metadata & Nút Copy */}
-                    <div className={`mt-1.5 flex items-center justify-between gap-2 text-[10px] ${
-                      isAssistant ? "text-[#9A8775]" : "text-white/60"
-                    }`}>
+                    <div className="flex items-center gap-2 text-[10px] text-stone-400 pt-0.5">
                       <span>
                         {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                        {msg.model && ` • ${msg.model}`}
                       </span>
 
-                      {isAssistant && (
+                      {!msg.isError && (
                         <button
                           type="button"
                           onClick={() => handleCopy(msg.id, msg.content)}
-                          className="opacity-0 group-hover:opacity-100 transition p-1 hover:text-[#3B2A1A]"
+                          className="opacity-0 group-hover:opacity-100 transition hover:text-stone-700"
                           title="Sao chép nội dung"
                         >
                           {copiedId === msg.id ? (
-                            <Check className="h-3 w-3 text-emerald-600" />
+                            <Check className="w-3 h-3 text-emerald-600 inline" />
                           ) : (
-                            <Copy className="h-3 w-3" />
+                            <Copy className="w-3 h-3 inline" />
                           )}
                         </button>
                       )}
                     </div>
                   </div>
-
-                  {!isAssistant && (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#4F3925] text-white shadow-sm mt-0.5">
-                      <User className="h-3.5 w-3.5 text-[#EAD8B1]" />
-                    </div>
-                  )}
                 </div>
               );
             })}
 
-            {/* TYPING INDICATOR */}
+            {/* TYPING / THINKING INDICATOR (CHUẨN SHOWCASE) */}
             {isLoading && (
               <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C5A059] text-white shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5 animate-spin text-[#3B2A1A]" />
+                <div className="w-6 h-6 rounded-lg overflow-hidden border border-stone-200/60 bg-white flex items-center justify-center shrink-0">
+                  <img
+                    src={everwebLogo}
+                    alt="EverWeb"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="rounded-2xl rounded-tl-sm bg-white border border-[#EAE3D8] px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce"></span>
-                    <span className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce [animation-delay:0.4s]"></span>
-                    <span className="text-xs font-medium text-[#8C7A68] ml-2">
-                      Én Hỷ đang phân tích kế hoạch...
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 text-stone-600 bg-stone-50 border border-stone-200/60 rounded-xl px-3 py-1.5 shadow-2xs">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-500" />
+                  <span className="text-xs">Đang xử lý...</span>
                 </div>
               </div>
             )}
@@ -353,52 +373,56 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* GỢI Ý NHANH (PROMPT CHIPS - DÙNG LUCIDE SVG ICON, KHÔNG DÙNG ICON TEXT) */}
-          <div className="bg-white border-t border-[#F0EAE1] px-3 py-2 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              {QUICK_PROMPTS.map((item, idx) => {
-                const IconComponent = item.icon;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => handleSend(item.prompt)}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[#FAF5EE] border border-[#E6DCBF] px-3 py-1.5 text-xs text-[#5D4632] hover:bg-[#3B2A1A] hover:text-white hover:border-[#3B2A1A] transition active:scale-95 disabled:opacity-50"
-                  >
-                    <IconComponent className="h-3.5 w-3.5 text-[#C5A059]" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* GỢI Ý NHANH (PROMPT CHIPS DẠNG PILL) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto ew-no-scrollbar pt-2 pb-1 border-t border-stone-100">
+            {QUICK_PROMPTS.map((item, idx) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleSend(item.prompt)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-stone-50 border border-stone-200/80 px-3 py-1.5 text-xs text-stone-600 hover:bg-[#231F1C] hover:text-white hover:border-[#231F1C] transition-all shadow-2xs active:scale-95 disabled:opacity-50 shrink-0"
+                >
+                  <IconComponent className="h-3 w-3 text-stone-500" />
+                  <span className="font-normal">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* THANH NHẬP LIỆU (INPUT AREA) */}
+          {/* THANH NHẬP LIỆU (CHUẨN PILL SHOWCASE TỪ ẢNH CHỤP) */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSend();
             }}
-            className="flex items-center gap-2 p-3 bg-white border-t border-[#EAE3D8]"
+            className="pt-2"
           >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Hỏi Én Hỷ về ngân sách, kịch bản, nghi lễ..."
-              disabled={isLoading}
-              className="flex-1 rounded-xl bg-[#FAF8F5] border border-[#E4DCD3] px-3.5 py-2.5 text-sm text-[#2C2117] placeholder-[#A49484] focus:outline-none focus:ring-2 focus:ring-[#C5A059] focus:bg-white transition disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3B2A1A] text-white shadow-md hover:bg-[#523B25] active:scale-95 disabled:opacity-40 disabled:hover:bg-[#3B2A1A] transition"
-              title="Gửi câu hỏi"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+            <div className="relative flex items-center bg-[#F8F8FA] border border-stone-200/80 rounded-full px-4 py-2.5 shadow-inner focus-within:border-stone-400 transition-colors">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Hỏi bất kỳ điều gì..."
+                disabled={isLoading}
+                className="text-xs sm:text-sm text-[#1E1E24] placeholder-stone-400 outline-none flex-1 pr-2 font-normal bg-transparent disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                  input.trim() && !isLoading
+                    ? "bg-[#231F1C] text-white hover:bg-stone-800 active:scale-95 shadow-xs cursor-pointer"
+                    : "bg-stone-200 text-stone-400 cursor-default"
+                }`}
+                title="Gửi"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+            </div>
           </form>
         </div>
       )}

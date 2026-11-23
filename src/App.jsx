@@ -21,7 +21,7 @@ import GuestsPage from "./pages/dashboard/guests/GuestsPage";
 import ServicesPage from "./pages/dashboard/services/ServicesPage";
 import SchedulePage from "./pages/dashboard/schedule/SchedulePage";
 import AssistantPage from "./pages/dashboard/assistant/AssistantPage";
-import Landing from "./pages/Landing";
+import Landing from "./pages/landing/Landing";
 import InvitationPreview from "./pages/InvitationPreview";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -139,54 +139,45 @@ function DashboardWorkspace() {
   };
 
   const handleDeleteWedding = async (id) => {
-    try {
-      await weddingApi.remove(id);
-      setWeddings((prev) => {
-        const remaining = prev.filter((w) => w.id !== id);
-        if (selectedWeddingId === id) {
-          setSelectedWeddingId(remaining[0]?.id || "");
-        }
-        return remaining;
-      });
-      toast.success("Đã xoá hồ sơ đám cưới");
-    } catch (error) {
-      toast.error(
-        extractApiError(error, "Không thể xoá hồ sơ đám cưới.").message
-      );
-      throw error;
-    }
+    await weddingApi.delete(id);
+    setWeddings((prev) => {
+      const next = prev.filter((w) => w.id !== id);
+      setSelectedWeddingId(next[0]?.id || "");
+      return next;
+    });
+    toast.success("Đã xóa hồ sơ đám cưới thành công");
   };
 
-  const handleLogout = useCallback(() => {
-    logout();
-    navigate(ROUTE_PATHS.LOGIN, { replace: true });
-  }, [logout, navigate]);
-
-  const handleGoAdmin = useCallback(() => {
-    navigate(ROUTE_PATHS.ADMIN);
-  }, [navigate]);
-
-  const currentNav = DASHBOARD_NAV_ITEMS.find((item) => item.key === activeKey);
   const selectedWedding = useMemo(
-    () => weddings.find((w) => w.id === selectedWeddingId) || weddings[0] || null,
+    () => weddings.find((w) => w.id === selectedWeddingId) || null,
     [weddings, selectedWeddingId]
   );
 
-  if (!isValidSection) {
-    return <Navigate to={ROUTE_PATHS.DASHBOARD_DEFAULT} replace />;
-  }
+  const currentNav = useMemo(
+    () => DASHBOARD_NAV_ITEMS.find((item) => item.key === activeKey),
+    [activeKey]
+  );
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate(ROUTE_PATHS.LOGIN);
+    } catch {
+      toast.error("Đăng xuất không thành công, vui lòng thử lại.");
+    }
+  };
+
+  const handleGoAdmin = () => {
+    navigate(ROUTE_PATHS.ADMIN);
+  };
 
   return (
     <>
       <DashboardLayout
         activeKey={activeKey}
-        onNavigate={handleNavigateSection}
-        weddings={weddings}
-        selectedWeddingId={selectedWedding?.id || ""}
-        onSelectWedding={setSelectedWeddingId}
-        onCreateWeddingClick={() => setIsCreateModalOpen(true)}
-        onGoHome={() => navigate(ROUTE_PATHS.HOME)}
-        onBellClick={() => toast.info("Bạn có 2 xác nhận tham dự mới")}
+        onSelectKey={handleNavigateSection}
+        weddingTitle={selectedWedding?.title || "Đang tải hồ sơ..."}
+        onAddNew={() => console.log("Thêm mới")}
         user={user}
         onLogout={handleLogout}
         onGoAdmin={handleGoAdmin}
@@ -258,7 +249,6 @@ function DashboardWorkspace() {
         onCreate={handleCreateWedding}
       />
 
-      {/* Trợ lý Kế hoạch Cưới Én Hỷ - Chỉ hiển thị trong trang quản trị Dashboard */}
       <WeddingAssistantChatbot selectedWedding={selectedWedding} />
     </>
   );

@@ -62,9 +62,22 @@ const INITIAL_MESSAGES = [
   },
 ];
 
+const WIDGET_STORAGE_KEY = "everweb_ai_widget_chat";
+
 export default function WeddingAssistantChatbot({ selectedWedding }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(WIDGET_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // Bỏ qua lỗi parse
+    }
+    return INITIAL_MESSAGES;
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -72,6 +85,15 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Tự động lưu tin nhắn của widget nổi vào LocalStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // Bỏ qua lỗi quota
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,6 +116,11 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
     if (window.confirm("Bạn có chắc muốn đặt lại cuộc trò chuyện này không?")) {
       setMessages(INITIAL_MESSAGES);
       setErrorMsg("");
+      try {
+        localStorage.removeItem(WIDGET_STORAGE_KEY);
+      } catch {
+        // Bỏ qua
+      }
     }
   };
 

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import {
   Sparkles,
   Bot,
-  User,
   Send,
   RotateCcw,
   Check,
@@ -12,6 +11,11 @@ import {
   Calendar,
   Heart,
   ChevronRight,
+  History,
+  Plus,
+  Trash2,
+  MessageSquare,
+  PanelLeft,
 } from "lucide-react";
 import aiApi from "../../../services/aiApi";
 import MarkdownContent from "../../../components/chat/MarkdownContent";
@@ -75,8 +79,31 @@ Mình ở đây để đồng hành cùng hai bạn chuẩn bị ngày cưới t
   },
 ];
 
+const LOCAL_STORAGE_KEY_PREFIX = "everweb_ai_chat_";
+
 export default function AssistantPage({ selectedWedding }) {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const weddingKey = selectedWedding?.id || "default";
+  const storageKey = `${LOCAL_STORAGE_KEY_PREFIX}${weddingKey}`;
+
+  // Trạng thái hội thoại & lịch sử
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // Bỏ qua lỗi parse
+    }
+    return INITIAL_MESSAGES;
+  });
+
+  const [sessions, setSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [showHistory, setShowHistory] = useState(true);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -84,9 +111,134 @@ export default function AssistantPage({ selectedWedding }) {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Lưu tin nhắn cục bộ vào LocalStorage để không mất khi F5
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {
+      // Bỏ qua lỗi quota
+    }
+  }, [messages, storageKey]);
+
+  // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  const weddingId = selectedWedding?.id;
+
+  const refreshSessions = async () => {
+    try {
+      const res = await aiApi.getSessions(
+        weddingId && weddingId.length === 36 ? weddingId : undefined
+      );
+      if (res.status === "success" && Array.isArray(res.data)) {
+        setSessions(res.data);
+      }
+    } catch (err) {
+      console.warn("Không thể tải danh sách phiên chat từ server:", err.message);
+    }
+  };
+
+  // Tải danh sách phiên trò chuyện từ Backend
+  useEffect(() => {
+    let isMounted = true;
+    const loadSessions = async () => {
+      try {
+        const res = await aiApi.getSessions(
+          weddingId && weddingId.length === 36 ? weddingId : undefined
+        );
+        if (isMounted && res.status === "success" && Array.isArray(res.data)) {
+          setSessions(res.data);
+        }
+      } catch (err) {
+        console.warn("Không thể tải danh sách phiên chat từ server:", err.message);
+      } finally {
+        if (isMounted) {
+          setIsLoadingSessions(false);
+        }
+      }
+    };
+
+    loadSessions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [weddingId]);
+
+  // Chọn một phiên trò chuyện cũ để xem lại và tiếp tục
+  const handleSelectSession = async (sessionId) => {
+    if (sessionId === currentSessionId || isLoading) return;
+    setIsLoading(true);
+    try {
+      const res = await aiApi.getSessionDetail(sessionId);
+      if (res.status === "success" && res.data) {
+        setCurrentSessionId(sessionId);
+        if (Array.isArray(res.data.messages) && res.data.messages.length > 0) {
+          setMessages(
+            res.data.messages.map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              createdAt: new Date(m.createdAt),
+            }))
+          );
+        } else {
+          setMessages(INITIAL_MESSAGES);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải phiên trò chuyện:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Bắt đầu cuộc trò chuyện mới
+  const handleNewChat = () => {
+    setCurrentSessionId(null);
+    setMessages(INITIAL_MESSAGES);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // Bỏ qua
+    }
+    inputRef.current?.focus();
+  };
+
+  // Xóa một phiên trò chuyện cụ thể
+  const handleDeleteSession = async (e, sessionId) => {
+    e.stopPropagation();
+    if (!window.confirm("Bạn có chắc muốn xóa cuộc trò chuyện này khỏi lịch sử?")) return;
+
+    try {
+      await aiApi.deleteSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      if (currentSessionId === sessionId) {
+        handleNewChat();
+      }
+    } catch (err) {
+      console.error("Lỗi xóa phiên chat:", err);
+    }
+  };
+
+  // Xóa toàn bộ lịch sử trò chuyện
+  const handleClearAllHistory = async () => {
+    if (!window.confirm("Bạn có chắc muốn xóa TOÀN BỘ lịch sử trò chuyện không?")) return;
+
+    try {
+      await aiApi.clearAllSessions(
+        selectedWedding?.id && selectedWedding.id.length === 36
+          ? selectedWedding.id
+          : undefined
+      );
+      setSessions([]);
+      handleNewChat();
+    } catch (err) {
+      console.error("Lỗi xóa tất cả lịch sử:", err);
+    }
+  };
 
   const handleCopy = (id, text) => {
     navigator.clipboard.writeText(text);
@@ -94,12 +246,7 @@ export default function AssistantPage({ selectedWedding }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleReset = () => {
-    if (window.confirm("Đặt lại cuộc trò chuyện này về trạng thái ban đầu?")) {
-      setMessages(INITIAL_MESSAGES);
-    }
-  };
-
+  // Gửi tin nhắn và lưu vào bộ nhớ lịch sử
   const handleSend = async (userPrompt) => {
     const textToSend = (userPrompt || input).trim();
     if (!textToSend || isLoading) return;
@@ -116,20 +263,14 @@ export default function AssistantPage({ selectedWedding }) {
     setIsLoading(true);
 
     try {
-      // Giữ tối đa 6 tin nhắn gần nhất để tối ưu dung lượng và không chạm giới hạn token
-      const recentMessages = [...messages, userMessage].slice(-6);
-      const historyToSend = recentMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      const response = await aiApi.chat({
-        messages: historyToSend,
-        provider: "openai",
+      // Gọi API session-chat có lưu CSDL và duy trì trí nhớ ngữ cảnh
+      const response = await aiApi.sessionChat({
+        sessionId: currentSessionId || undefined,
         weddingId:
           selectedWedding?.id && selectedWedding.id.length === 36
             ? selectedWedding.id
             : undefined,
+        message: textToSend,
       });
 
       const replyText =
@@ -137,16 +278,24 @@ export default function AssistantPage({ selectedWedding }) {
         response.data ||
         "Xin lỗi, mình chưa nhận được phản hồi phù hợp.";
 
+      // Nếu tạo mới phiên, cập nhật lại sessionId
+      if (response.data?.sessionId) {
+        setCurrentSessionId(response.data.sessionId);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
-          id: createPageMessageId("assistant"),
+          id: response.data?.assistantMessage?.id || createPageMessageId("assistant"),
           role: "assistant",
           content: replyText,
           model: response.data?.model,
           createdAt: new Date(),
         },
       ]);
+
+      // Cập nhật lại danh sách lịch sử
+      refreshSessions();
     } catch (err) {
       console.error("Chat error:", err);
       const rawError =
@@ -162,7 +311,7 @@ export default function AssistantPage({ selectedWedding }) {
         rawError.toLowerCase().includes("rate limit")
       ) {
         friendlyMsg =
-          "Hệ thống nhận nhiều yêu cầu cùng lúc hoặc nội dung quá dài (vượt giới hạn xử lý tạm thời trong 1 phút). Bạn vui lòng bấm nút 'Đặt lại trò chuyện' hoặc rút ngắn câu hỏi và thử lại sau ít giây nhé!";
+          "Hệ thống nhận nhiều yêu cầu cùng lúc hoặc nội dung quá dài (vượt giới hạn xử lý tạm thời trong 1 phút). Bạn vui lòng bấm nút 'Cuộc trò chuyện mới' hoặc rút ngắn câu hỏi và thử lại sau ít giây nhé!";
       }
 
       setMessages((prev) => [
@@ -170,7 +319,7 @@ export default function AssistantPage({ selectedWedding }) {
         {
           id: createPageMessageId("err"),
           role: "assistant",
-          content: `**Thông báo:** ${friendlyMsg}\n\n*Gợi ý: Hãy bấm nút làm mới ở góc phải để bắt đầu lượt trò chuyện mới, hoặc kiểm tra file \`EverWeb-BE/.env\` nếu server chưa chạy.*`,
+          content: `**Thông báo:** ${friendlyMsg}\n\n*Gợi ý: Hãy bấm nút "+ Cuộc trò chuyện mới" để bắt đầu lượt trò chuyện mới hoặc kiểm tra file \`EverWeb-BE/.env\`.*`,
           createdAt: new Date(),
           isError: true,
         },
@@ -252,166 +401,301 @@ export default function AssistantPage({ selectedWedding }) {
         })}
       </div>
 
-      {/* 3. KHU VỰC TRÒ CHUYỆN CHÍNH */}
-      <div className="rounded-3xl bg-white border border-[#EAE3D8] shadow-sm overflow-hidden flex flex-col h-[700px]">
-        {/* Chat Header */}
+      {/* 3. KHU VỰC TRÒ CHUYỆN KÈM BỘ NHỚ LỊCH SỬ CHAT */}
+      <div className="rounded-3xl bg-white border border-[#EAE3D8] shadow-sm overflow-hidden flex flex-col h-[740px]">
+        {/* Chat Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0EAE1] bg-[#FAF8F5]">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowHistory((prev) => !prev)}
+              className={`p-2 rounded-xl border transition ${
+                showHistory
+                  ? "bg-[#3B2A1A] text-[#C5A059] border-[#3B2A1A]"
+                  : "bg-white text-[#6F5B49] border-[#E4DCD3] hover:bg-[#F2ECE3]"
+              }`}
+              title={showHistory ? "Ẩn lịch sử trò chuyện" : "Hiện lịch sử trò chuyện"}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#3B2A1A] to-[#5A3F27] text-[#C5A059] shadow-md">
               <Bot className="h-6 w-6" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#2C2117]">
-                Cuộc trò chuyện với Én Hỷ
+                {currentSessionId
+                  ? sessions.find((s) => s.id === currentSessionId)?.title || "Cuộc trò chuyện với Én Hỷ"
+                  : "Cuộc trò chuyện với Én Hỷ"}
               </h3>
               <p className="text-xs text-[#8C7A68]">
-                Sẵn sàng giải đáp ngân sách, tiến độ và nghi lễ cưới
+                {currentSessionId ? "Đang tiếp tục phiên trò chuyện đã lưu" : "Sẵn sàng giải đáp ngân sách, tiến độ và nghi lễ cưới"}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleReset}
+              onClick={handleNewChat}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#C5A059] bg-[#C5A059]/10 px-3 py-1.5 text-xs font-semibold text-[#8B6E32] hover:bg-[#C5A059]/20 transition"
+              title="Khởi tạo cuộc trò chuyện mới"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Cuộc trò chuyện mới</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNewChat}
               className="inline-flex items-center gap-1.5 rounded-xl border border-[#E4DCD3] bg-white px-3 py-1.5 text-xs font-semibold text-[#5D4632] hover:bg-[#FAF8F5] transition"
+              title="Đặt lại màn hình chat"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Đặt lại
+              <span>Đặt lại</span>
             </button>
           </div>
         </div>
 
-        {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#FAF9F6]">
-          {messages.map((msg) => {
-            const isAssistant = msg.role === "assistant";
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-4 ${
-                  isAssistant ? "justify-start" : "justify-end"
-                }`}
-              >
-                {isAssistant && (
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B2A1A] text-[#C5A059] shadow-md mt-1">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                )}
-
-                <div
-                  className={`group relative max-w-[85%] lg:max-w-[78%] rounded-3xl p-5 shadow-sm ${
-                    isAssistant
-                      ? msg.isError
-                        ? "bg-rose-50 border border-rose-200 text-rose-900 rounded-tl-sm"
-                        : "bg-white border border-[#EAE3D8] text-[#2C2117] rounded-tl-sm"
-                      : "bg-[#3B2A1A] text-white rounded-tr-sm"
-                  }`}
+        {/* Nội dung chính: Cột Lịch Sử + Cột Tin Nhắn */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* 3.1. SIDEBAR LỊCH SỬ TRÒ CHUYỆN (BỘ NHỚ LỊCH SỬ) */}
+          {showHistory && (
+            <div className="w-72 border-r border-[#EAE3D8] bg-[#FDFBF7] flex flex-col justify-between shrink-0">
+              <div className="p-3 border-b border-[#EAE3D8] flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#3B2A1A]">
+                  <History className="h-4 w-4 text-[#C5A059]" />
+                  <span>Lịch sử trò chuyện ({sessions.length})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleNewChat}
+                  className="p-1.5 rounded-lg hover:bg-[#EFE9DF] text-[#5D4632] transition"
+                  title="Tạo cuộc trò chuyện mới"
                 >
-                  {isAssistant ? (
-                    <MarkdownContent content={msg.content} />
-                  ) : (
-                    <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">
-                      {msg.content}
-                    </p>
-                  )}
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
 
-                  <div
-                    className={`mt-3 flex items-center justify-between gap-4 text-[11px] pt-2 border-t ${
-                      isAssistant
-                        ? "border-[#F2ECE3] text-[#9A8775]"
-                        : "border-white/15 text-white/60"
-                    }`}
-                  >
-                    <span>
-                      {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {msg.model && ` • ${msg.model}`}
-                    </span>
-
-                    {isAssistant && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(msg.id, msg.content)}
-                        className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition p-1 hover:text-[#3B2A1A]"
-                        title="Sao chép nội dung"
+              {/* Danh sách các phiên trò chuyện */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+                {isLoadingSessions ? (
+                  <div className="p-4 text-center text-xs text-[#8C7A68]">
+                    Đang nạp lịch sử...
+                  </div>
+                ) : sessions.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[#A59483]">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-[#D2C5B5] stroke-1" />
+                    Chưa có lịch sử trò chuyện nào. Hãy đặt câu hỏi để bắt đầu!
+                  </div>
+                ) : (
+                  sessions.map((sess) => {
+                    const isActive = sess.id === currentSessionId;
+                    return (
+                      <div
+                        key={sess.id}
+                        onClick={() => handleSelectSession(sess.id)}
+                        className={`group relative flex items-start justify-between gap-2 p-2.5 rounded-xl text-left cursor-pointer transition border ${
+                          isActive
+                            ? "bg-[#3B2A1A] text-white border-[#3B2A1A] shadow-xs"
+                            : "bg-white text-[#3B2A1A] border-[#EAE3D8] hover:border-[#C5A059] hover:bg-[#FAF8F5]"
+                        }`}
                       >
-                        {copiedId === msg.id ? (
-                          <>
-                            <Check className="h-3 w-3 text-emerald-600" />
-                            <span className="text-emerald-600">Đã chép</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            <span>Sao chép</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                        <div className="flex items-start gap-2 min-w-0">
+                          <MessageSquare
+                            className={`h-4 w-4 mt-0.5 shrink-0 ${
+                              isActive ? "text-[#C5A059]" : "text-[#8C7A68]"
+                            }`}
+                          />
+                          <div className="min-w-0">
+                            <p
+                              className={`text-xs font-semibold truncate ${
+                                isActive ? "text-white" : "text-[#2C2117]"
+                              }`}
+                            >
+                              {sess.title || "Cuộc trò chuyện"}
+                            </p>
+                            <p
+                              className={`text-[10px] mt-0.5 ${
+                                isActive ? "text-[#D8C8B8]" : "text-[#9A8775]"
+                              }`}
+                            >
+                              {new Date(sess.createdAt).toLocaleDateString("vi-VN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {sess.messageCount > 0 && ` • ${sess.messageCount} tin nhắn`}
+                            </p>
+                          </div>
+                        </div>
 
-                {!isAssistant && (
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#C5A059] text-white shadow-md mt-1">
-                    <User className="h-4 w-4" />
-                  </div>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSession(e, sess.id)}
+                          className={`p-1 rounded-lg opacity-0 group-hover:opacity-100 transition hover:bg-rose-500/20 ${
+                            isActive ? "text-white hover:text-rose-300" : "text-[#8C7A68] hover:text-rose-600"
+                          }`}
+                          title="Xóa phiên này"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
-            );
-          })}
 
-          {isLoading && (
-            <div className="flex items-center gap-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B2A1A] text-[#C5A059] shadow-md">
-                <Sparkles className="h-4 w-4 animate-spin" />
-              </div>
-              <div className="rounded-3xl rounded-tl-sm bg-white border border-[#EAE3D8] px-5 py-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#C5A059] animate-bounce"></span>
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#C5A059] animate-bounce [animation-delay:0.2s]"></span>
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#C5A059] animate-bounce [animation-delay:0.4s]"></span>
-                  <span className="text-xs font-medium text-[#7B6A58] ml-2">
-                    Én Hỷ đang phân tích kế hoạch và tính toán số liệu...
-                  </span>
+              {/* Nút xóa tất cả lịch sử */}
+              {sessions.length > 0 && (
+                <div className="p-3 border-t border-[#EAE3D8] bg-[#F7F4EE]">
+                  <button
+                    type="button"
+                    onClick={handleClearAllHistory}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl border border-rose-200 bg-white text-xs font-medium text-rose-700 hover:bg-rose-50 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Xóa toàn bộ lịch sử</span>
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          <div ref={messagesEndRef} />
-        </div>
+          {/* 3.2. KHUNG STREAM TIN NHẮN */}
+          <div className="flex-1 flex flex-col bg-[#FAF9F6] overflow-hidden">
+            {/* Stream Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {messages.map((msg) => {
+                const isAssistant = msg.role === "assistant";
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-4 ${
+                      isAssistant ? "justify-start" : "justify-end"
+                    }`}
+                  >
+                    {isAssistant && (
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B2A1A] text-[#C5A059] shadow-md mt-1">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                    )}
 
-        {/* Input Bar */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="p-4 bg-white border-t border-[#EAE3D8] flex items-center gap-3"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Hỏi Én Hỷ bất cứ điều gì (ví dụ: 'Phân bổ ngân sách 300 triệu', 'Kịch bản lễ đón dâu')..."
-            disabled={isLoading}
-            className="flex-1 rounded-2xl bg-[#FAF8F5] border border-[#E4DCD3] px-5 py-3 text-sm text-[#2C2117] placeholder-[#9E8E7E] focus:outline-none focus:ring-2 focus:ring-[#C5A059] focus:bg-white transition disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#3B2A1A] text-white shadow-md hover:bg-[#523B25] active:scale-95 disabled:opacity-40 transition"
-            title="Gửi câu hỏi"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-        </form>
+                    <div
+                      className={`group relative max-w-[85%] lg:max-w-[78%] rounded-3xl p-5 shadow-sm ${
+                        isAssistant
+                          ? msg.isError
+                            ? "bg-rose-50 border border-rose-200 text-rose-900 rounded-tl-sm"
+                            : "bg-white border border-[#EAE3D8] text-[#2C2117] rounded-tl-sm"
+                          : "bg-[#3B2A1A] text-white rounded-tr-sm"
+                      }`}
+                    >
+                      {isAssistant ? (
+                        <MarkdownContent content={msg.content} />
+                      ) : (
+                        <p className="text-sm leading-relaxed text-white whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                      )}
+
+                      <div
+                        className={`mt-3 flex items-center justify-between gap-4 text-[11px] pt-2 border-t ${
+                          isAssistant
+                            ? "border-[#F2ECE3] text-[#9A8775]"
+                            : "border-white/15 text-white/60"
+                        }`}
+                      >
+                        <span>
+                          {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {msg.model && ` • ${msg.model}`}
+                        </span>
+
+                        {isAssistant && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(msg.id, msg.content)}
+                            className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition p-1 hover:text-[#3B2A1A]"
+                            title="Sao chép nội dung"
+                          >
+                            {copiedId === msg.id ? (
+                              <>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                                <span className="text-emerald-600">Đã chép</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3" />
+                                <span>Sao chép</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {isLoading && (
+                <div className="flex gap-4 justify-start items-center">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B2A1A] text-[#C5A059] shadow-md animate-pulse">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div className="rounded-2xl bg-white border border-[#EAE3D8] px-5 py-3.5 text-xs text-[#7B6A58] shadow-xs flex items-center gap-3">
+                    <div className="flex space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="h-2 w-2 rounded-full bg-[#C5A059] animate-bounce"></div>
+                    </div>
+                    <span>Én Hỷ đang suy nghĩ và tính toán...</span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Box */}
+            <div className="p-4 bg-white border-t border-[#F0EAE1]">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="relative flex items-center"
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Hỏi Én Hỷ về dự trù kinh phí, lịch trình cưới, kịch bản MC, mẫu thiệp..."
+                  disabled={isLoading}
+                  className="w-full rounded-2xl border border-[#DED7CE] bg-[#FAF9F6] py-3.5 pl-4 pr-14 text-sm text-[#2C2117] placeholder-[#A39281] focus:border-[#C5A059] focus:bg-white focus:outline-none focus:ring-3 focus:ring-[#C5A059]/15 transition disabled:opacity-60"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B2A1A] text-[#C5A059] hover:bg-[#4E3824] transition disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                  title="Gửi câu hỏi"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+
+              <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#A59483] px-1">
+                <span>Nhấn Enter để gửi • Cuộc trò chuyện được tự động lưu vào bộ nhớ</span>
+                <span>EverWeb AI Wedding Planner</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-

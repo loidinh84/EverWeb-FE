@@ -1,5 +1,4 @@
 import {
-  Bot,
   CalendarDays,
   Image,
   LayoutGrid,
@@ -12,7 +11,6 @@ import {
 
 export const DASHBOARD_NAV_ITEMS = [
   { key: "overview", label: "Tổng quan", icon: LayoutGrid, group: "workspace" },
-  { key: "assistant", label: "Trợ lý cưới AI", icon: Bot, group: "workspace" },
   { key: "seating", label: "Sơ đồ sảnh", icon: LayoutTemplate, group: "workspace" },
   { key: "budget", label: "Ngân sách", icon: Wallet, group: "workspace" },
   { key: "guests", label: "Khách mời", icon: Users, group: "workspace" },

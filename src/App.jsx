@@ -9,7 +9,6 @@ import BudgetPage from "./pages/dashboard/budget/BudgetPage";
 import GuestsPage from "./pages/dashboard/guests/GuestsPage";
 import ServicesPage from "./pages/dashboard/services/ServicesPage";
 import SchedulePage from "./pages/dashboard/schedule/SchedulePage";
-import AssistantPage from "./pages/dashboard/assistant/AssistantPage";
 import LandingPage from "./pages/LandingPage";
 import WeddingAssistantChatbot from "./components/chat/WeddingAssistantChatbot";
 
@@ -49,9 +48,7 @@ function App() {
           onGoHome={() => setView("landing")}
           onBellClick={() => toast.info("Bạn có 2 xác nhận RSVP mới")}
         >
-          {activeKey === "assistant" ? (
-            <AssistantPage selectedWedding={selectedWedding} />
-          ) : activeKey === "seating" ? (
+          {activeKey === "seating" ? (
             <SeatingPlanPage
               selectedWedding={selectedWedding}
               onOpenBudget={() => setActiveKey("budget")}

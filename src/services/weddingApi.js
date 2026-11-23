@@ -113,6 +113,34 @@ export const weddingApi = {
         : data?.reason || "Đường dẫn này đã được sử dụng.",
     };
   },
+
+  async getMembers(weddingId) {
+    const response = await api.get(`/weddings/${weddingId}/members`);
+    return response.data?.data ?? response.data;
+  },
+
+  async addMember(weddingId, payload) {
+    const response = await api.post(`/weddings/${weddingId}/members`, payload);
+    return response.data?.data ?? response.data;
+  },
+
+  async removeMember(weddingId, userId) {
+    await api.delete(`/weddings/${weddingId}/members/${userId}`);
+    return { userId };
+  },
+
+  async getFeatures(weddingId) {
+    const response = await api.get(`/weddings/${weddingId}/features`);
+    return response.data?.data ?? response.data;
+  },
+
+  async updateFeatureSection(weddingId, section, data) {
+    const response = await api.patch(
+      `/weddings/${weddingId}/features/${section}`,
+      data
+    );
+    return response.data?.data ?? response.data;
+  },
 };
 
 export default weddingApi;

@@ -39,12 +39,105 @@
   }
 }
 
+@keyframes ew-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ew-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ew-float-slow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes ew-ken-burns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.07) translate3d(-1%, -1%, 0);
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ew-sheen-sweep {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
 .ew-fade-in {
-  animation: ew-fade-in 0.2s ease-out;
+  animation: ew-fade-in 0.2s ease-out both;
 }
 
 .ew-zoom-in {
-  animation: ew-zoom-in 0.2s ease-out;
+  animation: ew-zoom-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ew-slide-up {
+  animation: ew-slide-up 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ew-pop-in {
+  animation: ew-pop-in 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.ew-float-slow {
+  animation: ew-float-slow 5s ease-in-out infinite;
+}
+
+.ew-ken-burns {
+  animation: ew-ken-burns 20s ease-in-out infinite;
+}
+
+.ew-card-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.ew-card-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: translateX(-140%) skewX(-20deg);
+  pointer-events: none;
+}
+
+.ew-card-sheen:hover::after {
+  animation: ew-sheen-sweep 0.9s ease-out;
 }
 
 /* ===== Marquee cho Landing Page ===== */

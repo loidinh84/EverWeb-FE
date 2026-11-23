@@ -13,6 +13,7 @@ export default function DashboardLayout({
   selectedWeddingId,
   onSelectWedding,
   onCreateWeddingClick,
+  onGoHub,
   onGoHome,
   onBellClick,
   user,
@@ -47,6 +48,7 @@ export default function DashboardLayout({
           pageLabel={currentNav?.label || "Tổng quan"}
           onOpenMobileMenu={() => setMobileOpen(true)}
           onToggleSidebar={() => setCollapsed((prev) => !prev)}
+          onGoHub={onGoHub}
           onGoHome={onGoHome}
           onGoServices={() => onNavigate?.("services")}
           onBellClick={onBellClick}

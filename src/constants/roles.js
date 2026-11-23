@@ -19,6 +19,22 @@ export const ROUTE_PATHS = Object.freeze({
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
+  CREATE_EVENT: "/create-event",
+  WEDDING_SETUP: "/onboarding/wedding",
+  EVENT_HUB: "/hub",
+  WEBSITE_PREVIEW: "/preview",
+  EVENT_SETTINGS: "/event-settings",
+  WEBSITE_DESIGN: "/website-design",
+  COLLECT_CONTACTS: "/collect-contacts",
+  RSVP_BUILDER: "/rsvp-builder",
+  MESSAGING: "/messaging",
+  TRAVEL: "/travel",
+  INVITATIONS_STUDIO: "/invitations-studio",
+  REGISTRY: "/registry",
+  SCHEDULE_EDITOR: "/schedule-editor",
+  GUEST_LIST: "/guest-list",
+  SEATING_CHART: "/seating-chart",
+  PHOTO_MOMENTS: "/photo-moments",
   INVITATION: "/invitation",
   DASHBOARD: "/dashboard",
   DASHBOARD_DEFAULT: "/dashboard/profile",
@@ -42,7 +58,7 @@ export function hasRequiredRole(user, allowedRoles) {
 export function getDefaultRouteByRole(role) {
   return role === ROLES.ADMIN
     ? ROUTE_PATHS.ADMIN
-    : ROUTE_PATHS.DASHBOARD_DEFAULT;
+    : ROUTE_PATHS.CREATE_EVENT;
 }
 
 export function getSafeRedirectPath(fromLocation, userRole) {

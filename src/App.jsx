@@ -25,6 +25,22 @@ import Landing from "./pages/landing/Landing";
 import InvitationPreview from "./pages/InvitationPreview";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import CreateEventPage from "./pages/onboarding/CreateEventPage";
+import WeddingSetupPage from "./pages/onboarding/WeddingSetupPage";
+import EventHubPage from "./pages/onboarding/EventHubPage";
+import WebsitePreviewPage from "./pages/onboarding/WebsitePreviewPage";
+import EventSettingsPage from "./pages/onboarding/EventSettingsPage";
+import WebsiteDesignPage from "./pages/features/WebsiteDesignPage";
+import CollectContactsPage from "./pages/features/CollectContactsPage";
+import RsvpBuilderPage from "./pages/features/RsvpBuilderPage";
+import MessagingPage from "./pages/features/MessagingPage";
+import TravelPage from "./pages/features/TravelPage";
+import InvitationsStudioPage from "./pages/features/InvitationsStudioPage";
+import RegistryPage from "./pages/features/RegistryPage";
+import ScheduleEditorPage from "./pages/features/ScheduleEditorPage";
+import GuestListPage from "./pages/features/GuestListPage";
+import SeatingChartPage from "./pages/features/SeatingChartPage";
+import PhotoMomentsPage from "./pages/features/PhotoMomentsPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import UnauthorizedPage from "./pages/errors/UnauthorizedPage";
 import NotFoundPage from "./pages/errors/NotFoundPage";
@@ -175,7 +191,14 @@ function DashboardWorkspace() {
     <>
       <DashboardLayout
         activeKey={activeKey}
+        onNavigate={handleNavigateSection}
         onSelectKey={handleNavigateSection}
+        weddings={weddings}
+        selectedWeddingId={selectedWeddingId}
+        onSelectWedding={setSelectedWeddingId}
+        onCreateWeddingClick={() => setIsCreateModalOpen(true)}
+        onGoHub={() => navigate(ROUTE_PATHS.EVENT_HUB)}
+        onGoHome={() => navigate(ROUTE_PATHS.HOME)}
         weddingTitle={selectedWedding?.title || "Đang tải hồ sơ..."}
         onAddNew={() => console.log("Thêm mới")}
         user={user}
@@ -302,6 +325,49 @@ function App() {
       <Route
         element={<ProtectedRoute allowedRoles={DASHBOARD_ALLOWED_ROLES} />}
       >
+        <Route path={ROUTE_PATHS.CREATE_EVENT} element={<CreateEventPage />} />
+        <Route path={ROUTE_PATHS.WEDDING_SETUP} element={<WeddingSetupPage />} />
+        <Route path={ROUTE_PATHS.EVENT_HUB} element={<EventHubPage />} />
+        <Route
+          path={ROUTE_PATHS.WEBSITE_PREVIEW}
+          element={<WebsitePreviewPage />}
+        />
+        <Route
+          path={ROUTE_PATHS.EVENT_SETTINGS}
+          element={<EventSettingsPage />}
+        />
+        <Route
+          path={ROUTE_PATHS.WEBSITE_DESIGN}
+          element={<WebsiteDesignPage />}
+        />
+        <Route
+          path={ROUTE_PATHS.COLLECT_CONTACTS}
+          element={<CollectContactsPage />}
+        />
+        <Route
+          path={ROUTE_PATHS.RSVP_BUILDER}
+          element={<RsvpBuilderPage />}
+        />
+        <Route path={ROUTE_PATHS.MESSAGING} element={<MessagingPage />} />
+        <Route path={ROUTE_PATHS.TRAVEL} element={<TravelPage />} />
+        <Route
+          path={ROUTE_PATHS.INVITATIONS_STUDIO}
+          element={<InvitationsStudioPage />}
+        />
+        <Route path={ROUTE_PATHS.REGISTRY} element={<RegistryPage />} />
+        <Route
+          path={ROUTE_PATHS.SCHEDULE_EDITOR}
+          element={<ScheduleEditorPage />}
+        />
+        <Route path={ROUTE_PATHS.GUEST_LIST} element={<GuestListPage />} />
+        <Route
+          path={ROUTE_PATHS.SEATING_CHART}
+          element={<SeatingChartPage />}
+        />
+        <Route
+          path={ROUTE_PATHS.PHOTO_MOMENTS}
+          element={<PhotoMomentsPage />}
+        />
         <Route
           path={ROUTE_PATHS.DASHBOARD}
           element={<Navigate to={ROUTE_PATHS.DASHBOARD_DEFAULT} replace />}

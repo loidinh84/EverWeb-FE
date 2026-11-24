@@ -5,16 +5,19 @@ import {
   RotateCcw,
   Loader2,
   Check,
+  CheckCircle2,
   Copy,
   ClipboardList,
   Wallet,
-  Calendar,
-  Mail,
   LayoutGrid,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import everwebLogo from "../../assets/image/everweb-logo.jpg";
 import aiApi from "../../services/aiApi";
+import { useToast } from "../common";
+import { useCurrentWedding } from "../../pages/features/useCurrentWedding";
+import { executeAiDirectAction } from "../../services/aiActionDispatcher";
 import MarkdownContent from "./MarkdownContent";
 
 const STORAGE_KEY = "everweb_ai_widget_chat";
@@ -27,6 +30,21 @@ function createMessageId(prefix = "msg") {
 
 const QUICK_PROMPTS = [
   {
+    label: "Chuyển khách sang Bàn 2",
+    icon: LayoutGrid,
+    prompt: "Chuyển khách Lan Anh sang Bàn 2",
+  },
+  {
+    label: "Tự động xếp bàn",
+    icon: Sparkles,
+    prompt: "Tự động xếp chỗ cho toàn bộ khách mời vào bàn",
+  },
+  {
+    label: "Xóa khách khỏi bàn",
+    icon: LayoutGrid,
+    prompt: "Xóa khách Lan Anh khỏi bàn",
+  },
+  {
     label: "Checklist 6 tháng",
     icon: ClipboardList,
     prompt: "Lập danh sách việc cần làm (Checklist) trước ngày cưới 6 tháng",
@@ -36,21 +54,6 @@ const QUICK_PROMPTS = [
     icon: Wallet,
     prompt: "Gợi ý cho mình cách phân bổ ngân sách cưới 200 triệu đồng hợp lý nhất",
   },
-  {
-    label: "Lịch trình ngày cưới",
-    icon: Calendar,
-    prompt: "Gợi ý lịch trình ngày cưới chính thức gồm: Lễ Gia Tiên lúc 09:00 tại Nhà gái, Tiệc mừng thân mật lúc 11:30 và Tiệc cưới lúc 18:00 tại Riverside Palace",
-  },
-  {
-    label: "Mẫu thiệp mời",
-    icon: Mail,
-    prompt: "Gợi ý các mẫu lời mời thiệp cưới online trang trọng và ý nghĩa",
-  },
-  {
-    label: "Sắp xếp bàn tiệc",
-    icon: LayoutGrid,
-    prompt: "Hướng dẫn nguyên tắc sắp xếp sơ đồ bàn tiệc đám cưới hợp lý",
-  },
 ];
 
 const INITIAL_MESSAGES = [
@@ -58,12 +61,14 @@ const INITIAL_MESSAGES = [
     id: "welcome-1",
     role: "assistant",
     content:
-      "Chào bạn, mình là **Trợ lý EverWeb AI**.\n\nMình có thể hỗ trợ bạn thiết kế website cưới, lên lịch trình sự kiện, lập checklist việc cần làm, tính toán phân bổ ngân sách và giải đáp mọi thắc mắc ngày cưới.\n\nChỉ cần đưa ra yêu cầu — đơn giản như một cuộc trò chuyện.",
+      "Chào bạn, mình là **Trợ lý EverWeb AI**.\n\nMình có thể hỗ trợ bạn thiết kế website cưới, lên lịch trình, tính ngân sách, và **trực tiếp điều khiển sơ đồ bàn tiệc** (chuyển bàn, xóa khách khỏi bàn, tự động xếp chỗ).\n\nChỉ cần đưa ra yêu cầu — đơn giản như một cuộc trò chuyện.",
     createdAt: new Date().toISOString(),
   },
 ];
 
 export default function WeddingAssistantChatbot({ selectedWedding }) {
+  const toast = useToast();
+  const { wedding: currentWedding } = useCurrentWedding();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
     try {
@@ -145,27 +150,58 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
         content: m.content,
       }));
 
-      const response = await aiApi.chat({
-        messages: historyToSend,
-        provider: "openai",
-        weddingId:
-          selectedWedding?.id && selectedWedding.id.length === 36
-            ? selectedWedding.id
-            : undefined,
+      const effectiveWedding = selectedWedding || currentWedding;
+      let replyText = "";
+      let model = "";
+
+      try {
+        const response = await aiApi.chat({
+          messages: historyToSend,
+          provider: "openai",
+          weddingId:
+            effectiveWedding?.id && effectiveWedding.id.length === 36
+              ? effectiveWedding.id
+              : undefined,
+        });
+
+        replyText =
+          response.data?.reply ||
+          response.data ||
+          "";
+        model = response.data?.model;
+      } catch (chatErr) {
+        console.warn("AI chat API notice:", chatErr.message);
+      }
+
+      // THỰC THI LỆNH ĐIỀU KHIỂN TRỰC TIẾP TRÊN HỆ THỐNG
+      const actionResult = await executeAiDirectAction({
+        wedding: effectiveWedding,
+        userPrompt: textToSend,
+        aiResponseText: replyText,
       });
 
-      const replyText =
-        response.data?.reply ||
-        response.data ||
-        "Xin lỗi, mình chưa nhận được phản hồi phù hợp.";
+      let cleanedReply = (replyText || "").replace(/\[ACTION:[^\]]+\]/g, "").trim();
+
+      if (actionResult?.handled && actionResult.success) {
+        if (!cleanedReply) {
+          cleanedReply = `Mình đã thực thi yêu cầu của bạn: ${actionResult.actionResult?.detail || "Đã cập nhật hệ thống thành công."}`;
+        }
+        toast.success(actionResult.actionResult?.title || "Đã thực hiện thành công");
+      } else if (actionResult?.handled && !actionResult.success) {
+        cleanedReply = actionResult.message || cleanedReply;
+        toast.info(actionResult.message);
+      } else if (!cleanedReply) {
+        cleanedReply = "Mình đã ghi nhận câu hỏi của bạn. Hãy cho mình biết chi tiết thêm nhé!";
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           id: createMessageId("assistant"),
           role: "assistant",
-          content: replyText,
-          model: response.data?.model,
+          content: cleanedReply,
+          model,
+          actionResult: actionResult?.handled && actionResult.success ? actionResult.actionResult : null,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -324,6 +360,21 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
                     <div className="text-xs sm:text-sm text-[#1E1E24] leading-relaxed">
                       <MarkdownContent content={msg.content} />
                     </div>
+
+                    {msg.actionResult && (
+                      <div className="mt-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{msg.actionResult.title}</span>
+                        </div>
+                        <p className="mt-1 text-emerald-700 leading-relaxed font-medium">
+                          {msg.actionResult.detail}
+                        </p>
+                        <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/90 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          <span>Sơ đồ bàn tiệc đã cập nhật trực tiếp</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2 text-[10px] text-stone-400 pt-0.5">
                       <span>

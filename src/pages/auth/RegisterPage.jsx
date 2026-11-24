@@ -1,20 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Flower2,
-  Heart,
-  Lock,
-  Mail,
-  User,
-} from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../components/common";
 import { getDefaultRouteByRole, ROUTE_PATHS } from "../../constants/roles";
 import { useAuth } from "../../hooks/useAuth";
 import { extractApiError } from "../../services/api";
+import AuthVisualShowcase from "./AuthVisualShowcase";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -92,294 +83,149 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F6F2EA] text-[#2C2117]">
-      {/* Left Editorial Brand Panel */}
-      <aside className="relative hidden w-5/12 flex-col justify-between overflow-hidden bg-[#2F241D] p-10 text-[#EDE4D6] lg:flex xl:p-14">
-        <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#C5A059]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#C5A059]/10 blur-3xl" />
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-12 bg-white text-[#1F1A17]">
+      {/* LEFT: Visual Showcase Collage */}
+      <AuthVisualShowcase />
 
-        <div className="relative z-10">
-          <Link
-            to={ROUTE_PATHS.HOME}
-            className="inline-flex items-center gap-3 text-white transition hover:opacity-90"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C5A059] text-[#2F241D] shadow-xs">
-              <Flower2 size={20} />
-            </div>
-            <div>
-              <p className="font-display text-2xl font-semibold tracking-tight">
-                EverWeb
-              </p>
-              <p className="text-[10px] tracking-widest text-[#CBBBA8] uppercase">
-                Hoa Tình Yêu · Ngày chung đôi
-              </p>
-            </div>
-          </Link>
-        </div>
-
-        <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#C5A059]/30 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[#E8CD94]">
-            <Heart size={14} />
-            <span>Khởi tạo không gian cưới riêng</span>
-          </div>
-          <h1 className="font-display text-4xl leading-tight font-medium text-white xl:text-5xl">
-            Bắt đầu hành trình chuẩn bị lễ cưới tinh gọn & thanh lịch.
-          </h1>
-          <p className="max-w-md text-sm leading-relaxed text-[#CBBBA8]">
-            Tài khoản mới được cấp quyền Cặp đôi mặc định để quản lý hồ sơ cưới,
-            danh sách khách mời, sơ đồ sảnh tiệc và thiệp mời trực tuyến.
-          </p>
-        </div>
-
-        <div className="relative z-10 border-t border-white/10 pt-6 text-xs text-[#B6A38E]">
-          <p>Bảo mật mật khẩu & phiên làm việc theo tiêu chuẩn EverWeb.</p>
-        </div>
-      </aside>
-
-      {/* Right Register Form */}
-      <main className="flex flex-1 flex-col justify-center px-4 py-10 sm:px-8 lg:px-14">
-        <div className="mx-auto w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between">
+      {/* RIGHT: Register Form */}
+      <div className="flex lg:col-span-5 flex-col items-center justify-center px-6 py-10 sm:px-10">
+        <div className="w-full max-w-[380px]">
+          {/* Logo */}
+          <div className="text-center">
             <Link
               to={ROUTE_PATHS.HOME}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6D5B4B] transition hover:text-[#2C2117]"
+              className="inline-block transition hover:opacity-80"
             >
-              <ArrowLeft size={14} />
-              <span>Về trang chủ</span>
-            </Link>
-
-            <div className="flex items-center gap-2 lg:hidden">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#2F241D] text-[#C5A059]">
-                <Flower2 size={15} />
-              </div>
-              <span className="font-display text-lg font-semibold text-[#2C2117]">
-                EverWeb
+              <span className="font-display text-4xl sm:text-5xl font-normal italic tracking-tight text-[#1F1A17]">
+                .EverWeb
               </span>
-            </div>
+            </Link>
           </div>
 
-          <div className="rounded-2xl border border-[#EAE3D8] bg-[#FCFBF8] p-7 shadow-sm sm:p-9">
-            <div className="mb-6">
-              <h2 className="font-display text-3xl font-semibold text-[#2C2117]">
-                Tạo tài khoản mới
-              </h2>
-              <p className="mt-1.5 text-xs leading-relaxed text-[#7D6D5E]">
-                Khởi tạo không gian lập kế hoạch tiệc cưới mang dấu ấn riêng của
-                hai bạn.
-              </p>
-            </div>
-
-            {serverError && (
-              <div
-                role="alert"
-                className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700"
-              >
-                {serverError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
-              <div>
-                <label
-                  htmlFor="register-fullname"
-                  className="mb-1.5 block text-xs font-semibold text-[#4A3B2C]"
-                >
-                  Họ và tên
-                </label>
-                <div className="relative">
-                  <User
-                    size={16}
-                    className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#9C8B7A]"
-                  />
-                  <input
-                    id="register-fullname"
-                    type="text"
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(e) => {
-                      setFullName(e.target.value);
-                      if (errors.full_name) {
-                        setErrors((prev) => ({ ...prev, full_name: "" }));
-                      }
-                    }}
-                    placeholder="Nguyễn Minh Khang"
-                    className={`w-full rounded-xl border bg-white py-2.5 pr-3.5 pl-10 text-sm text-[#2C2117] placeholder:text-[#B6A38E] transition outline-none ${
-                      errors.full_name
-                        ? "border-rose-400 focus:border-rose-500"
-                        : "border-[#DFD5C5] focus:border-[#C5A059]"
-                    }`}
-                  />
-                </div>
-                {errors.full_name && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.full_name}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="register-email"
-                  className="mb-1.5 block text-xs font-semibold text-[#4A3B2C]"
-                >
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={16}
-                    className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#9C8B7A]"
-                  />
-                  <input
-                    id="register-email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (errors.email) {
-                        setErrors((prev) => ({ ...prev, email: "" }));
-                      }
-                    }}
-                    placeholder="name@example.com"
-                    className={`w-full rounded-xl border bg-white py-2.5 pr-3.5 pl-10 text-sm text-[#2C2117] placeholder:text-[#B6A38E] transition outline-none ${
-                      errors.email
-                        ? "border-rose-400 focus:border-rose-500"
-                        : "border-[#DFD5C5] focus:border-[#C5A059]"
-                    }`}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-1 text-xs text-rose-600">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="register-password"
-                  className="mb-1.5 block text-xs font-semibold text-[#4A3B2C]"
-                >
-                  Mật khẩu
-                </label>
-                <div className="relative">
-                  <Lock
-                    size={16}
-                    className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#9C8B7A]"
-                  />
-                  <input
-                    id="register-password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (errors.password) {
-                        setErrors((prev) => ({ ...prev, password: "" }));
-                      }
-                    }}
-                    placeholder="Tối thiểu 6 ký tự"
-                    className={`w-full rounded-xl border bg-white py-2.5 pr-10 pl-10 text-sm text-[#2C2117] placeholder:text-[#B6A38E] transition outline-none ${
-                      errors.password
-                        ? "border-rose-400 focus:border-rose-500"
-                        : "border-[#DFD5C5] focus:border-[#C5A059]"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={
-                      showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
-                    }
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-[#8C7A68] transition hover:text-[#2C2117]"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="register-confirm-password"
-                  className="mb-1.5 block text-xs font-semibold text-[#4A3B2C]"
-                >
-                  Xác nhận mật khẩu
-                </label>
-                <div className="relative">
-                  <Lock
-                    size={16}
-                    className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#9C8B7A]"
-                  />
-                  <input
-                    id="register-confirm-password"
-                    type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (errors.confirmPassword) {
-                        setErrors((prev) => ({
-                          ...prev,
-                          confirmPassword: "",
-                        }));
-                      }
-                    }}
-                    placeholder="Nhập lại mật khẩu"
-                    className={`w-full rounded-xl border bg-white py-2.5 pr-10 pl-10 text-sm text-[#2C2117] placeholder:text-[#B6A38E] transition outline-none ${
-                      errors.confirmPassword
-                        ? "border-rose-400 focus:border-rose-500"
-                        : "border-[#DFD5C5] focus:border-[#C5A059]"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={
-                      showConfirmPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
-                    }
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-[#8C7A68] transition hover:text-[#2C2117]"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={16} />
-                    ) : (
-                      <Eye size={16} />
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#C5A059] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#B28D46] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span>
-                  {isSubmitting ? "Đang tạo tài khoản..." : "Đăng ký ngay"}
-                </span>
-                {!isSubmitting && <ArrowRight size={15} />}
-              </button>
-            </form>
-
-            <div className="mt-6 border-t border-[#EAE3D8] pt-5 text-center text-xs text-[#7D6D5E]">
+          {/* Heading & Subtitle */}
+          <div className="mt-6 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1F1A17]">
+              Đăng ký tài khoản
+            </h1>
+            <p className="mt-2 text-xs text-stone-500">
               Đã có tài khoản?{" "}
               <Link
                 to={ROUTE_PATHS.LOGIN}
-                className="font-semibold text-[#2F241D] underline-offset-2 transition hover:text-[#A67C37] hover:underline"
+                className="underline decoration-dotted underline-offset-4 font-semibold text-stone-900 hover:text-[#3B52DE] transition"
               >
-                Đăng nhập ngay
+                Đăng nhập
               </Link>
+            </p>
+          </div>
+
+          {/* Server Error / Alert */}
+          {serverError && (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700">
+              {serverError}
             </div>
+          )}
+
+          {/* Form Fields */}
+          <form onSubmit={handleSubmit} className="mt-5 space-y-3.5" noValidate>
+            <div>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Họ và tên"
+                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+              />
+              {errors.full_name && (
+                <p className="mt-1 text-xs text-rose-600">{errors.full_name}</p>
+              )}
+            </div>
+
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Địa chỉ email"
+                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-rose-600">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mật khẩu (tối thiểu 6 ký tự)"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 pr-11 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-stone-400 hover:text-stone-600 cursor-pointer transition"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-xs text-rose-600">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Xác nhận mật khẩu"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 pr-11 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={
+                    showConfirmPassword ? "Ẩn mật khẩu xác nhận" : "Hiện mật khẩu xác nhận"
+                  }
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-stone-400 hover:text-stone-600 cursor-pointer transition"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-xs text-rose-600">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-full bg-[#3B52DE] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2F43C2] active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+              >
+                {isSubmitting ? "Đang tạo tài khoản..." : "Đăng ký tài khoản"}
+              </button>
+            </div>
+          </form>
+
+          {/* Policy footer */}
+          <div className="mt-5 text-center">
+            <p className="text-[11px] leading-relaxed text-stone-400">
+              Bằng việc đăng ký tài khoản, bạn đồng ý với{" "}
+              <span className="text-stone-600 underline">Điều khoản dịch vụ</span>{" "}
+              và{" "}
+              <span className="text-stone-600 underline">Chính sách bảo mật</span> của .EverWeb.
+            </p>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

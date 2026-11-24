@@ -1,17 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
+  CalendarDays,
   ChevronDown,
   Globe,
+  LogOut,
   Menu,
+  Plus,
   Search,
+  User,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ROUTE_PATHS } from "../../constants/roles";
+import { useAuth } from "../../hooks/useAuth";
+import { UserProfileModal } from "../../components/common";
 
 export default function LandingNavbar({ onOpenDashboard }) {
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  const initials = (user?.full_name || user?.email || "U")
+    .slice(0, 1)
+    .toUpperCase();
+  const displayName = user?.full_name || user?.email?.split("@")[0] || "Tài khoản";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +39,16 @@ export default function LandingNavbar({ onOpenDashboard }) {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -157,11 +185,100 @@ export default function LandingNavbar({ onOpenDashboard }) {
             </a>
           </nav>
 
-          <div className="flex items-center gap-4">
-            {onOpenDashboard ? (
+          <div className="flex items-center gap-3 sm:gap-4">
+            {isAuthenticated ? (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                  className={`flex items-center gap-2 rounded-full border py-1 pl-1.5 pr-3 text-xs font-semibold transition cursor-pointer ${
+                    isScrolled
+                      ? "border-[#EAE3DB] bg-[#FAF8F5] text-[#231F1C] hover:border-[#3B52DE]"
+                      : "border-white/30 bg-black/35 text-white hover:bg-black/50 backdrop-blur-md"
+                  }`}
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3B52DE] text-white font-bold text-xs shadow-xs">
+                    {initials}
+                  </div>
+                  <span className="hidden sm:inline max-w-[120px] truncate">
+                    {displayName}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                </button>
+
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#EAE3DB] bg-white p-2 text-[#231F1C] shadow-xl z-50 select-none"
+                    >
+                      <div className="px-3 py-2 border-b border-[#F0EAE1]">
+                        <p className="text-xs font-bold truncate text-[#231F1C]">
+                          {user?.full_name || "Tài khoản của bạn"}
+                        </p>
+                        <p className="text-[11px] text-[#8C7A68] truncate mt-0.5">
+                          {user?.email}
+                        </p>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate(ROUTE_PATHS.CREATE_EVENT);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#231F1C] hover:bg-[#F6F4F0] transition"
+                        >
+                          <Plus className="h-4 w-4 text-[#3B52DE]" />
+                          <span>Tạo sự kiện mới</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            setIsProfileModalOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#2C2117] hover:bg-[#F6F4F0] transition cursor-pointer"
+                        >
+                          <User className="h-4 w-4 text-[#3B52DE]" />
+                          <span>Xem hồ sơ</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate(ROUTE_PATHS.EVENT_HUB);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#231F1C] hover:bg-[#F6F4F0] transition"
+                        >
+                          <CalendarDays className="h-4 w-4 text-[#3B52DE]" />
+                          <span>Trung tâm sự kiện</span>
+                        </button>
+                      </div>
+                      <div className="border-t border-[#F0EAE1] pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            logout();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={onOpenDashboard}
+                onClick={() => navigate(ROUTE_PATHS.LOGIN)}
                 className={`hidden sm:inline-block text-sm font-medium transition cursor-pointer ${
                   isScrolled
                     ? "text-[#231F1C] hover:text-[#5239D8]"
@@ -170,28 +287,19 @@ export default function LandingNavbar({ onOpenDashboard }) {
               >
                 Đăng nhập
               </button>
-            ) : (
-              <a
-                href="#pricing"
-                className={`hidden sm:inline-block text-sm font-medium transition ${
-                  isScrolled
-                    ? "text-[#231F1C] hover:text-[#5239D8]"
-                    : "text-white hover:text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
-                }`}
-              >
-                Đăng nhập
-              </a>
             )}
-            <a
-              href="#pricing"
-              className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 ${
+
+            <button
+              type="button"
+              onClick={onOpenDashboard}
+              className={`rounded-full px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition duration-200 cursor-pointer ${
                 isScrolled
                   ? "bg-[#5239D8] text-white hover:bg-[#432BC2]"
                   : "bg-white text-[#231F1C] hover:bg-neutral-100"
               }`}
             >
               Bắt đầu ngay
-            </a>
+            </button>
 
             <button
               type="button"
@@ -253,11 +361,95 @@ export default function LandingNavbar({ onOpenDashboard }) {
                 >
                   Bảng giá
                 </a>
+
+                <div className="pt-3 border-t border-stone-200/40">
+                  {isAuthenticated ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2.5 pb-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3B52DE] text-white font-bold text-xs">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs truncate">{displayName}</p>
+                          <p className="text-[11px] opacity-70 truncate">{user?.email}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate(ROUTE_PATHS.CREATE_EVENT);
+                        }}
+                        className="w-full text-left py-1.5 text-xs font-semibold text-[#3B52DE]"
+                      >
+                        + Tạo sự kiện mới
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsProfileModalOpen(true);
+                        }}
+                        className="w-full text-left py-1.5 text-xs font-semibold text-[#2C2117] flex items-center gap-1.5"
+                      >
+                        <User className="h-3.5 w-3.5 text-[#3B52DE]" />
+                        <span>Xem hồ sơ tài khoản</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate(ROUTE_PATHS.EVENT_HUB);
+                        }}
+                        className="w-full text-left py-1.5 text-xs font-semibold text-[#3B52DE]"
+                      >
+                        → Trung tâm sự kiện
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full text-left py-1.5 text-xs font-medium text-rose-500"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate(ROUTE_PATHS.LOGIN);
+                        }}
+                        className="py-1.5 text-xs font-semibold"
+                      >
+                        Đăng nhập
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenDashboard();
+                        }}
+                        className="rounded-full bg-[#5239D8] px-4 py-1.5 text-xs font-semibold text-white"
+                      >
+                        Bắt đầu ngay
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 }

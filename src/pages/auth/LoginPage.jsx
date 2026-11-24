@@ -1,10 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Flower2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../components/common";
 import { getSafeRedirectPath, ROUTE_PATHS } from "../../constants/roles";
 import { useAuth } from "../../hooks/useAuth";
 import { extractApiError } from "../../services/api";
+import AuthVisualShowcase from "./AuthVisualShowcase";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -73,110 +74,111 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F6F2EA] px-4 py-10 text-[#2C2117]">
-      <div className="w-full max-w-[390px] rounded-2xl border border-[#E6DFD3] bg-white p-8 shadow-xs">
-        {/* Brand */}
-        <div className="flex flex-col items-center text-center">
-          <Link
-            to={ROUTE_PATHS.HOME}
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#3B52DE] text-white transition hover:opacity-90"
-          >
-            <Flower2 size={22} />
-          </Link>
-          <p className="mt-2 text-xs font-semibold tracking-widest text-[#8C7A68] uppercase">
-            EverWed
-          </p>
-          <h1 className="mt-3 text-xl font-bold tracking-tight text-[#2C2117]">
-            Chào mừng trở lại
-          </h1>
-        </div>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-12 bg-white text-[#1F1A17]">
+      {/* LEFT: Visual Showcase Collage */}
+      <AuthVisualShowcase />
 
-        {(redirectReason || serverError) && (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700">
-            {serverError || redirectReason}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-3.5" noValidate>
-          <div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email của bạn"
-              className="w-full rounded-xl border border-[#E2D9CB] bg-[#FAF8F5] px-3.5 py-2.5 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE] focus:bg-white"
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-rose-600">{errors.email}</p>
-            )}
+      {/* RIGHT: Sign In Form */}
+      <div className="flex lg:col-span-5 flex-col items-center justify-center px-6 py-12 sm:px-10">
+        <div className="w-full max-w-[380px]">
+          {/* Logo */}
+          <div className="text-center">
+            <Link
+              to={ROUTE_PATHS.HOME}
+              className="inline-block transition hover:opacity-80"
+            >
+              <span className="font-display text-4xl sm:text-5xl font-normal italic tracking-tight text-[#1F1A17]">
+                .EverWeb
+              </span>
+            </Link>
           </div>
 
-          <div>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mật khẩu"
-                className="w-full rounded-xl border border-[#E2D9CB] bg-[#FAF8F5] py-2.5 pr-10 pl-3.5 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE] focus:bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                className="absolute top-1/2 right-3 -translate-y-1/2 text-[#8C7A68] hover:text-[#2C2117]"
+          {/* Heading & Subtitle */}
+          <div className="mt-7 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1F1A17]">
+              Đăng nhập
+            </h1>
+            <p className="mt-2 text-xs text-stone-500">
+              Chưa có tài khoản?{" "}
+              <Link
+                to={ROUTE_PATHS.REGISTER}
+                className="underline decoration-dotted underline-offset-4 font-semibold text-stone-900 hover:text-[#3B52DE] transition"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                Đăng ký ngay
+              </Link>
+            </p>
+          </div>
+
+          {/* Server Error / Alert */}
+          {(redirectReason || serverError) && (
+            <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700">
+              {serverError || redirectReason}
+            </div>
+          )}
+
+          {/* Form Fields */}
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Địa chỉ email"
+                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-rose-600">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mật khẩu"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 pr-11 text-sm text-[#1F1A17] placeholder:text-stone-400 outline-none transition focus:border-[#3B52DE] focus:ring-1 focus:ring-[#3B52DE]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-stone-400 hover:text-stone-600 cursor-pointer transition"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-xs text-rose-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-full bg-[#3B52DE] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2F43C2] active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+              >
+                {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </button>
             </div>
-            {errors.password && (
-              <p className="mt-1 text-xs text-rose-600">{errors.password}</p>
-            )}
+          </form>
+
+          {/* Reset Password Footer Link */}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-stone-500">
+              Quên mật khẩu?{" "}
+              <Link
+                to={ROUTE_PATHS.FORGOT_PASSWORD}
+                className="underline decoration-dotted underline-offset-4 font-medium text-stone-800 hover:text-[#3B52DE] cursor-pointer transition"
+              >
+                Đặt lại mật khẩu
+              </Link>
+            </p>
           </div>
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() =>
-                toast.info("Liên hệ quản trị viên để đặt lại mật khẩu")
-              }
-              className="text-xs font-medium text-[#7D6D5E] underline underline-offset-2 hover:text-[#2C2117]"
-            >
-              Quên mật khẩu?
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-full bg-[#3B52DE] py-2.5 text-sm font-semibold text-white transition hover:bg-[#2F43C2] disabled:opacity-60"
-          >
-            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
-        </form>
-
-        {/* Help box */}
-        <div className="mt-6 rounded-xl border border-[#EFEAE1] bg-[#FAF8F5] p-3.5 text-xs">
-          <p className="font-semibold text-[#2C2117]">Gặp sự cố đăng nhập?</p>
-          <button
-            type="button"
-            onClick={() => toast.info("Hỗ trợ kỹ thuật: support@everwed.vn")}
-            className="mt-1.5 block text-[#6D5B4B] underline underline-offset-2 hover:text-[#2C2117]"
-          >
-            Cần trợ giúp đăng nhập?
-          </button>
         </div>
-
-        <p className="mt-5 text-center text-xs text-[#7D6D5E]">
-          Mới sử dụng EverWed?{" "}
-          <Link
-            to={ROUTE_PATHS.REGISTER}
-            className="font-semibold text-[#2C2117] underline underline-offset-2"
-          >
-            Đăng ký
-          </Link>
-        </p>
       </div>
     </div>
   );

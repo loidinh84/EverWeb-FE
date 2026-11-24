@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Loader2, Plus, Trash2, UserPlus } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
 import { useAuth } from "../../hooks/useAuth";
@@ -82,7 +82,7 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
     }
   };
 
-  const ownerEmail = owner?.email || user?.email || "ban@everwed.vn";
+  const ownerEmail = owner?.email || user?.email || "ban@everweb.vn";
   const ownerInitial = ownerEmail.slice(0, 1).toUpperCase();
 
   return (
@@ -95,19 +95,19 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
       <div className="space-y-5">
         {/* Owner */}
         <div>
-          <p className="mb-2 text-xs font-semibold text-[#2C2117]">
+          <p className="mb-2 text-xs font-semibold text-[#1F1A17]">
             Chủ sở hữu
           </p>
-          <div className="flex items-center justify-between rounded-xl border border-[#E6DFD3] bg-[#FAF8F5] px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F3E8D2] text-xs font-bold text-[#8A6121]">
                 {ownerInitial}
               </div>
-              <span className="text-sm font-medium text-[#2C2117]">
+              <span className="text-sm font-medium text-[#1F1A17]">
                 {ownerEmail}
               </span>
             </div>
-            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-medium text-[#7D6D5E] ring-1 ring-[#E6DFD3]">
+            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-medium text-stone-500 ring-1 ring-[#E7E5E4]">
               Bạn
             </span>
           </div>
@@ -115,31 +115,31 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
 
         {/* Collaborators */}
         <div>
-          <p className="mb-2 text-xs font-semibold text-[#2C2117]">
+          <p className="mb-2 text-xs font-semibold text-[#1F1A17]">
             Cộng tác viên
           </p>
 
           {isLoading ? (
-            <div className="flex justify-center py-4 text-[#8C7A68]">
+            <div className="flex justify-center py-4 text-stone-500">
               <Loader2 size={18} className="animate-spin" />
             </div>
           ) : collaborators.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#E2D9CB] bg-[#FAF8F5] px-4 py-4 text-center text-xs text-[#8C7A68]">
+            <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-center text-xs text-stone-500">
               Chưa có cộng tác viên nào. Bạn có thể mời bạn đời hoặc người thân
               cùng quản lý sự kiện.
             </div>
           ) : (
-            <div className="divide-y divide-[#F1ECE3] rounded-xl border border-[#E6DFD3]">
+            <div className="divide-y divide-stone-100 rounded-xl border border-stone-200">
               {collaborators.map((c) => (
                 <div
                   key={c.userId}
                   className="flex items-center justify-between px-4 py-2.5 text-xs"
                 >
                   <div>
-                    <p className="font-semibold text-[#2C2117]">
+                    <p className="font-semibold text-[#1F1A17]">
                       {c.fullName || c.email}
                     </p>
-                    <p className="text-[#8C7A68]">{c.email}</p>
+                    <p className="text-stone-500">{c.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-[#EEF2FF] px-2.5 py-0.5 text-[11px] font-medium text-[#3B52DE]">
@@ -149,7 +149,7 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
                       type="button"
                       onClick={() => handleRemove(c.userId)}
                       aria-label={`Gỡ ${c.email}`}
-                      className="rounded-md p-1 text-[#9C8B7A] hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-md p-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -160,20 +160,20 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
           )}
 
           {showAddForm ? (
-            <form onSubmit={handleAdd} className="mt-3 space-y-2.5 rounded-xl border border-[#E6DFD3] bg-[#FAF8F5] p-3.5">
+            <form onSubmit={handleAdd} className="mt-3 space-y-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3.5">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Nhập email tài khoản EverWed..."
-                  className="flex-1 rounded-lg border border-[#E2D9CB] bg-white px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                  placeholder="Nhập email tài khoản EverWeb..."
+                  className="flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                   autoFocus
                 />
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="rounded-lg border border-[#E2D9CB] bg-white px-2.5 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#3B52DE]"
                 >
                   <option value="editor">Quyền chỉnh sửa</option>
                   <option value="viewer">Chỉ xem</option>
@@ -183,7 +183,7 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="rounded-lg border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-medium text-[#5E5042]"
+                  className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700"
                 >
                   Huỷ
                 </button>
@@ -201,7 +201,7 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-[#FAF8F5] px-4 py-2 text-xs font-semibold text-[#2C2117] transition hover:border-[#3B52DE]"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-semibold text-[#1F1A17] transition hover:border-[#3B52DE]"
             >
               <Plus size={14} />
               Thêm cộng tác viên
@@ -209,11 +209,11 @@ export default function CollaboratorsModal({ isOpen, onClose, weddingId }) {
           )}
         </div>
 
-        <div className="flex justify-end border-t border-[#F1ECE3] pt-3">
+        <div className="flex justify-end border-t border-stone-100 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full bg-[#2C2117] px-6 py-2 text-xs font-semibold text-white transition hover:bg-[#3D2F22]"
+            className="rounded-full bg-[#1F1A17] px-6 py-2 text-xs font-semibold text-white transition hover:bg-[#3D2F22]"
           >
             Xong
           </button>

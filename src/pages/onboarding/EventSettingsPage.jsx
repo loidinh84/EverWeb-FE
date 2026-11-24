@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Copy, ExternalLink, Search } from "lucide-react";
 import { useToast } from "../../components/common";
@@ -61,7 +61,7 @@ export default function EventSettingsPage() {
     };
   }, [wedding]);
 
-  const publicUrl = `everwed.vn/${wedding?.slug || "khang-an"}`;
+  const publicUrl = `everweb.vn/${wedding?.slug || "khang-an"}`;
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -81,6 +81,7 @@ export default function EventSettingsPage() {
       });
       setWedding(updated);
       sessionStorage.setItem("everweb_pending_wedding", JSON.stringify(updated));
+      localStorage.setItem("everweb_recent_wedding", JSON.stringify(updated));
       toast.success("Đã lưu thay đổi cài đặt sự kiện!");
     } catch (error) {
       toast.error(extractApiError(error, "Không thể lưu thay đổi").message);
@@ -90,21 +91,21 @@ export default function EventSettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#2C2117]">
+    <div className="flex min-h-screen flex-col bg-white text-[#1F1A17]">
       {/* Top Bar */}
-      <header className="flex h-14 items-center justify-between border-b border-[#EAE3D8] px-6">
+      <header className="flex h-14 items-center justify-between border-b border-stone-200 px-6">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() =>
               navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } })
             }
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-[#5E5042] hover:bg-[#FAF8F5] hover:text-[#2C2117]"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-50 hover:text-[#1F1A17]"
           >
             <ArrowLeft size={15} />
             Quay lại
           </button>
-          <span className="text-sm font-bold text-[#2C2117]">
+          <span className="text-sm font-bold text-[#1F1A17]">
             Cài đặt sự kiện
           </span>
         </div>
@@ -115,7 +116,7 @@ export default function EventSettingsPage() {
             onClick={() =>
               navigate(ROUTE_PATHS.WEBSITE_PREVIEW, { state: { wedding } })
             }
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2D9CB] px-3.5 py-1.5 text-xs font-medium text-[#2C2117] hover:border-[#3B52DE]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-3.5 py-1.5 text-xs font-medium text-[#1F1A17] hover:border-[#3B52DE]"
           >
             <ExternalLink size={13} />
             Xem trước Website
@@ -133,9 +134,9 @@ export default function EventSettingsPage() {
 
       <div className="grid flex-1 grid-cols-1 md:grid-cols-12">
         {/* Left Settings Sidebar */}
-        <aside className="border-r border-[#EAE3D8] bg-[#FAF8F5] p-5 md:col-span-3 lg:col-span-2">
-          <p className="mb-3 px-2 text-xs text-[#8C7A68]">
-            Website / <b className="text-[#2C2117]">Cài đặt</b>
+        <aside className="border-r border-stone-200 bg-stone-50 p-5 md:col-span-3 lg:col-span-2">
+          <p className="mb-3 px-2 text-xs text-stone-500">
+            Website / <b className="text-[#1F1A17]">Cài đặt</b>
           </p>
           <nav className="space-y-1">
             {SETTINGS_MENU.map((item) => {
@@ -153,8 +154,8 @@ export default function EventSettingsPage() {
                   }}
                   className={`w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition ${
                     isActive
-                      ? "bg-white font-semibold text-[#3B52DE] shadow-2xs ring-1 ring-[#E6DFD3]"
-                      : "text-[#5E5042] hover:bg-white/70"
+                      ? "bg-white font-semibold text-[#3B52DE] shadow-2xs ring-1 ring-[#E7E5E4]"
+                      : "text-stone-700 hover:bg-white/70"
                   }`}
                 >
                   {item.label}
@@ -168,24 +169,24 @@ export default function EventSettingsPage() {
         <main className="flex flex-col justify-between md:col-span-9 lg:col-span-10">
           <form onSubmit={handleSave} className="mx-auto w-full max-w-2xl space-y-8 p-6 sm:p-10">
             <div>
-              <h1 className="text-xl font-bold text-[#2C2117]">
+              <h1 className="text-xl font-bold text-[#1F1A17]">
                 Cài đặt chung
               </h1>
-              <p className="mt-1 text-xs text-[#8C7A68]">
+              <p className="mt-1 text-xs text-stone-500">
                 Quản lý đường dẫn thiệp cưới và thông tin cặp đôi hiển thị trên Website
               </p>
             </div>
 
             {/* Event URL */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-semibold text-[#2C2117]">
-                Đường dẫn sự kiện EverWed
+              <label className="block text-xs font-semibold text-[#1F1A17]">
+                Đường dẫn sự kiện EverWeb
               </label>
               <input
                 type="text"
                 readOnly
                 value={publicUrl}
-                className="w-full rounded-xl border border-[#E2D9CB] bg-[#FAF8F5] px-4 py-2.5 text-sm text-[#5E5042] outline-none"
+                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-700 outline-none"
               />
               <button
                 type="button"
@@ -193,7 +194,7 @@ export default function EventSettingsPage() {
                   navigator.clipboard?.writeText(`https://${publicUrl}`);
                   toast.success("Đã sao chép đường dẫn sự kiện!");
                 }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#EFEAE1] py-2.5 text-xs font-semibold text-[#2C2117] transition hover:bg-[#E5DEC9]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#F5F5F4] py-2.5 text-xs font-semibold text-[#1F1A17] transition hover:bg-[#E5DEC9]"
               >
                 <Copy size={14} />
                 Sao chép đường dẫn sự kiện
@@ -201,65 +202,65 @@ export default function EventSettingsPage() {
             </div>
 
             {/* Personal Info */}
-            <div className="space-y-4 border-t border-[#F1ECE3] pt-6">
-              <h2 className="text-sm font-bold text-[#2C2117]">
+            <div className="space-y-4 border-t border-stone-100 pt-6">
+              <h2 className="text-sm font-bold text-[#1F1A17]">
                 Thông tin cặp đôi
               </h2>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6D5B4B]">
+                  <label className="mb-1 block text-xs font-medium text-stone-600">
                     Người thứ nhất (Chú rể)
                   </label>
                   <input
                     type="text"
                     value={groomName}
                     onChange={(e) => setGroomName(e.target.value)}
-                    className="w-full rounded-xl border border-[#E2D9CB] px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6D5B4B]">
+                  <label className="mb-1 block text-xs font-medium text-stone-600">
                     Người thứ hai (Cô dâu)
                   </label>
                   <input
                     type="text"
                     value={brideName}
                     onChange={(e) => setBrideName(e.target.value)}
-                    className="w-full rounded-xl border border-[#E2D9CB] px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6D5B4B]">
+                  <label className="mb-1 block text-xs font-medium text-stone-600">
                     Địa điểm tổ chức
                   </label>
                   <input
                     type="text"
                     value={venueName}
                     onChange={(e) => setVenueName(e.target.value)}
-                    className="w-full rounded-xl border border-[#E2D9CB] px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6D5B4B]">
+                  <label className="mb-1 block text-xs font-medium text-stone-600">
                     Ngày cưới
                   </label>
                   <input
                     type="date"
                     value={weddingDate}
                     onChange={(e) => setWeddingDate(e.target.value)}
-                    className="w-full rounded-xl border border-[#E2D9CB] px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#3B52DE]"
                   />
                 </div>
               </div>
             </div>
 
             {/* Footer Save Bar */}
-            <div className="flex items-center justify-between border-t border-[#F1ECE3] pt-5">
-              <span className="inline-flex items-center gap-1.5 text-xs text-[#8C7A68]">
+            <div className="flex items-center justify-between border-t border-stone-100 pt-5">
+              <span className="inline-flex items-center gap-1.5 text-xs text-stone-500">
                 <Check size={14} className="text-emerald-600" />
                 Đồng bộ trực tiếp với Neon Database
               </span>

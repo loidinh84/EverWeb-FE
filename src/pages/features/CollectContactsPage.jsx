@@ -1,14 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Activity,
+  Check,
   Clock,
   Copy,
+  Download,
+  ExternalLink,
   Eye,
+  Globe,
+  Info,
   Mail,
+  MapPin,
   MessageSquare,
+  QrCode,
+  Search,
   Send,
   Settings,
   Share2,
+  Smartphone,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
@@ -17,22 +26,79 @@ import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 
 const RECIPIENT_GROUPS = [
-  "Khách chưa có SĐT & Địa chỉ (42 khách)",
-  "Toàn bộ danh sách khách mời (120 khách)",
-  "Nhóm bạn thân & Đồng nghiệp (35 khách)",
+  { id: "missing", label: "Khách chưa có SĐT & Địa chỉ (42 khách)", count: 42 },
+  { id: "all", label: "Toàn bộ danh sách khách mời (142 khách)", count: 142 },
+  { id: "friends", label: "Nhóm Bạn bè & Đồng nghiệp (38 khách)", count: 38 },
+  { id: "family", label: "Họ hàng & Người thân ở xa (26 khách)", count: 26 },
 ];
 
 const DEFAULT_FIELDS = [
-  { key: "fullName", label: "Họ và tên", enabled: true },
-  { key: "phone", label: "Số điện thoại", enabled: true },
-  { key: "email", label: "Email", enabled: true },
-  { key: "address", label: "Địa chỉ nhận thiệp giấy", enabled: true },
-  { key: "note", label: "Ghi chú thêm", enabled: false },
+  { key: "fullName", label: "Họ và tên khách mời", required: true, enabled: true, desc: "Bắt buộc để in lên bao thư thiệp cưới" },
+  { key: "phone", label: "Số điện thoại di động", required: true, enabled: true, desc: "Gửi SMS nhắc ngày cưới & liên hệ giao thiệp" },
+  { key: "address", label: "Địa chỉ nhận thiệp giấy tận nơi", required: false, enabled: true, desc: "Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành" },
+  { key: "email", label: "Địa chỉ Email", required: false, enabled: true, desc: "Gửi thiệp điện tử (E-invitation) có tương tác" },
+  { key: "companions", label: "Số lượng người đi cùng dự kiến", required: false, enabled: true, desc: "Giúp cô dâu chú rể sắp xếp chỗ ngồi chu đáo" },
+  { key: "wishes", label: "Lời chúc mừng gửi đến đôi uyên ương", required: false, enabled: true, desc: "Lưu giữ kỷ niệm và hiển thị tại bàn tiệc" },
+];
+
+const INITIAL_SUBMISSIONS = [
+  {
+    id: "sub-1",
+    name: "Nguyễn Thị Lan Anh",
+    phone: "0909 123 456",
+    email: "lananh.nguyen@gmail.com",
+    address: "Chung cư Richmond City, 207 Nguyễn Xí, P.26, Q. Bình Thạnh, TP.HCM",
+    companions: 2,
+    group: "Bạn cô dâu",
+    wishes: "Chúc hai bạn trăm năm hạnh phúc, sớm đón thiên thần nhỏ nhé!",
+    time: "12 phút trước",
+    status: "Đã đồng bộ",
+  },
+  {
+    id: "sub-2",
+    name: "Lê Minh Khoa",
+    phone: "0912 345 678",
+    email: "khoa.le@fpt.com.vn",
+    address: "45 Lê Duẩn, P. Bến Nghé, Quận 1, TP.HCM",
+    companions: 1,
+    group: "Đồng nghiệp chú rể",
+    wishes: "Chúc mừng Khang lấy được vợ hiền, mãi hạnh phúc bên nhau nhé!",
+    time: "1 giờ trước",
+    status: "Đã đồng bộ",
+  },
+  {
+    id: "sub-3",
+    name: "Bác Hai - Trần Văn Nam",
+    phone: "0988 765 432",
+    email: "bacnam.ct@gmail.com",
+    address: "124 đường 30/4, P. Hưng Lợi, Q. Ninh Kiều, Cần Thơ",
+    companions: 4,
+    group: "Họ hàng nhà trai",
+    wishes: "Bác và gia đình chắc chắn sẽ lên chung vui cùng hai cháu!",
+    time: "3 giờ trước",
+    status: "Đã đồng bộ",
+  },
+  {
+    id: "sub-4",
+    name: "Phạm Thảo Vy & Bạn trai",
+    phone: "0933 555 789",
+    email: "thaovy.designer@yahoo.com",
+    address: "Vinhomes Grand Park, P. Long Bình, TP. Thủ Đức, TP.HCM",
+    companions: 2,
+    group: "Bạn đại học",
+    wishes: "Háo hức chờ ngày đại tiệc của Khang & Khanh!",
+    time: "Hôm qua",
+    status: "Đã đồng bộ",
+  },
 ];
 
 export default function CollectContactsPage() {
   const toast = useToast();
   const { wedding } = useCurrentWedding();
+
+  const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
+  const collectorSlug = wedding?.slug || "khang-an";
+  const collectorUrl = `https://everweb.vn/contact/${collectorSlug}`;
 
   const { data: ccData, saveSection } = useWeddingFeature(
     wedding,
@@ -42,531 +108,960 @@ export default function CollectContactsPage() {
       sendTime: "now",
       scheduledAt: "",
       channel: "both",
-      recipientGroup: RECIPIENT_GROUPS[0],
-      subject: "Chia sẻ thông tin nhận thiệp cưới",
-      body: "Chào bạn! Chúng mình sắp tổ chức lễ cưới và rất mong có đầy đủ SĐT, địa chỉ của bạn để gửi thiệp mời. Bấm vào nút bên dưới để điền nhanh nhé!",
-      buttonText: "Điền thông tin liên hệ",
+      recipientGroupId: "missing",
+      subject: "Chia sẻ thông tin nhận thiệp cưới của Trần Thanh Khang & Mai Khanh",
+      body: "Chào bạn! Tụi mình sắp tổ chức lễ cưới và rất mong có đầy đủ số điện thoại, địa chỉ của bạn để gửi thiệp mời chu đáo nhất. Nhờ bạn dành 1 phút bấm vào link bên dưới để điền nhanh giúp tụi mình nhé!",
+      buttonText: "Điền thông tin nhận thiệp cưới",
+      formCoverTitle: `Mừng Hôn Lễ ${coupleNames}`,
+      formCoverNote: "Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của gia đình chúng mình. Vui lòng cập nhật thông tin liên hệ để nhận thiệp mời trang trọng.",
       fields: DEFAULT_FIELDS,
-      submissions: [
-        {
-          id: "c1",
-          name: "Nguyễn Thị Lan",
-          phone: "0909 123 456",
-          address: "Q. Bình Thạnh, TP.HCM",
-          time: "10 phút trước",
-        },
-        {
-          id: "c2",
-          name: "Lê Minh Khoa",
-          phone: "0912 345 678",
-          address: "Q.1, TP.HCM",
-          time: "1 giờ trước",
-        },
-      ],
+      submissions: INITIAL_SUBMISSIONS,
     }
   );
 
-  const [tab, setTab] = useState("send");
-  const [previewMode, setPreviewMode] = useState("sms");
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [senderName, setSenderName] = useState(
-    (wedding?.title || "Trần Thanh Khang & Trần Ngọc An").normalize("NFC")
-  );
+  const [activeTab, setActiveTab] = useState("compose"); // compose | submissions | fields | qr
+  const [previewChannel, setPreviewChannel] = useState("sms"); // sms | email
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [submissionSearch, setSubmissionSearch] = useState("");
 
   const isCollectorOn = ccData.isCollectorOn ?? true;
   const sendTime = ccData.sendTime || "now";
   const scheduledAt = ccData.scheduledAt || "";
   const channel = ccData.channel || "both";
-  const recipientGroup = ccData.recipientGroup || RECIPIENT_GROUPS[0];
-  const subject = ccData.subject || "";
+  const recipientGroupId = ccData.recipientGroupId || "missing";
+  const subject = ccData.subject || "Chia sẻ thông tin nhận thiệp cưới của Trần Thanh Khang & Mai Khanh";
   const body = ccData.body || ccData.message || "";
-  const buttonText = ccData.buttonText || "Điền thông tin liên hệ";
+  const buttonText = ccData.buttonText || "Điền thông tin nhận thiệp cưới";
   const fields = ccData.fields || DEFAULT_FIELDS;
-  const submissions = ccData.submissions || [];
+  const submissions = ccData.submissions || INITIAL_SUBMISSIONS;
+  const formCoverTitle = ccData.formCoverTitle || `Mừng Hôn Lễ ${coupleNames}`;
+  const formCoverNote = ccData.formCoverNote || "Sự hiện diện của bạn là niềm hạnh phúc lớn nhất của gia đình chúng mình.";
 
-  const collectorUrl = `https://everwed.vn/contact/${wedding?.slug || "khang-an"}`;
+  const [formState, setFormState] = useState({
+    senderName: coupleNames,
+    subject,
+    body,
+    buttonText,
+  });
+
+  // Filtered Submissions
+  const filteredSubmissions = useMemo(() => {
+    const q = submissionSearch.trim().toLowerCase();
+    if (!q) return submissions;
+    return submissions.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.phone.includes(q) ||
+        s.address.toLowerCase().includes(q) ||
+        (s.group && s.group.toLowerCase().includes(q))
+    );
+  }, [submissions, submissionSearch]);
+
+  const handleCopy = (text, label) => {
+    navigator.clipboard?.writeText(text);
+    toast.success(`Đã sao chép ${label}`);
+  };
 
   const handleSend = (e) => {
     e.preventDefault();
+    if (sendTime === "scheduled" && !scheduledAt) {
+      toast.error("Vui lòng chọn thời gian hẹn giờ gửi tin nhắn");
+      return;
+    }
+
     toast.success(
-      sendTime === "scheduled" && scheduledAt
-        ? `Đã hẹn giờ gửi lúc ${scheduledAt} (đã lưu Neon DB)`
-        : "Đã gửi yêu cầu thu thập liên hệ tới khách mời!"
+      sendTime === "scheduled"
+        ? `Đã lên lịch gửi tin nhắn thu thập liên hệ lúc ${scheduledAt}`
+        : "Đã gửi yêu cầu thu thập liên hệ tới danh sách khách mời!"
     );
+
+    // Thêm bản ghi mẫu vào danh sách phản hồi để kiểm thử
+    const newSubmission = {
+      id: `sub-${Date.now()}`,
+      name: "Khách mời vừa gửi",
+      phone: "0908 999 888",
+      email: "khachmoi@gmail.com",
+      address: "123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM",
+      companions: 2,
+      group: "Đồng nghiệp",
+      wishes: "Đã điền thông tin qua link thu thập!",
+      time: "Vừa xong",
+      status: "Đã đồng bộ",
+    };
+
     saveSection((prev) => ({
       ...prev,
-      submissions: [
-        {
-          id: `c-${Date.now()}`,
-          name: "Khách mời mới",
-          phone: "0908 888 999",
-          address: "Đã gửi link thu thập",
-          time: "Vừa xong",
-        },
-        ...(prev.submissions || []),
-      ],
+      submissions: [newSubmission, ...(prev.submissions || INITIAL_SUBMISSIONS)],
     }));
+  };
+
+  const handleExportCsv = () => {
+    const headers = "Họ và tên,Số điện thoại,Email,Địa chỉ nhận thiệp,Số người đi cùng,Nhóm khách,Lời chúc\n";
+    const rows = submissions
+      .map(
+        (s) =>
+          `"${s.name}","${s.phone}","${s.email || ""}","${s.address || ""}","${s.companions || 1}","${s.group || ""}","${s.wishes || ""}"`
+      )
+      .join("\n");
+    const blob = new Blob([`\uFEFF${headers}${rows}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `danh-sach-lien-he-${collectorSlug}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Đã xuất danh sách liên hệ khách mời ra file CSV");
   };
 
   return (
     <FeatureShell
-      title="Thu thập thông tin liên hệ"
-      subtitle="Gửi link để khách mời tự điền SĐT, email & địa chỉ nhận thiệp"
+      title="Thu thập thông tin liên hệ (Contact Collector)"
+      subtitle={`Thu thập SĐT & Địa chỉ nhận thiệp giấy tự động · Link: ${collectorSlug}`}
       wedding={wedding}
       actions={
         <div className="flex items-center gap-2">
+          {/* Toggle trạng thái link */}
           <button
             type="button"
             onClick={() => {
               saveSection({ isCollectorOn: !isCollectorOn });
               toast.info(
                 !isCollectorOn
-                  ? "Đã bật link thu thập liên hệ"
-                  : "Đã tạm tắt link thu thập liên hệ"
+                  ? "Đã kích hoạt link thu thập liên hệ công khai"
+                  : "Đã tạm dừng link thu thập liên hệ"
               );
             }}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
               isCollectorOn
                 ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                 : "bg-stone-100 text-stone-600"
             }`}
           >
-            {isCollectorOn ? "Link đang mở" : "Link đang tắt"}
+            <span className={`h-1.5 w-1.5 rounded-full ${isCollectorOn ? "bg-emerald-600" : "bg-stone-400"}`} />
+            <span>{isCollectorOn ? "Link đang mở" : "Link tạm đóng"}</span>
           </button>
+
+          {/* Nút Xem mã QR */}
           <button
             type="button"
-            onClick={() => {
-              navigator.clipboard?.writeText(collectorUrl);
-              toast.success("Đã sao chép link thu thập");
-            }}
-            className="hidden items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE] sm:inline-flex"
+            onClick={() => setIsQrModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE] hover:bg-stone-50 transition"
+          >
+            <QrCode size={13} /> Mã QR
+          </button>
+
+          {/* Nút Sao chép link */}
+          <button
+            type="button"
+            onClick={() => handleCopy(collectorUrl, "link thu thập")}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE] hover:bg-stone-50 transition"
           >
             <Share2 size={13} /> Chia sẻ
           </button>
+
+          {/* Nút Xem trước form */}
           <button
             type="button"
-            onClick={() => setIsPreviewOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#3B52DE] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2F43C2]"
+            onClick={() => setIsPreviewModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1F1A17] px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 transition shadow-xs active:scale-95"
           >
             <Eye size={13} /> Xem trước form
           </button>
         </div>
       }
     >
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        {/* Left WithJoy Sidebar (Send / Activity / Settings) */}
-        <aside className="rounded-2xl border border-[#E6DFD3] bg-white p-2.5 lg:col-span-2">
-          <nav className="flex flex-row gap-1 lg:flex-col">
-            {[
-              { key: "send", label: "Gửi yêu cầu", icon: Send },
-              {
-                key: "activity",
-                label: `Hoạt động (${submissions.length})`,
-                icon: Activity,
-              },
-              { key: "settings", label: "Cài đặt", icon: Settings },
-            ].map((item) => {
-              const Icon = item.icon;
-              const active = tab === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setTab(item.key)}
-                  className={`flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
-                    active
-                      ? "bg-[#EEF2FF] text-[#3B52DE]"
-                      : "text-[#5E5042] hover:bg-[#FAF8F5]"
-                  }`}
-                >
-                  <Icon size={15} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <div className="lg:col-span-10">
-          {tab === "send" && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              {/* Compose Form */}
-              <form
-                onSubmit={handleSend}
-                className="space-y-4 rounded-2xl border border-[#E6DFD3] bg-white p-5 lg:col-span-7"
+      {/* =========================================================================
+          HERO OVERVIEW CARD: THỐNG KÊ TIẾN ĐỘ THU THẬP & LINK CHIA SẺ NHANH
+         ========================================================================= */}
+      <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-12">
+        {/* Khối Trạng thái Link & Thao tác sao chép */}
+        <div className="lg:col-span-7 rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-[11px] font-bold tracking-wider text-stone-700 uppercase">
+                <Globe size={13} className="text-[#3B52DE]" /> Trang thu thập thông tin khách mời
+              </span>
+              <a
+                href={collectorUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#3B52DE] hover:underline"
               >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
-                    Soạn tin nhắn thu thập liên hệ
-                  </h2>
-                  <div className="inline-flex rounded-full border border-[#E2D9CB] bg-[#FAF8F5] p-0.5 text-[11px] font-semibold">
-                    {[
-                      { key: "now", label: "Gửi ngay" },
-                      { key: "scheduled", label: "Hẹn giờ" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => saveSection({ sendTime: opt.key })}
-                        className={`rounded-full px-3 py-1 transition ${
-                          sendTime === opt.key
-                            ? "bg-white text-[#3B52DE] shadow-2xs"
-                            : "text-[#7D6D5E]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <span>Mở trang thực tế</span>
+                <ExternalLink size={12} />
+              </a>
+            </div>
 
-                {sendTime === "scheduled" && (
-                  <div className="flex items-center gap-2 rounded-xl border border-[#E2D9CB] bg-[#FAF8F5] px-3 py-2 text-xs">
-                    <Clock size={14} className="text-[#3B52DE]" />
-                    <span className="text-[#6D5B4B]">Thời gian gửi:</span>
-                    <input
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) =>
-                        saveSection({ scheduledAt: e.target.value })
-                      }
-                      className="bg-transparent font-semibold text-[#2C2117] outline-none"
-                    />
-                  </div>
-                )}
+            <h2 className="mt-4 text-xl sm:text-2xl font-bold tracking-tight text-[#1F1A17]">
+              Cổng thu thập địa chỉ & số điện thoại khách mời
+            </h2>
+            <p className="mt-1.5 text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Khách mời chỉ cần 60 giây để bấm vào liên kết, điền số điện thoại và địa chỉ nhận thiệp cưới. Toàn bộ dữ liệu được tự động đồng bộ vào Danh bạ khách mời trên hệ thống.
+            </p>
 
-                <div>
-                  <label className="text-xs font-semibold text-[#5E5042]">
-                    Kênh gửi
-                  </label>
-                  <div className="mt-1.5 grid grid-cols-3 gap-2">
-                    {[
-                      { key: "sms", label: "SMS" },
-                      { key: "email", label: "Email" },
-                      { key: "both", label: "Cả hai" },
-                    ].map((c) => (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => saveSection({ channel: c.key })}
-                        className={`rounded-xl border py-2 text-xs font-semibold transition ${
-                          channel === c.key
-                            ? "border-[#3B52DE] bg-[#EEF2FF]/60 text-[#3B52DE]"
-                            : "border-[#E6DFD3] text-[#5E5042]"
-                        }`}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Link box sao chép nhanh */}
+            <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-2 sm:p-2.5">
+              <div className="flex items-center gap-2 pl-2 overflow-hidden">
+                <Smartphone size={16} className="text-stone-400 shrink-0" />
+                <span className="font-mono text-xs font-semibold text-[#1F1A17] truncate">
+                  {collectorUrl}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopy(collectorUrl, "link thu thập")}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F1A17] px-4 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition shrink-0 cursor-pointer"
+              >
+                <Copy size={13} />
+                <span>Sao chép link</span>
+              </button>
+            </div>
+          </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-[#5E5042]">
-                    Người nhận (To)
-                  </label>
-                  <select
-                    value={recipientGroup}
-                    onChange={(e) =>
-                      saveSection({ recipientGroup: e.target.value })
-                    }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] bg-white px-3 py-2 text-xs font-medium outline-none focus:border-[#3B52DE]"
-                  >
-                    {RECIPIENT_GROUPS.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div className="mt-6 flex flex-wrap items-center gap-2.5 pt-4 border-t border-stone-100 text-xs">
+            <button
+              type="button"
+              onClick={() => handleCopy(`Chào bạn thân mến! Tụi mình sắp tổ chức hôn lễ và đang hoàn thiện thiệp mời. Nhờ bạn dành 1 phút điền thông tin địa chỉ nhận thiệp tại: ${collectorUrl} nhé! Cảm ơn bạn rất nhiều!`, "nội dung mẫu gửi Zalo")}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 font-semibold text-stone-700 hover:bg-stone-100 transition"
+            >
+              <MessageSquare size={13} /> Sao chép tin nhắn gửi Zalo / Messenger
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 font-semibold text-stone-700 hover:bg-stone-100 transition"
+            >
+              <QrCode size={13} /> Tải mã QR gửi Story
+            </button>
+          </div>
+        </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold text-[#5E5042]">
-                      Người gửi
-                    </label>
-                    <input
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[#5E5042]">
-                      Tiêu đề Email
-                    </label>
-                    <input
-                      type="text"
-                      value={subject}
-                      onChange={(e) => saveSection({ subject: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
-                    />
-                  </div>
-                </div>
+        {/* Khối Thống kê số lượng khách cần thu thập */}
+        <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-stone-50/70 p-6 sm:p-7 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                Tiến độ cập nhật danh bạ
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                Đã có {submissions.length + 80} / 142 khách
+              </span>
+            </div>
 
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <label className="font-semibold text-[#5E5042]">
-                      Nội dung tin nhắn
-                    </label>
-                    <span className="text-[11px] text-[#8C7A68] tabular-nums">
-                      SMS: {body.length}/306 ký tự
-                    </span>
-                  </div>
-                  <textarea
-                    rows={4}
-                    value={body}
-                    onChange={(e) => saveSection({ body: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] p-3 text-xs leading-relaxed outline-none focus:border-[#3B52DE]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-[#5E5042]">
-                    Chữ trên nút bấm
-                  </label>
-                  <input
-                    type="text"
-                    value={buttonText}
-                    onChange={(e) =>
-                      saveSection({ buttonText: e.target.value })
-                    }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FAF8F5] px-3 py-2.5 text-xs">
-                  <span className="truncate text-[#6D5B4B]">
-                    {collectorUrl}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard?.writeText(collectorUrl);
-                      toast.success("Đã sao chép đường dẫn thu thập");
-                    }}
-                    className="inline-flex shrink-0 items-center gap-1 font-semibold text-[#3B52DE]"
-                  >
-                    <Copy size={12} /> Sao chép
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B52DE] py-2.5 text-xs font-semibold text-white transition hover:bg-[#2F43C2]"
-                >
-                  <Send size={14} />{" "}
-                  {sendTime === "scheduled"
-                    ? "Lên lịch gửi lời nhắc"
-                    : "Gửi yêu cầu thu thập liên hệ"}
-                </button>
-              </form>
-
-              {/* Live SMS / Email Preview + How It Works */}
-              <div className="space-y-4 lg:col-span-5">
-                <div className="rounded-2xl border border-[#E6DFD3] bg-white p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2C2117]">
-                      Xem trước tin nhắn
-                    </span>
-                    <div className="flex rounded-lg border border-[#E2D9CB] bg-[#FAF8F5] p-0.5 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("sms")}
-                        className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium ${
-                          previewMode === "sms"
-                            ? "bg-white text-[#3B52DE] shadow-2xs"
-                            : "text-[#8C7A68]"
-                        }`}
-                      >
-                        <MessageSquare size={12} /> SMS
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("email")}
-                        className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium ${
-                          previewMode === "email"
-                            ? "bg-white text-[#3B52DE] shadow-2xs"
-                            : "text-[#8C7A68]"
-                        }`}
-                      >
-                        <Mail size={12} /> Email
-                      </button>
-                    </div>
-                  </div>
-
-                  {previewMode === "sms" ? (
-                    <div className="mx-auto max-w-[280px] rounded-3xl border-4 border-[#2C2117] bg-[#FAF8F5] p-4">
-                      <p className="text-center text-[10px] font-semibold text-[#8C7A68]">
-                        Tin nhắn từ {senderName}
-                      </p>
-                      <div className="mt-3 rounded-2xl rounded-tl-xs bg-[#E5E7EB] p-3 text-xs leading-relaxed text-[#1F2937]">
-                        {body}
-                        <p className="mt-2 font-medium text-[#3B52DE] underline">
-                          {collectorUrl}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="overflow-hidden rounded-2xl border border-[#E6DFD3] bg-[#FAF8F5]">
-                      <img
-                        src={heroWedding}
-                        alt="Cover"
-                        className="h-24 w-full object-cover"
-                      />
-                      <div className="p-5 text-center">
-                        <p className="font-display text-lg font-bold text-[#2C2117]">
-                          {senderName}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-[#3B52DE]">
-                          {subject}
-                        </p>
-                        <p className="mt-3 text-xs leading-relaxed text-[#5E5042]">
-                          {body}
-                        </p>
-                        <span className="mt-4 inline-block rounded-full bg-[#3B52DE] px-5 py-2 text-xs font-semibold text-white">
-                          {buttonText}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* How It Works */}
-                <div className="rounded-2xl border border-[#E6DFD3] bg-white p-5">
-                  <h3 className="text-xs font-bold text-[#2C2117]">
-                    Cách hoạt động
-                  </h3>
-                  <ol className="mt-3 space-y-2.5 text-xs text-[#5E5042]">
-                    <li className="flex gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-[10px] font-bold text-[#3B52DE]">
-                        1
-                      </span>
-                      Bật link thu thập liên hệ và chọn nhóm khách mời.
-                    </li>
-                    <li className="flex gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-[10px] font-bold text-[#3B52DE]">
-                        2
-                      </span>
-                      Gửi qua SMS, Email hoặc sao chép link gửi Zalo.
-                    </li>
-                    <li className="flex gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EEF2FF] text-[10px] font-bold text-[#3B52DE]">
-                        3
-                      </span>
-                      Khách tự điền SĐT & địa chỉ nhận thiệp, đồng bộ thẳng vào
-                      danh sách.
-                    </li>
-                  </ol>
-                </div>
+            {/* Thanh tiến trình */}
+            <div>
+              <div className="flex justify-between text-xs font-semibold text-[#1F1A17] mb-1.5">
+                <span>Tỷ lệ hoàn thành</span>
+                <span>65%</span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-stone-200 overflow-hidden">
+                <div className="h-full rounded-full bg-[#1F1A17] transition-all duration-500" style={{ width: "65%" }} />
               </div>
             </div>
-          )}
 
-          {tab === "activity" && (
-            <div className="rounded-2xl border border-[#E6DFD3] bg-white p-5">
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-[#2C2117]">
-                <Users size={16} className="text-[#3B52DE]" />
-                Khách mời đã phản hồi thông tin
-              </h2>
-              <div className="divide-y divide-[#F1ECE3]">
-                {submissions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs"
-                  >
-                    <div>
-                      <p className="font-bold text-[#2C2117]">{s.name}</p>
-                      <p className="text-[#7D6D5E]">
-                        {s.phone} · {s.address}
-                      </p>
-                    </div>
-                    <span className="text-[11px] text-[#8C7A68]">{s.time}</span>
-                  </div>
-                ))}
+            {/* Các con số chi tiết */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="rounded-2xl border border-stone-200 bg-white p-3.5">
+                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Còn thiếu SĐT</span>
+                <span className="text-lg font-bold text-[#1F1A17] tabular-nums mt-0.5 block">24 khách</span>
+                <span className="text-[11px] text-stone-500 mt-0.5 block">Chưa có số liên hệ</span>
+              </div>
+
+              <div className="rounded-2xl border border-stone-200 bg-white p-3.5">
+                <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Thiếu địa chỉ thiệp</span>
+                <span className="text-lg font-bold text-[#1F1A17] tabular-nums mt-0.5 block">38 khách</span>
+                <span className="text-[11px] text-stone-500 mt-0.5 block">Chưa điền địa chỉ gửi</span>
               </div>
             </div>
-          )}
+          </div>
 
-          {tab === "settings" && (
-            <div className="max-w-xl space-y-4 rounded-2xl border border-[#E6DFD3] bg-white p-5">
-              <h2 className="text-sm font-bold text-[#2C2117]">
-                Cài đặt trường thông tin cần hỏi khách
-              </h2>
-              <div className="divide-y divide-[#F1ECE3]">
-                {fields.map((f) => (
-                  <label
-                    key={f.key}
-                    className="flex items-center justify-between py-2.5 text-xs"
-                  >
-                    <span className="font-medium text-[#2C2117]">
-                      {f.label}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={f.enabled}
-                      onChange={() => {
-                        saveSection((prev) => ({
-                          ...prev,
-                          fields: (prev.fields || DEFAULT_FIELDS).map((item) =>
-                            item.key === f.key
-                              ? { ...item, enabled: !item.enabled }
-                              : item
-                          ),
-                        }));
-                        toast.success("Đã cập nhật cấu hình lên Neon DB");
-                      }}
-                      className="h-4 w-4 accent-[#3B52DE]"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="mt-5 pt-3 border-t border-stone-200/60 flex items-center justify-between text-xs">
+            <span className="text-stone-500">Phản hồi gần nhất: {submissions[0]?.time || "Hôm nay"}</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab("submissions")}
+              className="font-semibold text-[#3B52DE] hover:underline"
+            >
+              Xem danh sách ({submissions.length}) →
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Guest-Facing Form Preview Modal */}
+      {/* =========================================================================
+          TAB NAVIGATION CHUYÊN NGHIỆP
+         ========================================================================= */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "compose", label: "Soạn & Gửi tin nhắn", count: null, icon: Send },
+            { key: "submissions", label: "Khách đã phản hồi", count: submissions.length, icon: Users },
+            { key: "fields", label: "Cấu hình trường câu hỏi", count: fields.filter((f) => f.enabled).length, icon: Settings },
+          ].map((t) => {
+            const Icon = t.icon;
+            const active = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+                  active
+                    ? "bg-[#1F1A17] text-white shadow-xs"
+                    : "bg-stone-100 text-stone-600 hover:bg-stone-200/70 hover:text-stone-900"
+                }`}
+              >
+                <Icon size={14} />
+                <span>{t.label}</span>
+                {t.count !== null && (
+                  <span
+                    className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                      active ? "bg-white/20 text-white" : "bg-stone-200 text-stone-700"
+                    }`}
+                  >
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeTab === "submissions" && (
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-[#3B52DE] transition"
+          >
+            <Download size={13} /> Xuất file CSV
+          </button>
+        )}
+      </div>
+
+      {/* =========================================================================
+          TAB 1: SOẠN & GỬI TIN NHẮN (STUDIO LAYOUT: FORM BÊN TRÁI, LIVE MOCKUP BÊN PHẢI)
+         ========================================================================= */}
+      {activeTab === "compose" && (
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
+          {/* CỘT TRÁI: FORM CẤU HÌNH THÔNG ĐIỆP */}
+          <form
+            onSubmit={handleSend}
+            className="lg:col-span-7 rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs space-y-5"
+          >
+            <div className="border-b border-stone-100 pb-4">
+              <h3 className="text-base font-bold text-[#1F1A17]">
+                Nội dung tin nhắn gửi khách
+              </h3>
+              <p className="mt-0.5 text-xs text-stone-500">
+                Tùy chỉnh thông điệp nhắc khách mời điền thông tin nhận thiệp cưới
+              </p>
+            </div>
+
+            {/* 1. Thời gian gửi: Gửi ngay hoặc Hẹn giờ */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-700">
+                Thời gian gửi tin
+              </label>
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-stone-100 border border-stone-200/70">
+                <button
+                  type="button"
+                  onClick={() => saveSection({ sendTime: "now" })}
+                  className={`py-2 text-xs font-medium rounded-xl transition cursor-pointer ${
+                    sendTime === "now"
+                      ? "bg-white text-[#1F1A17] font-semibold shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  Gửi ngay bây giờ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveSection({ sendTime: "scheduled" })}
+                  className={`py-2 text-xs font-medium rounded-xl transition cursor-pointer ${
+                    sendTime === "scheduled"
+                      ? "bg-white text-[#1F1A17] font-semibold shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  Hẹn giờ gửi tự động
+                </button>
+              </div>
+
+              {sendTime === "scheduled" && (
+                <div className="mt-2 flex items-center gap-2 rounded-2xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-xs">
+                  <Clock size={15} className="text-[#3B52DE]" />
+                  <span className="text-stone-600 font-medium">Chọn ngày & giờ gửi:</span>
+                  <input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => saveSection({ scheduledAt: e.target.value })}
+                    className="bg-transparent font-semibold text-[#1F1A17] outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 2. Kênh gửi tin nhắn */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-700">
+                Kênh gửi tin
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: "sms", label: "Tin nhắn SMS", icon: MessageSquare },
+                  { key: "email", label: "Thư Email", icon: Mail },
+                  { key: "both", label: "Cả hai kênh", icon: Sparkles },
+                ].map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => saveSection({ channel: c.key })}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition cursor-pointer ${
+                        channel === c.key
+                          ? "border-[#1F1A17] bg-[#1F1A17] text-white shadow-xs"
+                          : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
+                      }`}
+                    >
+                      <Icon size={13} />
+                      <span>{c.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Đối tượng nhận */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-700">
+                Gửi đến danh sách khách mời (To)
+              </label>
+              <select
+                value={recipientGroupId}
+                onChange={(e) => saveSection({ recipientGroupId: e.target.value })}
+                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-xs font-medium text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+              >
+                {RECIPIENT_GROUPS.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 4. Tên người gửi & Tiêu đề email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-stone-700">
+                  Tên người gửi (From)
+                </label>
+                <input
+                  type="text"
+                  value={formState.senderName}
+                  onChange={(e) => setFormState({ ...formState, senderName: e.target.value })}
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs font-medium text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-stone-700">
+                  Tiêu đề thư Email
+                </label>
+                <input
+                  type="text"
+                  value={formState.subject}
+                  onChange={(e) => {
+                    setFormState({ ...formState, subject: e.target.value });
+                    saveSection({ subject: e.target.value });
+                  }}
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs font-medium text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+                />
+              </div>
+            </div>
+
+            {/* 5. Nội dung lời nhắn */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-semibold text-stone-700">
+                  Lời nhắn gửi khách
+                </label>
+                <span className="text-[11px] text-stone-400 tabular-nums">
+                  SMS: {formState.body.length}/306 ký tự
+                </span>
+              </div>
+              <textarea
+                rows={4}
+                value={formState.body}
+                onChange={(e) => {
+                  setFormState({ ...formState, body: e.target.value });
+                  saveSection({ body: e.target.value });
+                }}
+                className="w-full rounded-2xl border border-stone-200 p-3.5 text-xs text-[#1F1A17] leading-relaxed outline-none focus:border-[#3B52DE]"
+              />
+            </div>
+
+            {/* 6. Chữ trên nút bấm */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-700">
+                Tên nút bấm liên kết trong thư
+              </label>
+              <input
+                type="text"
+                value={formState.buttonText}
+                onChange={(e) => {
+                  setFormState({ ...formState, buttonText: e.target.value });
+                  saveSection({ buttonText: e.target.value });
+                }}
+                className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-xs font-medium text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+              />
+            </div>
+
+            {/* Hộp lưu ý an toàn */}
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3.5 flex items-start gap-2.5 text-xs text-stone-600">
+              <Info size={16} className="text-[#3B52DE] shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                Tin nhắn SMS sẽ chứa đường dẫn rút gọn an toàn <span className="font-semibold text-[#1F1A17]">{collectorUrl}</span> để khách mở form điền thông tin chỉ với 1 chạm.
+              </p>
+            </div>
+
+            {/* Nút gửi chính */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1F1A17] py-3.5 text-xs sm:text-sm font-semibold text-white hover:bg-stone-800 transition shadow-md cursor-pointer active:scale-[0.99]"
+              >
+                <Send size={15} />
+                <span>
+                  {sendTime === "scheduled"
+                    ? "Lên lịch gửi tin nhắn tự động"
+                    : "Gửi tin nhắn thu thập liên hệ ngay"}
+                </span>
+              </button>
+            </div>
+          </form>
+
+          {/* CỘT PHẢI: LIVE PHONE MOCKUP (CHUẨN IPHONE WITHJOY) */}
+          <div className="lg:col-span-5 space-y-4 sticky top-20">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-[#1F1A17]">
+                Xem trước giao diện tin nhắn khách nhận
+              </span>
+
+              {/* Nút chuyển đổi SMS / Email */}
+              <div className="flex rounded-full border border-stone-200 bg-stone-100 p-0.5 text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setPreviewChannel("sms")}
+                  className={`flex items-center gap-1 rounded-full px-3 py-1 transition cursor-pointer ${
+                    previewChannel === "sms"
+                      ? "bg-white text-[#1F1A17] shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <MessageSquare size={12} /> SMS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewChannel("email")}
+                  className={`flex items-center gap-1 rounded-full px-3 py-1 transition cursor-pointer ${
+                    previewChannel === "email"
+                      ? "bg-white text-[#1F1A17] shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <Mail size={12} /> Email
+                </button>
+              </div>
+            </div>
+
+            {/* KHUNG MOCKUP IPHONE */}
+            <div className="mx-auto w-full max-w-[340px] rounded-[40px] border-[6px] border-[#1F1A17] bg-white p-3 shadow-xl">
+              {/* Dynamic Island */}
+              <div className="mx-auto mb-4 h-4 w-24 rounded-full bg-[#1F1A17]" />
+
+              {previewChannel === "sms" ? (
+                /* SMS CHAT BUBBLE VIEW */
+                <div className="space-y-3 px-1 py-2">
+                  <div className="text-center">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 text-stone-700 font-bold text-xs">
+                      {formState.senderName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-[#1F1A17]">{formState.senderName}</p>
+                    <p className="text-[10px] text-stone-400">Tin nhắn văn bản · Hôm nay</p>
+                  </div>
+
+                  {/* Bong bóng tin nhắn */}
+                  <div className="rounded-2xl rounded-tl-xs bg-stone-100 p-3.5 text-xs text-[#1F1A17] leading-relaxed space-y-2.5">
+                    <p>{formState.body || "Chào bạn! Nhờ bạn dành 1 phút điền thông tin nhận thiệp cưới nhé..."}</p>
+
+                    {/* Thẻ preview liên kết trong bong bóng */}
+                    <div className="rounded-xl border border-stone-200 bg-white p-2.5 space-y-1.5 shadow-2xs">
+                      <img
+                        src={heroWedding}
+                        alt="Wedding"
+                        className="h-20 w-full rounded-lg object-cover"
+                      />
+                      <p className="text-[11px] font-bold text-[#1F1A17] truncate">
+                        Điền địa chỉ nhận thiệp · {formState.senderName}
+                      </p>
+                      <p className="font-mono text-[10px] text-[#3B52DE] truncate">
+                        {collectorUrl}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* EMAIL INVITATION VIEW */
+                <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-xs">
+                  <img
+                    src={heroWedding}
+                    alt="Cover"
+                    className="h-28 w-full object-cover"
+                  />
+                  <div className="p-4 text-center space-y-3">
+                    <span className="font-display italic text-lg font-bold text-[#1F1A17] block">
+                      .EverWeb
+                    </span>
+                    <h4 className="font-bold text-[#1F1A17] text-sm">
+                      {formState.subject}
+                    </h4>
+                    <p className="text-stone-600 leading-relaxed text-[11px]">
+                      {formState.body}
+                    </p>
+                    <div className="pt-2">
+                      <span className="inline-block rounded-full bg-[#1F1A17] px-5 py-2 text-[11px] font-semibold text-white shadow-xs">
+                        {formState.buttonText}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Hướng dẫn quy trình 3 bước */}
+            <div className="rounded-2xl border border-stone-200 bg-white p-4 text-xs">
+              <span className="font-bold text-[#1F1A17] block mb-2">Quy trình tự động hóa:</span>
+              <div className="space-y-2 text-stone-600 text-[11px]">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-stone-100 font-bold text-[10px] text-[#1F1A17]">1</span>
+                  <span>Khách nhận tin nhắn & chạm vào liên kết mở form.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-stone-100 font-bold text-[10px] text-[#1F1A17]">2</span>
+                  <span>Khách điền SĐT, địa chỉ nhận thiệp & gửi lời chúc.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-stone-100 font-bold text-[10px] text-[#1F1A17]">3</span>
+                  <span>Hệ thống tự động cập nhật vào Danh bạ khách mời.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 2: DANH SÁCH KHÁCH ĐÃ PHẢN HỒI (SUBMISSIONS TABLE)
+         ========================================================================= */}
+      {activeTab === "submissions" && (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-stone-200 bg-white p-4 sm:p-5 shadow-2xs">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[260px]">
+              <Search
+                size={14}
+                className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-stone-400"
+              />
+              <input
+                type="text"
+                value={submissionSearch}
+                onChange={(e) => setSubmissionSearch(e.target.value)}
+                placeholder="Tìm theo tên khách, số điện thoại, địa chỉ hoặc nhóm..."
+                className="w-full rounded-full border border-stone-200 bg-stone-50 py-2.5 pr-4 pl-9 text-xs text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-stone-500 font-medium">
+                Tìm thấy <span className="font-bold text-[#1F1A17]">{filteredSubmissions.length}</span> phản hồi
+              </span>
+            </div>
+          </div>
+
+          {/* Bảng dữ liệu phản hồi */}
+          <div className="overflow-x-auto rounded-3xl border border-stone-200 bg-white shadow-2xs">
+            <table className="min-w-full divide-y divide-stone-100 text-xs">
+              <thead className="bg-stone-50 text-left font-semibold text-stone-700">
+                <tr>
+                  <th className="px-5 py-3.5">Khách mời</th>
+                  <th className="px-5 py-3.5">Số điện thoại</th>
+                  <th className="px-5 py-3.5">Địa chỉ nhận thiệp giấy</th>
+                  <th className="px-5 py-3.5 text-center">Người đi cùng</th>
+                  <th className="px-5 py-3.5">Lời chúc mừng</th>
+                  <th className="px-5 py-3.5">Thời gian</th>
+                  <th className="px-5 py-3.5 text-right">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {filteredSubmissions.map((s) => (
+                  <tr key={s.id} className="hover:bg-stone-50/70 transition">
+                    <td className="px-5 py-4">
+                      <div>
+                        <p className="font-bold text-[#1F1A17]">{s.name}</p>
+                        <span className="inline-block mt-0.5 rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-600">
+                          {s.group || "Khách mời"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 font-mono font-medium text-stone-800">
+                      {s.phone}
+                    </td>
+                    <td className="px-5 py-4 text-stone-600 max-w-xs">
+                      <p className="flex items-start gap-1">
+                        <MapPin size={12} className="text-rose-500 shrink-0 mt-0.5" />
+                        <span>{s.address}</span>
+                      </p>
+                    </td>
+                    <td className="px-5 py-4 text-center font-bold text-[#1F1A17]">
+                      {s.companions || 1}
+                    </td>
+                    <td className="px-5 py-4 text-stone-600 italic max-w-xs truncate" title={s.wishes}>
+                      "{s.wishes || "Chúc hai bạn hạnh phúc!"}"
+                    </td>
+                    <td className="px-5 py-4 text-stone-400 text-[11px] whitespace-nowrap">
+                      {s.time}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                        <Check size={11} /> {s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: CẤU HÌNH TRƯỜNG THÔNG TIN FORM KHẢO SÁT
+         ========================================================================= */}
+      {activeTab === "fields" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs space-y-6">
+            <div>
+              <h3 className="text-base font-bold text-[#1F1A17]">
+                Các trường thông tin khách mời sẽ điền
+              </h3>
+              <p className="mt-0.5 text-xs text-stone-500">
+                Bật hoặc tắt các câu hỏi bạn muốn hiển thị trên biểu mẫu online
+              </p>
+            </div>
+
+            <div className="divide-y divide-stone-100">
+              {fields.map((f) => (
+                <div key={f.key} className="py-3.5 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#1F1A17]">{f.label}</span>
+                      {f.required && (
+                        <span className="rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold text-stone-600 uppercase">
+                          Bắt buộc
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-stone-500">{f.desc}</p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    disabled={f.required}
+                    checked={f.enabled}
+                    onChange={() => {
+                      const next = fields.map((item) =>
+                        item.key === f.key ? { ...item, enabled: !item.enabled } : item
+                      );
+                      saveSection({ fields: next });
+                      toast.success(`Đã cập nhật câu hỏi "${f.label}"`);
+                    }}
+                    className="h-4 w-4 rounded-sm border-stone-300 accent-[#1F1A17] cursor-pointer disabled:opacity-50"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Tùy chỉnh thông điệp trên form */}
+            <div className="border-t border-stone-100 pt-5 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                Thông điệp chào mừng trên form
+              </h4>
+
+              <div className="space-y-1.5 text-xs">
+                <label className="font-semibold text-stone-700">Tiêu đề bìa form</label>
+                <input
+                  type="text"
+                  value={formCoverTitle}
+                  onChange={(e) => saveSection({ formCoverTitle: e.target.value })}
+                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                <label className="font-semibold text-stone-700">Lời nhắn nhủ thân tình</label>
+                <textarea
+                  rows={2}
+                  value={formCoverNote}
+                  onChange={(e) => saveSection({ formCoverNote: e.target.value })}
+                  className="w-full rounded-xl border border-stone-200 p-2.5 text-xs outline-none focus:border-[#3B52DE]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* CỘT PHẢI: XEM TRƯỚC FORM KHÁCH ĐIỀN */}
+          <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-stone-50 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1F1A17]">Mô phỏng trang khách điền</span>
+              <span className="text-[11px] text-stone-400">Xem trực tiếp</span>
+            </div>
+
+            {/* Mockup Form Container */}
+            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm text-xs">
+              <img
+                src={heroWedding}
+                alt="Form cover"
+                className="h-28 w-full object-cover"
+              />
+              <div className="p-5 space-y-3.5">
+                <div className="text-center">
+                  <h4 className="font-display text-lg font-bold text-[#1F1A17]">
+                    {formCoverTitle}
+                  </h4>
+                  <p className="mt-1 text-[11px] text-stone-500">
+                    {formCoverNote}
+                  </p>
+                </div>
+
+                {fields
+                  .filter((f) => f.enabled)
+                  .map((f) => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-[11px] font-semibold text-stone-700">
+                        {f.label} {f.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        disabled
+                        placeholder={`Nhập ${f.label.toLowerCase()}...`}
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs"
+                      />
+                    </div>
+                  ))}
+
+                <button
+                  type="button"
+                  className="w-full rounded-xl bg-[#1F1A17] py-2.5 text-xs font-semibold text-white shadow-xs"
+                >
+                  Xác nhận & Gửi thông tin
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: MÃ QR CHIA SẺ NHANH LÊN MẠNG XÃ HỘI
+         ========================================================================= */}
       <Modal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        title="Xem trước Form khách mời sẽ điền"
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="Mã QR Thu Thập Thông Tin Liên Hệ"
         size="sm"
       >
-        <div className="overflow-hidden rounded-2xl border border-[#E6DFD3] bg-[#FAF8F5]">
+        <div className="space-y-4 text-center text-xs">
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(collectorUrl)}`}
+            alt="QR Thu thập liên hệ"
+            className="mx-auto h-52 w-52 rounded-2xl border border-stone-200 p-2.5 shadow-2xs"
+          />
+          <p className="font-semibold text-[#1F1A17]">{coupleNames}</p>
+          <p className="text-stone-500 text-[11px] leading-relaxed">
+            Khách mời quét mã QR này bằng Camera điện thoại hoặc Zalo sẽ được dẫn thẳng vào form điền số điện thoại và địa chỉ nhận thiệp cưới.
+          </p>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleCopy(collectorUrl, "link thu thập")}
+              className="flex-1 rounded-xl border border-stone-200 py-2 font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              Sao chép link
+            </button>
+            <a
+              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(collectorUrl)}`}
+              target="_blank"
+              download="QR-Thu-Thap-Lien-He.png"
+              rel="noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1F1A17] py-2 font-semibold text-white hover:bg-stone-800"
+            >
+              <Download size={13} /> Tải mã QR
+            </a>
+          </div>
+        </div>
+      </Modal>
+
+      {/* =========================================================================
+          MODAL: XEM TRƯỚC FORM HOÀN CHỈNH
+         ========================================================================= */}
+      <Modal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        title="Xem trước giao diện khách mời"
+        size="sm"
+      >
+        <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
           <img
             src={heroWedding}
-            alt="Form cover"
-            className="h-28 w-full object-cover"
+            alt="Cover"
+            className="h-32 w-full object-cover"
           />
-          <div className="space-y-3 p-5">
+          <div className="space-y-3.5 p-5 text-xs">
             <div className="text-center">
-              <p className="font-display text-xl font-bold text-[#2C2117]">
-                {senderName}
+              <span className="font-display italic text-lg font-bold text-[#1F1A17]">
+                .EverWeb
+              </span>
+              <h4 className="mt-1 text-sm font-bold text-[#1F1A17]">
+                {formCoverTitle}
+              </h4>
+              <p className="mt-1 text-[11px] text-stone-500">
+                {formCoverNote}
               </p>
-              <p className="mt-1 text-xs text-[#6D5B4B]">{subject}</p>
             </div>
+
             {fields
               .filter((f) => f.enabled)
               .map((f) => (
-                <div key={f.key}>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
-                    {f.label}
+                <div key={f.key} className="space-y-1">
+                  <label className="text-[11px] font-semibold text-stone-700">
+                    {f.label} {f.required && <span className="text-rose-500">*</span>}
                   </label>
                   <input
                     type="text"
                     disabled
                     placeholder={`Nhập ${f.label.toLowerCase()}...`}
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] bg-white px-3 py-2 text-xs"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs"
                   />
                 </div>
               ))}
+
             <button
               type="button"
-              onClick={() => setIsPreviewOpen(false)}
-              className="w-full rounded-xl bg-[#3B52DE] py-2 text-xs font-semibold text-white"
+              onClick={() => setIsPreviewModalOpen(false)}
+              className="w-full rounded-xl bg-[#1F1A17] py-2.5 text-xs font-semibold text-white shadow-xs"
             >
               Gửi thông tin (Xem trước)
             </button>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Camera,
@@ -40,7 +40,7 @@ const CARD_TEMPLATES = [
     matchesSite: true,
     isFree: true,
     image: galleryCeremony,
-    colors: ["#4A3520", "#2C2117", "#C5A059"],
+    colors: ["#4A3520", "#1F1A17", "#C5A059"],
   },
   {
     id: "c2",
@@ -60,7 +60,7 @@ const CARD_TEMPLATES = [
     matchesSite: false,
     isFree: false,
     image: heroWedding,
-    colors: ["#2C2117", "#C5A059", "#B85D6E"],
+    colors: ["#1F1A17", "#C5A059", "#B85D6E"],
   },
   {
     id: "c4",
@@ -70,7 +70,7 @@ const CARD_TEMPLATES = [
     matchesSite: true,
     isFree: true,
     image: galleryCeremony,
-    colors: ["#1E293B", "#3B52DE", "#8C7A68"],
+    colors: ["#1E293B", "#3B52DE", "#78716C"],
   },
   {
     id: "c5",
@@ -80,7 +80,7 @@ const CARD_TEMPLATES = [
     matchesSite: false,
     isFree: true,
     image: galleryBouquet,
-    colors: ["#5F7161", "#C5A059", "#2C2117"],
+    colors: ["#5F7161", "#C5A059", "#1F1A17"],
   },
   {
     id: "c6",
@@ -100,7 +100,7 @@ const CARD_TEMPLATES = [
     matchesSite: false,
     isFree: true,
     image: galleryDining,
-    colors: ["#2C2117", "#8C7A68", "#3B52DE"],
+    colors: ["#1F1A17", "#78716C", "#3B52DE"],
   },
   {
     id: "c8",
@@ -212,7 +212,7 @@ export default function InvitationsStudioPage() {
       subtitle="Save the Dates, Thiệp mời cưới, Thiệp cảm ơn & Ấn phẩm bàn tiệc"
       wedding={wedding}
       actions={
-        <div className="flex items-center gap-1 rounded-full border border-[#E2D9CB] bg-[#FAF8F5] p-0.5 text-xs font-semibold">
+        <div className="flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
           {[
             { key: "designs", label: "Mẫu thiết kế" },
             { key: "favorites", label: `Yêu thích (${favorites.length})` },
@@ -225,8 +225,8 @@ export default function InvitationsStudioPage() {
               onClick={() => setTopTab(t.key)}
               className={`rounded-full px-3 py-1 transition ${
                 topTab === t.key
-                  ? "bg-white text-[#2C2117] shadow-2xs"
-                  : "text-[#7D6D5E] hover:text-[#2C2117]"
+                  ? "bg-white text-[#1F1A17] shadow-2xs"
+                  : "text-stone-500 hover:text-[#1F1A17]"
               }`}
             >
               {t.label}
@@ -236,7 +236,7 @@ export default function InvitationsStudioPage() {
       }
     >
       {/* Centered Category Nav (matching WithJoy Stationery bar) */}
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-2 border-b border-[#EAE3D8] pb-4">
+      <div className="mb-6 flex flex-wrap items-center justify-center gap-2 border-b border-stone-200 pb-4">
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
@@ -244,8 +244,8 @@ export default function InvitationsStudioPage() {
             onClick={() => setCategoryFilter(cat)}
             className={`border-b-2 px-3 py-1.5 text-xs font-semibold transition ${
               categoryFilter === cat
-                ? "border-[#2C2117] text-[#2C2117]"
-                : "border-transparent text-[#7D6D5E] hover:text-[#2C2117]"
+                ? "border-[#1F1A17] text-[#1F1A17]"
+                : "border-transparent text-stone-500 hover:text-[#1F1A17]"
             }`}
           >
             {cat}
@@ -255,7 +255,7 @@ export default function InvitationsStudioPage() {
 
       {/* Centered Heading + Circular Style Bubbles (WithJoy Wedding Invitations) */}
       <div className="mb-8 text-center">
-        <h2 className="font-display text-3xl font-semibold text-[#2C2117] sm:text-4xl">
+        <h2 className="font-display text-3xl font-semibold text-[#1F1A17] sm:text-4xl">
           {categoryFilter === "Tất cả" ? "Thiệp mời cưới" : categoryFilter}
         </h2>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
@@ -272,7 +272,7 @@ export default function InvitationsStudioPage() {
                   className={`h-14 w-14 overflow-hidden rounded-full border-2 transition group-hover:scale-105 ${
                     active
                       ? "border-[#3B52DE] ring-2 ring-[#3B52DE]/20"
-                      : "border-[#E6DFD3]"
+                      : "border-stone-200"
                   }`}
                 >
                   <img
@@ -283,7 +283,7 @@ export default function InvitationsStudioPage() {
                 </div>
                 <span
                   className={`text-[11px] font-medium ${
-                    active ? "font-bold text-[#3B52DE]" : "text-[#5E5042]"
+                    active ? "font-bold text-[#3B52DE]" : "text-stone-700"
                   }`}
                 >
                   {b.label}
@@ -302,8 +302,8 @@ export default function InvitationsStudioPage() {
             onClick={() => setOnlyFree((p) => !p)}
             className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
               onlyFree
-                ? "border-[#3B52DE] bg-[#EEF2FF] text-[#3B52DE]"
-                : "border-[#E2D9CB] bg-white text-[#5E5042]"
+                ? "border-[#3B52DE] bg-stone-100 text-[#1F1A17] font-bold"
+                : "border-stone-200 bg-white text-stone-700"
             }`}
           >
             {onlyFree ? "✓ Chỉ mẫu miễn phí" : "Miễn phí"}
@@ -314,14 +314,14 @@ export default function InvitationsStudioPage() {
           <div className="relative">
             <Search
               size={14}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[#9C8B7A]"
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-stone-400"
             />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm mẫu thiệp..."
-              className="w-56 rounded-full border border-[#E2D9CB] bg-white py-1.5 pr-3 pl-8 text-xs outline-none focus:border-[#3B52DE]"
+              className="w-56 rounded-full border border-stone-200 bg-white py-1.5 pr-3 pl-8 text-xs outline-none focus:border-[#3B52DE]"
             />
           </div>
           <button
@@ -329,8 +329,8 @@ export default function InvitationsStudioPage() {
             onClick={() => setUsePhoto((p) => !p)}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
               usePhoto
-                ? "border-[#2C2117] bg-[#2C2117] text-white"
-                : "border-[#E2D9CB] bg-white text-[#5E5042]"
+                ? "border-[#1F1A17] bg-[#1F1A17] text-white"
+                : "border-stone-200 bg-white text-stone-700"
             }`}
           >
             <Camera size={13} /> Dùng ảnh của bạn
@@ -344,7 +344,7 @@ export default function InvitationsStudioPage() {
         <div className="flex flex-col justify-between rounded-2xl bg-[#1E3A5F] p-6 text-white shadow-sm">
           <div>
             <p className="text-[10px] font-semibold tracking-widest uppercase opacity-80">
-              Đặc quyền EverWed
+              Đặc quyền EverWeb
             </p>
             <h3 className="font-display mt-2 text-2xl leading-snug font-semibold">
               Miễn phí gắn tên khách mời lên phong bì & thiệp số
@@ -373,12 +373,12 @@ export default function InvitationsStudioPage() {
               className={`group overflow-hidden rounded-2xl border bg-white transition hover:shadow-md ${
                 isChosen
                   ? "border-[#3B52DE] ring-2 ring-[#3B52DE]/15"
-                  : "border-[#E6DFD3] hover:border-[#3B52DE]"
+                  : "border-stone-200 hover:border-[#3B52DE]"
               }`}
             >
               <div
                 onClick={() => setSelectedCard(card)}
-                className="relative aspect-[4/5] cursor-pointer overflow-hidden bg-[#FAF7F2]"
+                className="relative aspect-[4/5] cursor-pointer overflow-hidden bg-stone-50"
               >
                 {usePhoto ? (
                   <img
@@ -425,7 +425,7 @@ export default function InvitationsStudioPage() {
                   }}
                   aria-label="Yêu thích"
                   className={`absolute top-3 right-3 rounded-full bg-white/90 p-2 transition ${
-                    isFav ? "text-rose-500" : "text-[#8C7A68] hover:text-rose-500"
+                    isFav ? "text-rose-500" : "text-stone-500 hover:text-rose-500"
                   }`}
                 >
                   <Heart size={14} className={isFav ? "fill-current" : ""} />
@@ -433,7 +433,7 @@ export default function InvitationsStudioPage() {
               </div>
 
               <div className="p-4 text-center">
-                <h3 className="text-xs font-bold text-[#2C2117]">
+                <h3 className="text-xs font-bold text-[#1F1A17]">
                   {card.name}
                 </h3>
                 <div className="mt-2 flex items-center justify-center gap-1.5">
@@ -449,7 +449,7 @@ export default function InvitationsStudioPage() {
                       }
                       className={`h-4 w-4 rounded-full border transition ${
                         chosenColor === c
-                          ? "scale-115 border-[#2C2117] ring-1 ring-[#2C2117]/30"
+                          ? "scale-115 border-[#1F1A17] ring-1 ring-[#1F1A17]/30"
                           : "border-black/10"
                       }`}
                       style={{ backgroundColor: c }}
@@ -459,7 +459,7 @@ export default function InvitationsStudioPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCard(card)}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-[#FAF7F2] py-2 text-xs font-semibold text-[#2C2117] transition hover:bg-[#3B52DE] hover:text-white"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-stone-50 py-2 text-xs font-semibold text-[#1F1A17] transition hover:bg-[#3B52DE] hover:text-white"
                 >
                   {isChosen ? (
                     <>
@@ -485,26 +485,26 @@ export default function InvitationsStudioPage() {
         {selectedCard && (
           <div className="space-y-4">
             <div
-              className="rounded-2xl border-2 bg-[#FAF8F5] p-6 text-center"
+              className="rounded-2xl border-2 bg-stone-50 p-6 text-center"
               style={{
                 borderColor:
                   activeColors[selectedCard.id] || selectedCard.colors[0],
               }}
             >
-              <p className="text-[10px] tracking-[0.25em] text-[#8C7A68] uppercase">
+              <p className="text-[10px] tracking-[0.25em] text-stone-500 uppercase">
                 {selectedCard.category}
               </p>
-              <h3 className="font-display mt-2 text-2xl font-bold text-[#2C2117]">
+              <h3 className="font-display mt-2 text-2xl font-bold text-[#1F1A17]">
                 {coupleName}
               </h3>
-              <p className="mt-2 text-xs text-[#6D5B4B]">{customGreeting}</p>
+              <p className="mt-2 text-xs text-stone-600">{customGreeting}</p>
               <p className="mt-3 text-xs font-semibold text-[#3B52DE]">
                 {displayDate} · {displayVenue}
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#5E5042]">
+              <label className="text-xs font-semibold text-stone-700">
                 Lời mời trên thiệp
               </label>
               <textarea
@@ -513,7 +513,7 @@ export default function InvitationsStudioPage() {
                 onChange={(e) =>
                   saveSection({ customGreeting: e.target.value })
                 }
-                className="mt-1 w-full rounded-xl border border-[#E2D9CB] p-2.5 text-xs outline-none focus:border-[#3B52DE]"
+                className="mt-1 w-full rounded-xl border border-stone-200 p-2.5 text-xs outline-none focus:border-[#3B52DE]"
               />
             </div>
 
@@ -529,7 +529,7 @@ export default function InvitationsStudioPage() {
                   toast.info("Đã lưu vào Bản nháp");
                   setSelectedCard(null);
                 }}
-                className="rounded-lg border border-[#E6DFD3] px-4 py-2 text-xs font-semibold text-[#5E5042]"
+                className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-700"
               >
                 Lưu bản nháp
               </button>

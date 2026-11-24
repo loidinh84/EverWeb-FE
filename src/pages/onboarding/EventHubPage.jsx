@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,7 +29,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { Modal, useToast } from "../../components/common";
+import { Modal, useToast, UserProfileModal } from "../../components/common";
 import { ROUTE_PATHS } from "../../constants/roles";
 import { useAuth } from "../../hooks/useAuth";
 import weddingApi from "../../services/weddingApi";
@@ -48,7 +48,7 @@ const FEATURE_TILES = [
     subItems: [
       { label: "Tổng quan & Thiết kế", route: ROUTE_PATHS.WEBSITE_DESIGN },
       { label: "Xem trước Website", route: ROUTE_PATHS.WEBSITE_PREVIEW },
-      { label: "Ảnh cưới & Album", dashboardKey: "album" },
+      { label: "Ảnh cưới & Album", route: ROUTE_PATHS.PHOTO_MOMENTS },
       { label: "Cài đặt đường dẫn", route: ROUTE_PATHS.EVENT_SETTINGS },
     ],
   },
@@ -61,7 +61,7 @@ const FEATURE_TILES = [
     subItems: [
       { label: "Quản lý Quà mừng", route: ROUTE_PATHS.REGISTRY },
       { label: "Quỹ mừng cưới & VietQR", route: ROUTE_PATHS.REGISTRY },
-      { label: "Ngân sách đám cưới", dashboardKey: "budget" },
+      { label: "Quỹ cưới & Ngân sách", route: ROUTE_PATHS.REGISTRY },
     ],
   },
   {
@@ -169,7 +169,9 @@ export default function EventHubPage() {
   const [wedding, setWedding] = useState(() => {
     if (location.state?.wedding) return location.state.wedding;
     try {
-      const cached = sessionStorage.getItem("everweb_pending_wedding");
+      const cached =
+        sessionStorage.getItem("everweb_pending_wedding") ||
+        localStorage.getItem("everweb_recent_wedding");
       return cached ? JSON.parse(cached) : null;
     } catch {
       return null;
@@ -241,7 +243,7 @@ export default function EventHubPage() {
   const venueParts = rawVenue.includes(" - ") ? rawVenue.split(" - ") : [rawVenue];
   const displayVenue = venueParts[0];
   const displayCity = venueParts[1] || "TP. Hồ Chí Minh";
-  const publicUrl = `everwed.vn/${wedding?.slug || "khang-an"}`;
+  const publicUrl = `everweb.vn/${wedding?.slug || "khang-an"}`;
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -256,7 +258,15 @@ export default function EventHubPage() {
 
   const handleOpenFeature = (tile) => {
     if (typeof tile === "string") {
-      navigate(`${ROUTE_PATHS.DASHBOARD}/${tile}`);
+      if (tile === "album") {
+        navigate(ROUTE_PATHS.PHOTO_MOMENTS, { state: { wedding } });
+        return;
+      }
+      if (tile === "overview" || tile === "settings") {
+        navigate(ROUTE_PATHS.EVENT_SETTINGS, { state: { wedding } });
+        return;
+      }
+      navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } });
       return;
     }
     if (tile.subItems?.length) {
@@ -267,7 +277,7 @@ export default function EventHubPage() {
       navigate(tile.route, { state: { wedding, ...(tile.state || {}) } });
       return;
     }
-    navigate(`${ROUTE_PATHS.DASHBOARD}/${tile.key}`);
+    navigate(ROUTE_PATHS.EVENT_HUB);
   };
 
   const handleOpenSubItem = (sub) => {
@@ -277,7 +287,13 @@ export default function EventHubPage() {
       return;
     }
     if (sub.dashboardKey) {
-      navigate(`${ROUTE_PATHS.DASHBOARD}/${sub.dashboardKey}`);
+      if (sub.dashboardKey === "album") {
+        navigate(ROUTE_PATHS.PHOTO_MOMENTS, { state: { wedding } });
+      } else if (sub.dashboardKey === "budget") {
+        navigate(ROUTE_PATHS.REGISTRY, { state: { wedding } });
+      } else {
+        navigate(ROUTE_PATHS.EVENT_HUB);
+      }
     }
   };
 
@@ -304,34 +320,34 @@ export default function EventHubPage() {
     : FEATURE_TILES;
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-[#FAF8F5] text-[#2C2117] lg:grid-cols-12">
+    <div className="grid min-h-screen grid-cols-1 bg-stone-50 text-[#1F1A17] lg:grid-cols-12">
       {/* Left Half: Couple Info + Search & Settings + 3x4 App Grid */}
-      <div className="flex flex-col justify-between border-r border-[#EAE3D8] bg-white px-8 py-8 sm:px-12 sm:py-10 lg:col-span-6">
+      <div className="flex flex-col justify-between border-r border-stone-200 bg-white px-8 py-8 sm:px-12 sm:py-10 lg:col-span-6">
         <div className="flex flex-1 flex-col">
           <button
             type="button"
             onClick={() => navigate(ROUTE_PATHS.HOME)}
-            className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#EAE3D8] bg-[#FAF8F5] px-3 py-1 text-[11px] font-semibold text-[#5E5042] transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
+            className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-[11px] font-semibold text-stone-700 transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
           >
             <ArrowLeft size={12} />
-            Trang chủ EverWeb
+            Trang chủ .EverWeb
           </button>
 
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-[#2C2117] sm:text-4xl">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-[#1F1A17] sm:text-4xl">
                 {coupleName}
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#6D5B4B]">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6DFD3] bg-[#FAF8F5] px-3 py-1">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-600">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1">
                   <CalendarDays size={13} className="text-[#3B52DE]" />
                   {displayDate}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6DFD3] bg-[#FAF8F5] px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1">
                   <MapPin size={13} className="text-[#3B52DE]" />
                   {displayVenue}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6DFD3] bg-[#FAF8F5] px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1">
                   <Globe size={13} className="text-[#3B52DE]" />
                   {displayCity}
                 </span>
@@ -343,7 +359,7 @@ export default function EventHubPage() {
                   }}
                   title="Chia sẻ / Sao chép link"
                   aria-label="Chia sẻ link"
-                  className="rounded-full border border-[#E6DFD3] p-1.5 text-[#5E5042] hover:bg-[#FAF8F5]"
+                  className="rounded-full border border-stone-200 p-1.5 text-stone-700 hover:bg-stone-50"
                 >
                   <Share2 size={13} />
                 </button>
@@ -354,7 +370,7 @@ export default function EventHubPage() {
                   }
                   title="Xem trước Website"
                   aria-label="Xem trước Website"
-                  className="rounded-full border border-[#E6DFD3] p-1.5 text-[#5E5042] hover:bg-[#FAF8F5]"
+                  className="rounded-full border border-stone-200 p-1.5 text-stone-700 hover:bg-stone-50"
                 >
                   <ExternalLink size={13} />
                 </button>
@@ -368,31 +384,31 @@ export default function EventHubPage() {
                 onClick={() => setIsSearchOpen((prev) => !prev)}
                 aria-label="Tìm chức năng (Ctrl+K)"
                 title="Tìm nhanh (Ctrl+K)"
-                className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[#5E5042] transition hover:bg-[#FAF8F5]"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-stone-700 transition hover:bg-stone-50"
               >
                 <Search size={16} />
-                <span className="hidden rounded border border-[#E2D9CB] bg-[#FAF8F5] px-1.5 py-0.5 text-[10px] font-medium text-[#8C7A68] sm:inline">
+                <span className="hidden rounded border border-stone-200 bg-stone-50 px-1.5 py-0.5 text-[10px] font-medium text-stone-500 sm:inline">
                   Ctrl+K
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsMenuOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-[#FAF8F5] py-1 pr-2.5 pl-1 transition hover:border-[#3B52DE]"
+                className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 py-1 pr-2.5 pl-1 transition hover:border-[#3B52DE]"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2FF] text-xs font-bold text-[#3B52DE]">
                   {initials}
                 </div>
-                <Settings size={16} className="text-[#5E5042]" />
+                <Settings size={16} className="text-stone-700" />
               </button>
 
               {isMenuOpen && (
-                <div className="ew-zoom-in absolute top-12 right-0 z-40 w-64 rounded-2xl border border-[#E6DFD3] bg-white p-2 shadow-xl">
-                  <div className="border-b border-[#F1ECE3] px-3 py-3 text-center">
+                <div className="ew-zoom-in absolute top-12 right-0 z-40 w-64 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl">
+                  <div className="border-b border-stone-100 px-3 py-3 text-center">
                     <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#EEF2FF] text-sm font-bold text-[#3B52DE]">
                       {initials}
                     </div>
-                    <p className="mt-2 truncate text-xs font-bold text-[#2C2117]">
+                    <p className="mt-2 truncate text-xs font-bold text-[#1F1A17]">
                       {coupleName}
                     </p>
                   </div>
@@ -404,9 +420,9 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         navigate(ROUTE_PATHS.WEBSITE_PREVIEW, { state: { wedding } });
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <ExternalLink size={15} className="text-[#7D6D5E]" />
+                      <ExternalLink size={15} className="text-stone-500" />
                       Xem trước Website
                     </button>
                     <button
@@ -415,9 +431,9 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         navigate(ROUTE_PATHS.EVENT_SETTINGS, { state: { wedding } });
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <Settings size={15} className="text-[#7D6D5E]" />
+                      <Settings size={15} className="text-stone-500" />
                       Cài đặt sự kiện
                     </button>
                     <button
@@ -426,9 +442,9 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         setIsCollabOpen(true);
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <UserPlus size={15} className="text-[#7D6D5E]" />
+                      <UserPlus size={15} className="text-stone-500" />
                       Mời cộng tác viên
                     </button>
                     <button
@@ -437,20 +453,20 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         setIsFeedbackOpen(true);
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <Lightbulb size={15} className="text-[#7D6D5E]" />
+                      <Lightbulb size={15} className="text-stone-500" />
                       Gửi góp ý
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         setIsMenuOpen(false);
-                        toast.info("Hỗ trợ trực tuyến: support@everwed.vn");
+                        toast.info("Hỗ trợ trực tuyến: support@everweb.vn");
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <MessageSquare size={15} className="text-[#7D6D5E]" />
+                      <MessageSquare size={15} className="text-stone-500" />
                       Liên hệ hỗ trợ
                     </button>
                     <button
@@ -459,20 +475,20 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         toast.info("Hướng dẫn sử dụng đang được cập nhật");
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <HelpCircle size={15} className="text-[#7D6D5E]" />
+                      <HelpCircle size={15} className="text-stone-500" />
                       Trợ giúp
                     </button>
                   </div>
 
-                  <div className="space-y-0.5 border-t border-[#F1ECE3] pt-1.5 text-xs">
+                  <div className="space-y-0.5 border-t border-stone-100 pt-1.5 text-xs">
                     <button
                       type="button"
                       onClick={handleOpenManageEvents}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <CalendarDays size={15} className="text-[#7D6D5E]" />
+                      <CalendarDays size={15} className="text-stone-500" />
                       Quản lý sự kiện
                     </button>
                     <button
@@ -481,9 +497,9 @@ export default function EventHubPage() {
                         setIsMenuOpen(false);
                         setIsAccountModalOpen(true);
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#2C2117] hover:bg-[#FAF8F5]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[#1F1A17] hover:bg-stone-50"
                     >
-                      <User size={15} className="text-[#7D6D5E]" />
+                      <User size={15} className="text-stone-500" />
                       Thông tin tài khoản
                     </button>
                     <button
@@ -508,7 +524,7 @@ export default function EventHubPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm nhanh chức năng (ví dụ: Thiệp mời, RSVP, Quà mừng)..."
-                className="w-full rounded-full border border-[#E2D9CB] bg-[#FAF8F5] px-4 py-2.5 text-xs text-[#2C2117] outline-none focus:border-[#3B52DE]"
+                className="w-full rounded-full border border-stone-200 bg-stone-50 px-4 py-2.5 text-xs text-[#1F1A17] outline-none focus:border-[#3B52DE]"
               />
             </div>
           )}
@@ -564,17 +580,17 @@ export default function EventHubPage() {
                   </button>
 
                   {isDropdownOpen && subItems && (
-                    <div className="ew-zoom-in absolute top-full z-30 mt-2 w-52 rounded-2xl border border-[#E6DFD3] bg-white p-1.5 shadow-xl">
-                      <p className="px-3 py-1 text-[10px] font-bold tracking-wider text-[#9C8B7A] uppercase">
+                    <div className="ew-zoom-in absolute top-full z-30 mt-2 w-52 rounded-2xl border border-stone-200 bg-white p-1.5 shadow-xl">
+                      <p className="px-3 py-1 text-[10px] font-bold tracking-wider text-stone-400 uppercase">
                         {label}
                       </p>
-                      <div className="my-1 h-px bg-[#F1ECE3]" />
+                      <div className="my-1 h-px bg-[#F5F5F4]" />
                       {subItems.map((sub) => (
                         <button
                           key={sub.label}
                           type="button"
                           onClick={() => handleOpenSubItem(sub)}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium text-[#2C2117] transition hover:bg-[#FAF8F5] hover:text-[#3B52DE]"
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium text-[#1F1A17] transition hover:bg-stone-50 hover:text-[#3B52DE]"
                         >
                           <span className="h-1.5 w-1.5 rounded-full bg-[#3B52DE]/60" />
                           {sub.label}
@@ -588,14 +604,16 @@ export default function EventHubPage() {
           </div>
         </div>
 
-        {/* Minimal Footer Link to Full Dashboard */}
+        {/* Minimal Footer Link to Event Settings */}
         <div className="mt-10 flex items-center justify-center">
           <button
             type="button"
-            onClick={() => handleOpenFeature("overview")}
-            className="inline-flex items-center gap-2 rounded-full border border-[#E6DFD3] bg-[#FAF8F5] px-4 py-2 text-xs font-semibold text-[#5E5042] transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
+            onClick={() =>
+              navigate(ROUTE_PATHS.EVENT_SETTINGS, { state: { wedding } })
+            }
+            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-semibold text-stone-700 transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
           >
-            Mở Dashboard tổng hợp →
+            Cài đặt & Quản lý sự kiện →
           </button>
         </div>
       </div>
@@ -639,16 +657,18 @@ export default function EventHubPage() {
                   {displayDate} · {displayVenue}
                 </p>
               </div>
-              <div className="group/plus absolute top-3 right-3 flex items-center overflow-hidden rounded-full bg-white/95 text-[#2C2117] shadow-md transition-all duration-300 hover:shadow-lg">
+              <div className="group/plus absolute top-3 right-3 flex items-center overflow-hidden rounded-full bg-white/95 text-[#1F1A17] shadow-md transition-all duration-300 hover:shadow-lg">
                 <div className="flex max-w-0 items-center overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/plus:max-w-[220px] group-hover/plus:px-3 group-hover/plus:opacity-100">
                   <button
                     type="button"
-                    onClick={() => handleOpenFeature("album")}
+                    onClick={() =>
+                      navigate(ROUTE_PATHS.PHOTO_MOMENTS, { state: { wedding } })
+                    }
                     className="pr-2.5 text-xs font-semibold transition hover:text-[#3B52DE]"
                   >
                     Thêm ảnh
                   </button>
-                  <span className="h-3.5 w-px bg-[#E2D9CB]" />
+                  <span className="h-3.5 w-px bg-[#E7E5E4]" />
                   <button
                     type="button"
                     onClick={() =>
@@ -683,18 +703,18 @@ export default function EventHubPage() {
             {/* Subtle envelope backing */}
             <div className="absolute -top-3 -left-3 h-full w-full rounded-lg border border-[#E5DEC9] bg-[#FAF8F4] shadow-sm" />
             <div className="ew-card-sheen relative rounded-lg border border-[#E5DEC9] bg-white p-5 text-center shadow-xl">
-              <p className="text-[9px] tracking-[0.25em] text-[#8C7A68] uppercase">
+              <p className="text-[9px] tracking-[0.25em] text-stone-500 uppercase">
                 Trân trọng kính mời
               </p>
-              <p className="mt-3 font-display text-base leading-snug font-semibold text-[#2C2117]">
+              <p className="mt-3 font-display text-base leading-snug font-semibold text-[#1F1A17]">
                 {coupleName}
               </p>
-              <div className="mx-auto my-3 h-px w-10 bg-[#E2D9CB]" />
-              <p className="text-[10px] text-[#7D6D5E]">{displayDate}</p>
-              <p className="mt-0.5 truncate text-[10px] text-[#8C7A68]">
+              <div className="mx-auto my-3 h-px w-10 bg-[#E7E5E4]" />
+              <p className="text-[10px] text-stone-500">{displayDate}</p>
+              <p className="mt-0.5 truncate text-[10px] text-stone-500">
                 {displayVenue}
               </p>
-              <div className="group/cardplus absolute right-2.5 bottom-2.5 flex items-center overflow-hidden rounded-full border border-[#E6DFD3] bg-white text-[#2C2117] shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="group/cardplus absolute right-2.5 bottom-2.5 flex items-center overflow-hidden rounded-full border border-stone-200 bg-white text-[#1F1A17] shadow-sm transition-all duration-300 hover:shadow-md">
                 <button
                   type="button"
                   onClick={() =>
@@ -736,17 +756,17 @@ export default function EventHubPage() {
                 className="h-28 w-full object-cover"
               />
               <div className="p-2.5 text-center">
-                <p className="truncate font-display text-[11px] font-semibold text-[#2C2117]">
+                <p className="truncate font-display text-[11px] font-semibold text-[#1F1A17]">
                   {coupleName}
                 </p>
-                <p className="mt-0.5 text-[9px] text-[#8C7A68]">
+                <p className="mt-0.5 text-[9px] text-stone-500">
                   {displayDate}
                 </p>
-                <span className="mt-2 inline-block rounded-full border border-[#2C2117] px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-[#2C2117] uppercase">
+                <span className="mt-2 inline-block rounded-full border border-[#1F1A17] px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-[#1F1A17] uppercase">
                   RSVP
                 </span>
               </div>
-              <div className="group/phoneplus absolute right-2 bottom-2 flex items-center overflow-hidden rounded-full border border-[#E6DFD3] bg-white text-[#2C2117] shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="group/phoneplus absolute right-2 bottom-2 flex items-center overflow-hidden rounded-full border border-stone-200 bg-white text-[#1F1A17] shadow-sm transition-all duration-300 hover:shadow-md">
                 <button
                   type="button"
                   onClick={() =>
@@ -772,7 +792,7 @@ export default function EventHubPage() {
         </div>
 
         {/* Public URL Bar (WithJoy Style) */}
-        <div className="mt-2 flex items-center gap-2.5 rounded-full border border-[#E2D9CB] bg-white px-4 py-2 text-xs text-[#5E5042] shadow-2xs">
+        <div className="mt-2 flex items-center gap-2.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs text-stone-700 shadow-2xs">
           <span
             className={`h-2 w-2 rounded-full ${
               wedding?.status === "published" ? "bg-emerald-500" : "bg-amber-500"
@@ -781,8 +801,8 @@ export default function EventHubPage() {
           <span>
             {wedding?.status === "published" ? "Đã xuất bản" : "Chưa xuất bản"}
           </span>
-          <span className="font-semibold text-[#2C2117]">{publicUrl}</span>
-          <div className="ml-1 flex items-center gap-1.5 border-l border-[#EAE3D8] pl-2.5 text-[#6D5B4B]">
+          <span className="font-semibold text-[#1F1A17]">{publicUrl}</span>
+          <div className="ml-1 flex items-center gap-1.5 border-l border-stone-200 pl-2.5 text-stone-600">
             <button
               type="button"
               onClick={() =>
@@ -848,7 +868,7 @@ export default function EventHubPage() {
                 className={`flex items-center justify-between rounded-2xl border p-4 transition ${
                   isActive
                     ? "border-[#3B52DE] bg-[#F5F7FF]"
-                    : "border-[#E6DFD3] bg-[#FAF8F5]"
+                    : "border-stone-200 bg-stone-50"
                 }`}
               >
                 <div>
@@ -856,14 +876,14 @@ export default function EventHubPage() {
                     <span className="rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] font-semibold text-[#3B52DE]">
                       Đám cưới
                     </span>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[#5E5042]">
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-stone-700">
                       Chủ sở hữu
                     </span>
                   </div>
-                  <p className="font-display mt-1.5 text-lg font-semibold text-[#2C2117]">
+                  <p className="font-display mt-1.5 text-lg font-semibold text-[#1F1A17]">
                     {(item.title || "Đám cưới chưa đặt tên").normalize("NFC")}
                   </p>
-                  <p className="text-xs text-[#7D6D5E]">
+                  <p className="text-xs text-stone-500">
                     {item.wedding_date
                       ? new Date(item.wedding_date).toLocaleDateString("vi-VN")
                       : "Chưa chốt ngày"}{" "}
@@ -886,7 +906,7 @@ export default function EventHubPage() {
                       setIsEventsModalOpen(false);
                       toast.success("Đã chuyển sang sự kiện đã chọn");
                     }}
-                    className="rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE]"
+                    className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE]"
                   >
                     Mở sự kiện
                   </button>
@@ -909,54 +929,13 @@ export default function EventHubPage() {
         </div>
       </Modal>
 
-      {/* Account Info Modal */}
-      <Modal
+      {/* User Profile Modal */}
+      <UserProfileModal
         isOpen={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
-        title="Thông tin tài khoản"
-        size="sm"
-      >
-        <div className="space-y-3 text-xs">
-          <div className="rounded-xl border border-[#E6DFD3] bg-[#FAF8F5] p-3">
-            <p className="text-[#8C7A68]">Họ và tên</p>
-            <p className="mt-0.5 font-semibold text-[#2C2117]">
-              {user?.full_name || "Chưa cập nhật"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[#E6DFD3] bg-[#FAF8F5] p-3">
-            <p className="text-[#8C7A68]">Email</p>
-            <p className="mt-0.5 font-semibold text-[#2C2117]">
-              {user?.email || "—"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[#E6DFD3] bg-[#FAF8F5] p-3">
-            <p className="text-[#8C7A68]">Vai trò</p>
-            <p className="mt-0.5 font-semibold text-[#3B52DE] uppercase">
-              {user?.role || "USER"}
-            </p>
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
-              type="button"
-              onClick={() => setIsAccountModalOpen(false)}
-              className="rounded-xl bg-[#2C2117] px-4 py-2 font-semibold text-white"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      </Modal>
+        wedding={wedding}
+      />
 
-      {/* Floating Assistant Launcher (WithJoy bottom-right widget) */}
-      <button
-        type="button"
-        onClick={() => handleOpenFeature("assistant")}
-        title="Trợ lý cưới AI"
-        aria-label="Trợ lý cưới AI"
-        className="fixed right-5 bottom-5 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-[#3B52DE] text-white shadow-lg transition hover:scale-105 hover:bg-[#2F43C2] active:scale-95"
-      >
-        <MessageSquare size={20} />
-      </button>
     </div>
   );
 }

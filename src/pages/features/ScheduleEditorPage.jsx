@@ -1,10 +1,9 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Calendar,
   ChevronRight,
-  LayoutGrid,
   MapPin,
   Monitor,
   Plus,
@@ -155,27 +154,37 @@ export default function ScheduleEditorPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F6F3] text-[#2C2117]">
+    <div className="flex min-h-screen flex-col bg-white text-[#1F1A17] font-sans antialiased">
       {/* WithJoy Schedule Top Bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#EAE6DF] bg-white/95 px-4 backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-stone-200 bg-white px-6 sm:px-10">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() =>
               navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } })
             }
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[#5E5042] transition hover:bg-[#F3F0EA] hover:text-[#2C2117]"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-black transition cursor-pointer"
+            title="Quay lại Trung tâm sự kiện"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Trung tâm sự kiện</span>
+            <span>Trung tâm sự kiện</span>
           </button>
-          <span className="hidden h-4 w-px bg-[#E6DFD3] sm:block" />
-          <h1 className="font-display text-lg font-semibold text-[#2C2117]">
-            Lịch trình ngày cưới
-          </h1>
+          <span className="h-4 w-px bg-stone-200" />
+          <div className="flex items-center gap-1.5">
+            <span className="font-display italic font-bold text-lg text-[#1F1A17]">
+              .EverWeb
+            </span>
+            <span className="text-stone-300">|</span>
+            <h1 className="text-sm font-semibold text-[#1F1A17]">
+              Lịch trình ngày cưới
+            </h1>
+          </div>
+          <span className="rounded-md border border-stone-300 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase">
+            LỊCH TRÌNH+
+          </span>
         </div>
 
-        <div className="flex items-center rounded-lg border border-[#E2D9CB] bg-[#FAF8F5] p-0.5">
+        <div className="flex items-center rounded-lg border border-stone-200 bg-stone-50 p-0.5">
           <button
             type="button"
             onClick={() => setDevice("desktop")}
@@ -183,7 +192,7 @@ export default function ScheduleEditorPage() {
             className={`rounded-md px-2.5 py-1 ${
               device === "desktop"
                 ? "bg-white text-[#3B52DE] shadow-2xs"
-                : "text-[#8C7A68]"
+                : "text-stone-500"
             }`}
           >
             <Monitor size={15} />
@@ -195,20 +204,10 @@ export default function ScheduleEditorPage() {
             className={`rounded-md px-2.5 py-1 ${
               device === "mobile"
                 ? "bg-white text-[#3B52DE] shadow-2xs"
-                : "text-[#8C7A68]"
+                : "text-stone-500"
             }`}
           >
             <Smartphone size={15} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`${ROUTE_PATHS.DASHBOARD}/schedule`)}
-            className="hidden items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-semibold text-[#5E5042] hover:border-[#3B52DE] sm:inline-flex"
-          >
-            <LayoutGrid size={13} /> Checklist Planner
           </button>
         </div>
       </header>
@@ -216,10 +215,10 @@ export default function ScheduleEditorPage() {
       {/* Split Editor: Sticky White Left Sidebar + Full-Bleed Woodgrain Schedule Preview */}
       <div className="flex flex-1 items-start">
         {/* Left Sidebar */}
-        <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-88 shrink-0 flex-col border-r border-[#EAE6DF] bg-white">
-          <div className="border-b border-[#F1ECE3] px-5 py-3.5 text-xs font-medium text-[#8C7A68]">
+        <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-88 shrink-0 flex-col border-r border-stone-200 bg-white">
+          <div className="border-b border-stone-100 px-5 py-3.5 text-xs font-medium text-stone-500">
             Website / Các trang /{" "}
-            <span className="font-semibold text-[#2C2117]">Lịch trình</span>
+            <span className="font-semibold text-[#1F1A17]">Lịch trình</span>
           </div>
 
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
@@ -233,7 +232,7 @@ export default function ScheduleEditorPage() {
                   ‹ Quay lại danh sách sự kiện
                 </button>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
+                  <h2 className="text-sm font-bold text-[#1F1A17]">
                     Chỉnh sửa sự kiện
                   </h2>
                   <button
@@ -246,7 +245,7 @@ export default function ScheduleEditorPage() {
                   </button>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
+                  <label className="text-[11px] font-semibold text-stone-700">
                     Tên sự kiện
                   </label>
                   <input
@@ -257,11 +256,11 @@ export default function ScheduleEditorPage() {
                         title: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                    className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
+                  <label className="text-[11px] font-semibold text-stone-700">
                     Nhóm ngày
                   </label>
                   <select
@@ -271,7 +270,7 @@ export default function ScheduleEditorPage() {
                         day: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] bg-white px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                   >
                     <option value="Trước ngày cưới">Trước ngày cưới</option>
                     <option value="Ngày cưới chính thức">
@@ -282,7 +281,7 @@ export default function ScheduleEditorPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] font-semibold text-[#5E5042]">
+                    <label className="text-[11px] font-semibold text-stone-700">
                       Khung giờ
                     </label>
                     <input
@@ -293,11 +292,11 @@ export default function ScheduleEditorPage() {
                           time: e.target.value,
                         })
                       }
-                      className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                      className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-[#5E5042]">
+                    <label className="text-[11px] font-semibold text-stone-700">
                       Trang phục
                     </label>
                     <input
@@ -308,12 +307,12 @@ export default function ScheduleEditorPage() {
                           dresscode: e.target.value,
                         })
                       }
-                      className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                      className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
+                  <label className="text-[11px] font-semibold text-stone-700">
                     Địa điểm
                   </label>
                   <input
@@ -324,11 +323,11 @@ export default function ScheduleEditorPage() {
                         venue: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                    className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
+                  <label className="text-[11px] font-semibold text-stone-700">
                     Mô tả chi tiết
                   </label>
                   <textarea
@@ -339,7 +338,7 @@ export default function ScheduleEditorPage() {
                         description: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-[#E2D9CB] p-3 text-xs outline-none focus:border-[#3B52DE]"
+                    className="mt-1 w-full rounded-xl border border-stone-200 p-3 text-xs outline-none focus:border-[#3B52DE]"
                   />
                 </div>
               </div>
@@ -347,7 +346,7 @@ export default function ScheduleEditorPage() {
               <>
                 {/* Layout Selector */}
                 <div>
-                  <label className="text-[11px] font-semibold text-[#5E5042]">
+                  <label className="text-[11px] font-semibold text-stone-700">
                     Bố cục hiển thị (Layout)
                   </label>
                   <select
@@ -355,7 +354,7 @@ export default function ScheduleEditorPage() {
                     onChange={(e) =>
                       saveSection({ scheduleLayout: e.target.value })
                     }
-                    className="mt-1.5 w-full rounded-xl border border-[#E2D9CB] bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-[#3B52DE]"
+                    className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold outline-none focus:border-[#3B52DE]"
                   >
                     <option value="timeline">
                       Dòng thời gian (Timeline)
@@ -369,20 +368,20 @@ export default function ScheduleEditorPage() {
                   <div className="relative flex-1">
                     <Search
                       size={13}
-                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[#9C8B7A]"
+                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-stone-400"
                     />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Lọc sự kiện..."
-                      className="w-full rounded-full border border-[#E2D9CB] bg-[#FAF8F5] py-1.5 pr-3 pl-8 text-xs outline-none focus:border-[#3B52DE]"
+                      className="w-full rounded-full border border-stone-200 bg-stone-50 py-1.5 pr-3 pl-8 text-xs outline-none focus:border-[#3B52DE]"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleAddEvent}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#2C2117] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#3B52DE]"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1F1A17] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#3B52DE]"
                   >
                     <Plus size={13} /> Thêm mới
                   </button>
@@ -392,31 +391,31 @@ export default function ScheduleEditorPage() {
                 <div className="space-y-5">
                   {groupedEvents.map(([day, items]) => (
                     <div key={day}>
-                      <p className="mb-2 text-xs font-bold text-[#2C2117]">
+                      <p className="mb-2 text-xs font-bold text-[#1F1A17]">
                         {day}
                       </p>
-                      <div className="divide-y divide-[#F1ECE3] rounded-xl border border-[#EFEAE1]">
+                      <div className="divide-y divide-stone-100 rounded-xl border border-stone-200">
                         {items.map((ev) => (
                           <button
                             key={ev.id}
                             type="button"
                             onClick={() => setEditingId(ev.id)}
-                            className="flex w-full items-center justify-between px-3.5 py-3 text-left transition hover:bg-[#FAF8F5]"
+                            className="flex w-full items-center justify-between px-3.5 py-3 text-left transition hover:bg-stone-50"
                           >
                             <div>
-                              <p className="text-xs font-bold text-[#2C2117]">
+                              <p className="text-xs font-bold text-[#1F1A17]">
                                 {ev.title}
                               </p>
-                              <p className="mt-0.5 text-[11px] text-[#7D6D5E]">
+                              <p className="mt-0.5 text-[11px] text-stone-500">
                                 {ev.time}
                               </p>
-                              <span className="mt-1.5 inline-block rounded-full bg-[#F3F0EA] px-2 py-0.5 text-[10px] font-medium text-[#5E5042]">
+                              <span className="mt-1.5 inline-block rounded-full bg-[#F3F0EA] px-2 py-0.5 text-[10px] font-medium text-stone-700">
                                 {ev.audience}
                               </span>
                             </div>
                             <ChevronRight
                               size={15}
-                              className="shrink-0 text-[#9C8B7A]"
+                              className="shrink-0 text-stone-400"
                             />
                           </button>
                         ))}
@@ -428,14 +427,14 @@ export default function ScheduleEditorPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#F1ECE3] bg-[#FAF8F5] px-5 py-3 text-xs">
-            <span className="text-[11px] text-[#8C7A68]">
+          <div className="flex items-center justify-between border-t border-stone-100 bg-stone-50 px-5 py-3 text-xs">
+            <span className="text-[11px] text-stone-500">
               Tự động lưu Neon DB
             </span>
             <button
               type="button"
               onClick={() => toast.success("Đã lưu lịch trình lên Neon DB")}
-              className="rounded-full bg-[#2C2117] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#3B52DE]"
+              className="rounded-full bg-[#1F1A17] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#3B52DE]"
             >
               Lưu
             </button>
@@ -451,7 +450,7 @@ export default function ScheduleEditorPage() {
           }}
         >
           <div
-            className={`mx-auto min-h-full bg-[#EDE8E1] text-[#2C2117] shadow-2xl transition-all ${
+            className={`mx-auto min-h-full bg-[#E7E5E4] text-[#1F1A17] shadow-2xl transition-all ${
               device === "mobile" ? "max-w-[375px]" : "max-w-[740px]"
             }`}
           >
@@ -468,14 +467,14 @@ export default function ScheduleEditorPage() {
               <div className="mt-8 space-y-8">
                 {groupedEvents.map(([day, items]) => (
                   <div key={day}>
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#7D6D5E] uppercase">
+                    <p className="text-[10px] font-bold tracking-[0.2em] text-stone-500 uppercase">
                       {day}
                     </p>
                     <div
                       className={
                         layout === "cards"
                           ? "mt-3 space-y-3"
-                          : "mt-3 space-y-5 border-l border-[#2C2117]/20 pl-5"
+                          : "mt-3 space-y-5 border-l border-[#1F1A17]/20 pl-5"
                       }
                     >
                       {items.map((ev) => (
@@ -489,19 +488,19 @@ export default function ScheduleEditorPage() {
                           }`}
                         >
                           {layout !== "cards" && (
-                            <span className="absolute top-1.5 -left-[25px] h-2.5 w-2.5 rounded-full border-2 border-[#EDE8E1] bg-[#5D4532]" />
+                            <span className="absolute top-1.5 -left-[25px] h-2.5 w-2.5 rounded-full border-2 border-stone-200 bg-[#5D4532]" />
                           )}
-                          <p className="text-[10px] font-semibold text-[#7D6D5E]">
+                          <p className="text-[10px] font-semibold text-stone-500">
                             {ev.time}
                           </p>
                           <h3 className="mt-0.5 text-base font-bold">
                             {ev.title}
                           </h3>
-                          <p className="mt-1 flex items-center gap-1 text-[11px] text-[#5E5042]">
+                          <p className="mt-1 flex items-center gap-1 text-[11px] text-stone-700">
                             <MapPin size={11} /> {ev.venue}
                           </p>
                           {ev.dresscode && (
-                            <p className="mt-0.5 text-[11px] text-[#7D6D5E]">
+                            <p className="mt-0.5 text-[11px] text-stone-500">
                               Trang phục: {ev.dresscode}
                             </p>
                           )}

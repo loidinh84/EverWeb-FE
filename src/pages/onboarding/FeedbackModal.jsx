@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Modal, useToast } from "../../components/common";
 import { extractApiError } from "../../services/api";
 import feedbackApi from "../../services/feedbackApi";
@@ -49,13 +49,13 @@ export default function FeedbackModal({ isOpen, onClose }) {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#2C2117]">
+          <label className="mb-1.5 block text-xs font-semibold text-[#1F1A17]">
             Loại góp ý của bạn là gì?*
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-xl border border-[#E2D9CB] bg-white px-3.5 py-2.5 text-sm text-[#2C2117] outline-none focus:border-[#3B52DE]"
+            className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-[#1F1A17] outline-none focus:border-[#3B52DE]"
           >
             <option value="">Chọn một mục...</option>
             {FEEDBACK_TYPES.map((type) => (
@@ -67,7 +67,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#2C2117]">
+          <label className="mb-1.5 block text-xs font-semibold text-[#1F1A17]">
             Bạn muốn nhắn gửi điều gì với chúng tôi?*
           </label>
           <textarea
@@ -75,7 +75,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Nhập nội dung góp ý của bạn..."
-            className="w-full rounded-xl border border-[#E2D9CB] bg-white px-3.5 py-2.5 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE]"
+            className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-[#1F1A17] placeholder-[#A8A29E] outline-none focus:border-[#3B52DE]"
           />
         </div>
 
@@ -83,7 +83,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-[#E2D9CB] px-4 py-2 text-xs font-medium text-[#5E5042]"
+            className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-medium text-stone-700"
           >
             Huỷ
           </button>

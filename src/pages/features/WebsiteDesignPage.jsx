@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,12 +11,10 @@ import {
   Heart,
   Image as ImageIcon,
   Layout,
-  LayoutGrid,
   MapPin,
   Monitor,
   Palette,
-  PanelLeftClose,
-  PanelLeftOpen,
+  PanelLeft,
   Smartphone,
   Sparkles,
   Type,
@@ -38,20 +36,20 @@ const COLOR_THEMES = [
     outerBg: "#4A3423",
     outerPattern:
       "repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px), linear-gradient(135deg, #563C28 0%, #3E2A1B 50%, #4E3725 100%)",
-    bg: "#EDE8E1",
+    bg: "#E7E5E4",
     cardBg: "#F7F4EF",
     accent: "#5D4532",
-    text: "#2C2117",
+    text: "#1F1A17",
   },
   {
     id: "cobalt",
     name: "Xanh Hiện Đại",
     outerBg: "#E6EBF7",
     outerPattern: "linear-gradient(135deg, #E8EDFA 0%, #DCE3F5 100%)",
-    bg: "#FAF8F5",
+    bg: "#F8F9FA",
     cardBg: "#FFFFFF",
     accent: "#3B52DE",
-    text: "#2C2117",
+    text: "#1F1A17",
   },
   {
     id: "champagne",
@@ -182,7 +180,7 @@ export default function WebsiteDesignPage() {
   const displayVenue = (
     wedding?.venue_name || "Sảnh Hoa Mai - TP. Hồ Chí Minh"
   ).normalize("NFC");
-  const publicUrl = `everwed.vn/${wedding?.slug || "khang-an"}`;
+  const publicUrl = `everweb.vn/${wedding?.slug || "khang-an"}`;
   const isPublished = wedding?.status === "published";
 
   const isPageVisible = (key) =>
@@ -247,40 +245,44 @@ export default function WebsiteDesignPage() {
       : "text-2xl sm:text-3xl";
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F6F3] text-[#2C2117]">
+    <div className="flex min-h-screen flex-col bg-white text-[#1F1A17] font-sans antialiased">
       {/* Sticky Full-Width WithJoy Design Top Bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#EAE6DF] bg-white/95 px-4 backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-stone-200 bg-white px-6 sm:px-10">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() =>
               navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } })
             }
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[#5E5042] transition hover:bg-[#F3F0EA] hover:text-[#2C2117]"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 hover:text-black transition cursor-pointer"
+            title="Quay lại Trung tâm sự kiện"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Trung tâm sự kiện</span>
+            <span>Trung tâm sự kiện</span>
           </button>
-          <span className="hidden h-4 w-px bg-[#E6DFD3] sm:block" />
+          <span className="h-4 w-px bg-stone-200" />
           <button
             type="button"
             onClick={() => setSidebarOpen((p) => !p)}
-            title={sidebarOpen ? "Thu gọn thanh chỉnh sửa" : "Mở thanh chỉnh sửa"}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-medium text-[#5E5042] transition hover:border-[#3B52DE]"
+            title={sidebarOpen ? "Thu gọn thanh bên" : "Mở thanh bên"}
+            className="text-stone-700 hover:text-black transition cursor-pointer"
           >
-            {sidebarOpen ? (
-              <PanelLeftClose size={14} />
-            ) : (
-              <PanelLeftOpen size={14} />
-            )}
-            <span className="hidden md:inline">
-              {sidebarOpen ? "Thu gọn" : "Tuỳ chỉnh"}
-            </span>
+            <PanelLeft size={19} />
           </button>
+          <div className="flex items-center gap-1.5">
+            <span className="font-display italic font-bold text-lg text-[#1F1A17]">
+              .EverWeb
+            </span>
+            <span className="text-stone-300">|</span>
+            <span className="text-sm font-semibold text-[#1F1A17]">Website</span>
+          </div>
+          <span className="rounded-md border border-stone-300 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase">
+            WEBSITE+
+          </span>
         </div>
 
         {/* Center Desktop / Mobile Switcher (like WithJoy) */}
-        <div className="flex items-center rounded-lg border border-[#E2D9CB] bg-[#FAF8F5] p-0.5">
+        <div className="flex items-center rounded-lg border border-stone-200 bg-stone-50 p-0.5">
           <button
             type="button"
             onClick={() => setDevice("desktop")}
@@ -288,7 +290,7 @@ export default function WebsiteDesignPage() {
             className={`rounded-md px-2.5 py-1 ${
               device === "desktop"
                 ? "bg-white text-[#3B52DE] shadow-2xs"
-                : "text-[#8C7A68]"
+                : "text-stone-500"
             }`}
           >
             <Monitor size={15} />
@@ -300,7 +302,7 @@ export default function WebsiteDesignPage() {
             className={`rounded-md px-2.5 py-1 ${
               device === "mobile"
                 ? "bg-white text-[#3B52DE] shadow-2xs"
-                : "text-[#8C7A68]"
+                : "text-stone-500"
             }`}
           >
             <Smartphone size={15} />
@@ -314,7 +316,7 @@ export default function WebsiteDesignPage() {
               navigator.clipboard?.writeText(`https://${publicUrl}`);
               toast.success(`Đã sao chép: ${publicUrl}`);
             }}
-            className="hidden items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-[11px] font-medium text-[#5E5042] hover:border-[#3B52DE] lg:inline-flex"
+            className="hidden items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-[#3B52DE] lg:inline-flex"
           >
             <Copy size={11} /> {publicUrl}
           </button>
@@ -323,7 +325,7 @@ export default function WebsiteDesignPage() {
             onClick={() =>
               navigate(ROUTE_PATHS.WEBSITE_PREVIEW, { state: { wedding } })
             }
-            className="hidden items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-medium text-[#2C2117] hover:border-[#3B52DE] sm:inline-flex"
+            className="hidden items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-[#1F1A17] hover:border-[#3B52DE] sm:inline-flex"
           >
             <ExternalLink size={13} /> Xem trang
           </button>
@@ -331,17 +333,9 @@ export default function WebsiteDesignPage() {
             type="button"
             disabled={isPublishing}
             onClick={handleTogglePublish}
-            className="rounded-full bg-[#3B52DE] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[#2F43C2] disabled:opacity-60"
+            className="rounded-full bg-[#1F1A17] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60"
           >
             {isPublished ? "Ẩn Website" : "Xuất bản Website"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(ROUTE_PATHS.DASHBOARD_DEFAULT)}
-            title="Dashboard"
-            className="hidden items-center gap-1 rounded-full border border-[#E2D9CB] bg-white p-1.5 text-[#5E5042] hover:border-[#3B52DE] sm:inline-flex"
-          >
-            <LayoutGrid size={14} />
           </button>
         </div>
       </header>
@@ -350,10 +344,10 @@ export default function WebsiteDesignPage() {
       <div className="flex flex-1 items-start">
         {/* Left WithJoy Design Sidebar (Exact WithJoy Vertical Menu -> Sub-Panel) */}
         {sidebarOpen && (
-          <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-80 shrink-0 overflow-y-auto border-r border-[#EAE6DF] bg-white">
+          <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-80 shrink-0 overflow-y-auto border-r border-stone-200 bg-white">
             {/* Interactive Breadcrumb Header (WithJoy Style) */}
-            <div className="border-b border-[#F1ECE3] px-6 py-4">
-              <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-[#8C7A68]">
+            <div className="border-b border-stone-100 px-6 py-4">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-stone-500">
                 <button
                   type="button"
                   onClick={() => setActiveTab("pages")}
@@ -366,7 +360,7 @@ export default function WebsiteDesignPage() {
                   type="button"
                   onClick={() => setActiveTab(null)}
                   className={`transition hover:text-[#3B52DE] hover:underline ${
-                    !activeTab ? "font-semibold text-[#2C2117]" : ""
+                    !activeTab ? "font-semibold text-[#1F1A17]" : ""
                   }`}
                 >
                   Thiết kế
@@ -374,7 +368,7 @@ export default function WebsiteDesignPage() {
                 {activeTab && (
                   <>
                     <span>/</span>
-                    <span className="font-semibold text-[#2C2117]">
+                    <span className="font-semibold text-[#1F1A17]">
                       {DESIGN_TABS.find((t) => t.key === activeTab)?.label}
                     </span>
                   </>
@@ -391,7 +385,7 @@ export default function WebsiteDesignPage() {
                       <button
                         type="button"
                         onClick={() => setActiveTab(t.key)}
-                        className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-[15px] font-medium text-[#2C2117] transition hover:bg-[#F7F6F3] hover:text-[#3B52DE]"
+                        className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-[15px] font-medium text-[#1F1A17] transition hover:bg-stone-100 hover:text-[#3B52DE]"
                       >
                         <span>{t.label}</span>
                         <span className="text-xs text-[#B0A393]">›</span>
@@ -402,7 +396,7 @@ export default function WebsiteDesignPage() {
               </nav>
             ) : (
               /* Active Sub-Panel */
-              <div className="ew-slide-up border-b border-[#F1ECE3] p-5">
+              <div className="ew-slide-up border-b border-stone-100 p-5">
                 <button
                   type="button"
                   onClick={() => setActiveTab(null)}
@@ -412,7 +406,7 @@ export default function WebsiteDesignPage() {
                 </button>
               {activeTab === "color" && (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
+                  <h2 className="text-sm font-bold text-[#1F1A17]">
                     Chủ đề màu sắc
                   </h2>
                   <div className="space-y-2">
@@ -424,7 +418,7 @@ export default function WebsiteDesignPage() {
                         className={`flex w-full items-center justify-between rounded-xl border p-2.5 text-left text-xs transition ${
                           themeId === t.id
                             ? "border-[#3B52DE] bg-[#EEF2FF]/50 font-semibold"
-                            : "border-[#E6DFD3] hover:bg-[#FAF8F5]"
+                            : "border-stone-200 hover:bg-stone-50"
                         }`}
                       >
                         <span className="flex items-center gap-2.5">
@@ -447,7 +441,7 @@ export default function WebsiteDesignPage() {
               {activeTab === "font" && (
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-sm font-bold text-[#2C2117]">
+                    <h2 className="text-sm font-bold text-[#1F1A17]">
                       Phông chữ tiêu đề
                     </h2>
                     <div className="mt-3 space-y-2">
@@ -459,7 +453,7 @@ export default function WebsiteDesignPage() {
                           className={`w-full rounded-xl border px-3 py-2.5 text-left text-xs transition ${
                             fontId === f.id
                               ? "border-[#3B52DE] bg-[#EEF2FF]/50 font-semibold text-[#3B52DE]"
-                              : "border-[#E6DFD3] text-[#5E5042] hover:bg-[#FAF8F5]"
+                              : "border-stone-200 text-stone-700 hover:bg-stone-50"
                           }`}
                         >
                           {f.label}
@@ -468,7 +462,7 @@ export default function WebsiteDesignPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#5E5042]">
+                    <p className="text-xs font-semibold text-stone-700">
                       Cỡ chữ tiêu đề
                     </p>
                     <div className="mt-2 grid grid-cols-3 gap-2">
@@ -483,8 +477,8 @@ export default function WebsiteDesignPage() {
                           onClick={() => saveSection({ fontScale: s.key })}
                           className={`rounded-lg border py-1.5 text-xs font-semibold ${
                             fontScale === s.key
-                              ? "border-[#3B52DE] bg-[#EEF2FF] text-[#3B52DE]"
-                              : "border-[#E6DFD3] text-[#5E5042]"
+                              ? "border-[#3B52DE] bg-stone-100 text-[#1F1A17] font-bold"
+                              : "border-stone-200 text-stone-700"
                           }`}
                         >
                           {s.label}
@@ -497,7 +491,7 @@ export default function WebsiteDesignPage() {
 
               {activeTab === "layout" && (
                 <div className="space-y-3">
-                  <h2 className="flex items-center gap-1.5 text-sm font-bold text-[#2C2117]">
+                  <h2 className="flex items-center gap-1.5 text-sm font-bold text-[#1F1A17]">
                     <ImageIcon size={15} className="text-[#3B52DE]" />
                     Ảnh bìa đầu trang
                   </h2>
@@ -510,7 +504,7 @@ export default function WebsiteDesignPage() {
                         className={`overflow-hidden rounded-xl border text-left transition ${
                           coverId === img.id
                             ? "border-[#3B52DE] ring-2 ring-[#3B52DE]/20"
-                            : "border-[#E6DFD3]"
+                            : "border-stone-200"
                         }`}
                       >
                         <img
@@ -518,7 +512,7 @@ export default function WebsiteDesignPage() {
                           alt={img.label}
                           className="h-16 w-full object-cover"
                         />
-                        <p className="truncate px-2 py-1.5 text-[11px] font-medium text-[#2C2117]">
+                        <p className="truncate px-2 py-1.5 text-[11px] font-medium text-[#1F1A17]">
                           {img.label}
                         </p>
                       </button>
@@ -529,7 +523,7 @@ export default function WebsiteDesignPage() {
 
               {activeTab === "art" && (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
+                  <h2 className="text-sm font-bold text-[#1F1A17]">
                     Hoạ tiết trang trí góc
                   </h2>
                   <div className="space-y-2">
@@ -541,7 +535,7 @@ export default function WebsiteDesignPage() {
                         className={`w-full rounded-xl border px-3 py-2.5 text-left text-xs transition ${
                           artId === a.id
                             ? "border-[#3B52DE] bg-[#EEF2FF]/50 font-semibold text-[#3B52DE]"
-                            : "border-[#E6DFD3] text-[#5E5042] hover:bg-[#FAF8F5]"
+                            : "border-stone-200 text-stone-700 hover:bg-stone-50"
                         }`}
                       >
                         {a.label}
@@ -553,23 +547,23 @@ export default function WebsiteDesignPage() {
 
               {activeTab === "linkPreview" && (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
+                  <h2 className="text-sm font-bold text-[#1F1A17]">
                     Xem trước khi chia sẻ link
                   </h2>
-                  <div className="overflow-hidden rounded-xl border border-[#E6DFD3] bg-[#FAF8F5]">
+                  <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
                     <img
                       src={activeCover.src}
                       alt="Link preview"
                       className="h-32 w-full object-cover"
                     />
                     <div className="p-3">
-                      <p className="text-[10px] text-[#8C7A68] uppercase">
-                        everwed.vn
+                      <p className="text-[10px] text-stone-500 uppercase">
+                        everweb.vn
                       </p>
-                      <p className="mt-0.5 text-xs font-bold text-[#2C2117]">
+                      <p className="mt-0.5 text-xs font-bold text-[#1F1A17]">
                         {linkPreviewTitle || coupleName}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[#6D5B4B]">
+                      <p className="mt-0.5 text-[11px] text-stone-600">
                         {displayDate} · {displayVenue}
                       </p>
                     </div>
@@ -581,14 +575,14 @@ export default function WebsiteDesignPage() {
                       saveSection({ linkPreviewTitle: e.target.value })
                     }
                     placeholder="Tuỳ chỉnh tiêu đề khi gửi Zalo/FB..."
-                    className="w-full rounded-xl border border-[#E2D9CB] px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-[#3B52DE]"
                   />
                 </div>
               )}
 
               {activeTab === "css" && (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-bold text-[#2C2117]">
+                  <h2 className="text-sm font-bold text-[#1F1A17]">
                     Tuỳ chỉnh CSS (Nâng cao)
                   </h2>
                   <textarea
@@ -596,7 +590,7 @@ export default function WebsiteDesignPage() {
                     value={customCss}
                     onChange={(e) => saveSection({ customCss: e.target.value })}
                     placeholder="/* Ví dụ: #preview-sec-welcome h3 { letter-spacing: 2px; } */"
-                    className="w-full rounded-xl border border-[#E2D9CB] bg-[#FAF8F5] p-3 font-mono text-[11px] outline-none focus:border-[#3B52DE]"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 p-3 font-mono text-[11px] outline-none focus:border-[#3B52DE]"
                   />
                 </div>
               )}
@@ -604,14 +598,14 @@ export default function WebsiteDesignPage() {
               {activeTab === "pages" && (
                 <div>
                   <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-[#2C2117]">
+                    <h2 className="text-sm font-bold text-[#1F1A17]">
                       Các mục trên Website
                     </h2>
-                    <span className="text-xs text-[#8C7A68]">
+                    <span className="text-xs text-stone-500">
                       {pages.filter((p) => p.visible).length}/{pages.length} bật
                     </span>
                   </div>
-                  <div className="mt-3 divide-y divide-[#F1ECE3]">
+                  <div className="mt-3 divide-y divide-stone-100">
                     {pages.map((p) => (
                       <div
                         key={p.key}
@@ -620,8 +614,8 @@ export default function WebsiteDesignPage() {
                         <span
                           className={
                             p.visible
-                              ? "font-medium text-[#2C2117]"
-                              : "text-[#9C8B7A] line-through"
+                              ? "font-medium text-[#1F1A17]"
+                              : "text-stone-400 line-through"
                           }
                         >
                           {p.label}
@@ -649,14 +643,14 @@ export default function WebsiteDesignPage() {
             {/* Checklist Section (Flat Footer Block) */}
             <div className="p-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold tracking-wide text-[#2C2117] uppercase">
+                <h2 className="text-xs font-bold tracking-wide text-[#1F1A17] uppercase">
                   Hoàn thiện Website
                 </h2>
                 <span className="text-xs font-semibold text-[#3B52DE] tabular-nums">
                   {doneSteps.length}/{CHECKLIST.length}
                 </span>
               </div>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#EFEAE1]">
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#F5F5F4]">
                 <div
                   className="h-full rounded-full bg-[#3B52DE] transition-all"
                   style={{
@@ -686,8 +680,8 @@ export default function WebsiteDesignPage() {
                         <span
                           className={
                             done
-                              ? "text-[#8C7A68] line-through"
-                              : "text-[#2C2117]"
+                              ? "text-stone-500 line-through"
+                              : "text-[#1F1A17]"
                           }
                         >
                           {step}
@@ -1051,7 +1045,7 @@ export default function WebsiteDesignPage() {
 
                 {/* Footer */}
                 <footer className="border-t border-black/10 py-8 text-center text-[10px] opacity-65">
-                  Được tạo với tất cả yêu thương trên EverWed
+                  Được tạo với tất cả yêu thương trên EverWeb
                 </footer>
               </div>
           </div>

@@ -19,6 +19,8 @@ export const ROUTE_PATHS = Object.freeze({
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   CREATE_EVENT: "/create-event",
   WEDDING_SETUP: "/onboarding/wedding",
   EVENT_HUB: "/hub",
@@ -36,8 +38,8 @@ export const ROUTE_PATHS = Object.freeze({
   SEATING_CHART: "/seating-chart",
   PHOTO_MOMENTS: "/photo-moments",
   INVITATION: "/invitation",
-  DASHBOARD: "/dashboard",
-  DASHBOARD_DEFAULT: "/dashboard/profile",
+  DASHBOARD: "/hub",
+  DASHBOARD_DEFAULT: "/hub",
   ADMIN: "/admin",
   UNAUTHORIZED: "/403",
 });
@@ -45,6 +47,8 @@ export const ROUTE_PATHS = Object.freeze({
 const GUEST_AUTH_PATHS = new Set([
   ROUTE_PATHS.LOGIN,
   ROUTE_PATHS.REGISTER,
+  ROUTE_PATHS.FORGOT_PASSWORD,
+  ROUTE_PATHS.RESET_PASSWORD,
   ROUTE_PATHS.UNAUTHORIZED,
   "/unauthorized",
 ]);

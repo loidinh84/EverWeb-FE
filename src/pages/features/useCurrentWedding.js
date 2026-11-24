@@ -7,7 +7,9 @@ export function useCurrentWedding() {
   const [wedding, setWedding] = useState(() => {
     if (location.state?.wedding) return location.state.wedding;
     try {
-      const cached = sessionStorage.getItem("everweb_pending_wedding");
+      const cached =
+        sessionStorage.getItem("everweb_pending_wedding") ||
+        localStorage.getItem("everweb_recent_wedding");
       return cached ? JSON.parse(cached) : null;
     } catch {
       return null;
@@ -15,12 +17,33 @@ export function useCurrentWedding() {
   });
 
   useEffect(() => {
-    if (wedding) return undefined;
+    if (wedding) {
+      try {
+        localStorage.setItem("everweb_recent_wedding", JSON.stringify(wedding));
+      } catch (err) {
+        void err;
+      }
+      return undefined;
+    }
     let cancelled = false;
     weddingApi
       .getAll()
       .then((items) => {
-        if (!cancelled && items.length > 0) setWedding(items[0]);
+        if (!cancelled && items.length > 0) {
+          setWedding(items[0]);
+          try {
+            sessionStorage.setItem(
+              "everweb_pending_wedding",
+              JSON.stringify(items[0])
+            );
+            localStorage.setItem(
+              "everweb_recent_wedding",
+              JSON.stringify(items[0])
+            );
+          } catch (err) {
+            void err;
+          }
+        }
       })
       .catch(() => {});
     return () => {
@@ -57,6 +80,19 @@ export function useWeddingFeature(wedding, section, fallback) {
       cancelled = true;
     };
   }, [wedding?.id, section]);
+
+  // Lắng nghe tín hiệu cập nhật thời gian thực từ Trợ lý EverWeb AI hoặc các trang khác
+  useEffect(() => {
+    const handleFeatureUpdate = (event) => {
+      if (event.detail && event.detail.section === section && event.detail.data) {
+        setData((prev) => ({ ...prev, ...event.detail.data }));
+      }
+    };
+    window.addEventListener("everweb:feature-updated", handleFeatureUpdate);
+    return () => {
+      window.removeEventListener("everweb:feature-updated", handleFeatureUpdate);
+    };
+  }, [section]);
 
   const saveSection = useCallback(
     async (patchOrUpdater) => {

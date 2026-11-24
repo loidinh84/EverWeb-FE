@@ -44,6 +44,24 @@ export const authApi = {
     });
     return response.data;
   },
+
+  async forgotPassword(email) {
+    const response = await api.post(
+      "/auth/forgot-password",
+      { email },
+      { _skipAuthEvent: true }
+    );
+    return response.data;
+  },
+
+  async resetPassword({ token, newPassword }) {
+    const response = await api.post(
+      "/auth/reset-password",
+      { token, newPassword },
+      { _skipAuthEvent: true }
+    );
+    return response.data;
+  },
 };
 
 export default authApi;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import { useToast } from "../../components/common";
@@ -82,7 +82,7 @@ export default function WebsitePreviewPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#2C2117] text-white">
+    <div className="flex min-h-screen flex-col bg-[#1F1A17] text-white">
       {/* Top Publish Banner */}
       <div className="flex flex-wrap items-center justify-center gap-4 bg-[#3B52DE] px-4 py-2.5 text-xs text-white">
         <span>
@@ -152,7 +152,7 @@ export default function WebsitePreviewPage() {
         <button
           type="button"
           onClick={() => navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } })}
-          className="fixed bottom-5 left-5 z-30 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-[#2C2117] shadow-lg transition hover:bg-[#FAF8F5]"
+          className="fixed bottom-5 left-5 z-30 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-[#1F1A17] shadow-lg transition hover:bg-stone-50"
         >
           <ArrowLeft size={14} />
           Quay lại Trung tâm sự kiện

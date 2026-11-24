@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Flower2 } from "lucide-react";
 import { useToast } from "../../components/common";
@@ -60,6 +60,7 @@ export default function WeddingSetupPage() {
         status: draftWedding.status,
       });
       sessionStorage.setItem("everweb_pending_wedding", JSON.stringify(created));
+      localStorage.setItem("everweb_recent_wedding", JSON.stringify(created));
       toast.success(`Đã tạo đám cưới ${title}!`);
       navigate(ROUTE_PATHS.EVENT_HUB, {
         replace: true,
@@ -69,6 +70,10 @@ export default function WeddingSetupPage() {
       if (error?.response?.status === 404) {
         sessionStorage.setItem(
           "everweb_pending_wedding",
+          JSON.stringify(draftWedding)
+        );
+        localStorage.setItem(
+          "everweb_recent_wedding",
           JSON.stringify(draftWedding)
         );
         toast.success(`Đã tạo đám cưới ${title}!`);
@@ -91,32 +96,32 @@ export default function WeddingSetupPage() {
   };
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-white text-[#2C2117] lg:grid-cols-12">
+    <div className="grid min-h-screen grid-cols-1 bg-white text-[#1F1A17] lg:grid-cols-12">
       {/* Left: Visual Preview Collage */}
-      <div className="hidden flex-col justify-center gap-4 bg-[#FAF7F2] p-8 lg:col-span-6 lg:flex xl:p-12">
+      <div className="hidden flex-col justify-center gap-4 bg-stone-50 p-8 lg:col-span-6 lg:flex xl:p-12">
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-[#EAE3D8] bg-white p-4 shadow-2xs">
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-2xs">
             <div className="flex items-baseline gap-4">
               <div>
-                <p className="text-2xl font-bold text-[#2C2117]">95</p>
-                <p className="text-[11px] text-[#8C7A68]">Khách mời</p>
+                <p className="text-2xl font-bold text-[#1F1A17]">95</p>
+                <p className="text-[11px] text-stone-500">Khách mời</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-[#3B52DE]">80</p>
-                <p className="text-[11px] text-[#8C7A68]">Đã xác nhận</p>
+                <p className="text-[11px] text-stone-500">Đã xác nhận</p>
               </div>
             </div>
             <div className="mt-3 space-y-1.5 text-xs">
-              <div className="rounded-lg bg-[#FAF8F5] px-2.5 py-1.5 font-medium text-[#5E5042]">
+              <div className="rounded-lg bg-stone-50 px-2.5 py-1.5 font-medium text-stone-700">
                 60 Tham dự
               </div>
-              <div className="rounded-lg bg-[#FAF8F5] px-2.5 py-1.5 text-[#8C7A68]">
+              <div className="rounded-lg bg-stone-50 px-2.5 py-1.5 text-stone-500">
                 15 Chờ phản hồi
               </div>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[#EAE3D8] bg-white p-2 shadow-2xs">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-2 shadow-2xs">
             <img
               src={galleryBouquet}
               alt="Thiệp cưới mẫu"
@@ -125,7 +130,7 @@ export default function WeddingSetupPage() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-[#EAE3D8] bg-white p-3 shadow-xs">
+        <div className="relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-3 shadow-xs">
           <img
             src={heroWedding}
             alt="Trang web cưới"
@@ -141,7 +146,7 @@ export default function WeddingSetupPage() {
           </div>
         </div>
 
-        <div className="hidden overflow-hidden rounded-2xl border border-[#EAE3D8] bg-white p-2 xl:block">
+        <div className="hidden overflow-hidden rounded-2xl border border-stone-200 bg-white p-2 xl:block">
           <img
             src={galleryCeremony}
             alt="Lễ cưới"
@@ -157,10 +162,10 @@ export default function WeddingSetupPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B52DE] text-white">
               <Flower2 size={20} />
             </div>
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#2C2117]">
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#1F1A17]">
               Hãy sẵn sàng lên kế hoạch.
             </h1>
-            <p className="mt-1 text-xs text-[#8C7A68]">
+            <p className="mt-1 text-xs text-stone-500">
               Nhập thông tin cơ bản để tạo thiệp mời & không gian quản trị riêng
             </p>
           </div>
@@ -171,7 +176,7 @@ export default function WeddingSetupPage() {
               value={yourName}
               onChange={(e) => setYourName(e.target.value)}
               placeholder="Tên của bạn"
-              className="w-full rounded-xl border border-[#E2D9CB] bg-white px-4 py-3 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE]"
+              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder-[#A8A29E] outline-none focus:border-[#3B52DE]"
             />
 
             <input
@@ -179,7 +184,7 @@ export default function WeddingSetupPage() {
               value={partnerName}
               onChange={(e) => setPartnerName(e.target.value)}
               placeholder="Tên người thương"
-              className="w-full rounded-xl border border-[#E2D9CB] bg-white px-4 py-3 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE]"
+              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder-[#A8A29E] outline-none focus:border-[#3B52DE]"
             />
 
             <div>
@@ -189,21 +194,21 @@ export default function WeddingSetupPage() {
                 disabled={venueUndecided}
                 onChange={(e) => setVenue(e.target.value)}
                 placeholder="Địa điểm tổ chức"
-                className="w-full rounded-xl border border-[#E2D9CB] bg-white px-4 py-3 text-sm text-[#2C2117] placeholder-[#9C8B7A] outline-none focus:border-[#3B52DE] disabled:bg-[#FAF8F5] disabled:text-[#9C8B7A]"
+                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-[#1F1A17] placeholder-[#A8A29E] outline-none focus:border-[#3B52DE] disabled:bg-stone-50 disabled:text-stone-400"
               />
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-[#7D6D5E]">
+              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-stone-500">
                 <input
                   type="checkbox"
                   checked={venueUndecided}
                   onChange={(e) => setVenueUndecided(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#D6CFC4] accent-[#3B52DE]"
+                  className="h-4 w-4 rounded border-stone-200 accent-[#1F1A17]"
                 />
                 Chúng tôi vẫn đang cân nhắc
               </label>
             </div>
 
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-[#8C7A68]">
+              <label className="mb-1 block text-[11px] font-medium text-stone-500">
                 Ngày dự kiến tổ chức
               </label>
               <input
@@ -211,14 +216,14 @@ export default function WeddingSetupPage() {
                 value={eventDate}
                 disabled={dateUndecided}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full rounded-xl border border-[#E2D9CB] bg-white px-4 py-2.5 text-sm text-[#2C2117] outline-none focus:border-[#3B52DE] disabled:bg-[#FAF8F5] disabled:text-[#9C8B7A]"
+                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-[#1F1A17] outline-none focus:border-[#3B52DE] disabled:bg-stone-50 disabled:text-stone-400"
               />
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-[#7D6D5E]">
+              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-stone-500">
                 <input
                   type="checkbox"
                   checked={dateUndecided}
                   onChange={(e) => setDateUndecided(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#D6CFC4] accent-[#3B52DE]"
+                  className="h-4 w-4 rounded border-stone-200 accent-[#1F1A17]"
                 />
                 Chúng tôi vẫn đang cân nhắc
               </label>
@@ -233,12 +238,12 @@ export default function WeddingSetupPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-[#8C7A68]">
+          <p className="mt-5 text-center text-xs text-stone-500">
             Không phải {user?.email || "tài khoản này"}?{" "}
             <button
               type="button"
               onClick={handleSignOut}
-              className="font-medium text-[#2C2117] underline underline-offset-2"
+              className="font-medium text-[#1F1A17] underline underline-offset-2"
             >
               Đăng xuất
             </button>

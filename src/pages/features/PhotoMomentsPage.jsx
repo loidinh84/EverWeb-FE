@@ -1,659 +1,827 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import { useMemo, useState } from "react";
 import {
-  ArrowLeft,
+  Camera,
+  Check,
+  Copy,
+  Download,
+  ExternalLink,
   FolderPlus,
   Globe,
   Heart,
   Image as ImageIcon,
-  LayoutGrid,
-  Link2,
-  Lock,
-  MessageCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Maximize2,
+  Play,
   Plus,
   QrCode,
+  Settings,
+  Sparkles,
   Trash2,
-  Upload,
+  X,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
-import { ROUTE_PATHS } from "../../constants/roles";
 import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
 import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
 import galleryDining from "../../assets/image/gallery-dining.jpg";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
+import weddingCouple from "../../assets/image/wedding-couple.jpg";
+import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 
 const DEFAULT_ALBUMS = [
   {
-    id: "alb-pages",
-    name: "Ảnh các trang Website",
-    kind: "system",
-    visibility: "Public",
+    id: "alb-engagement",
+    name: "Ảnh Pre-Wedding & Đính hôn",
+    kind: "custom",
+    visibility: "Công khai",
     likesOn: true,
     commentsOn: true,
+    cover: heroWedding,
     photos: [
-      { id: "p1", url: heroWedding, caption: "Ảnh bìa Sảnh tiệc" },
-      { id: "p2", url: galleryCeremony, caption: "Cổng hoa ngoài trời" },
-      { id: "p3", url: galleryBouquet, caption: "Hoa cưới cầm tay" },
-      { id: "p4", url: galleryDining, caption: "Bàn tiệc tối" },
+      { id: "p1", url: heroWedding, caption: "Khoảnh khắc hoàng hôn lãng mạn tại Đà Lạt", likes: 48 },
+      { id: "p2", url: weddingCouple, caption: "Nụ cười rạng rỡ của cô dâu chú rể", likes: 62 },
+      { id: "p3", url: galleryCeremony, caption: "Lễ đính hôn ấm cúng cùng hai bên gia đình", likes: 35 },
+      { id: "p4", url: galleryBouquet, caption: "Bó hoa cưới hoa linh lan trắng tinh khôi", likes: 29 },
     ],
   },
   {
     id: "alb-event",
-    name: "Ảnh sự kiện (Khách gửi qua QR)",
+    name: "Khoảnh khắc tiệc cưới (Khách gửi qua QR)",
     kind: "event",
-    visibility: "Public",
+    visibility: "Công khai",
     likesOn: true,
     commentsOn: true,
+    cover: galleryDining,
     photos: [
-      { id: "p5", url: galleryCeremony, caption: "Khoảnh khắc đón khách" },
-      { id: "p6", url: galleryDining, caption: "Tiệc tối thân mật" },
+      { id: "p5", url: galleryCeremony, caption: "Khoảnh khắc tiến vào lễ đường cùng bố mẹ", likes: 54 },
+      { id: "p6", url: galleryDining, caption: "Bàn tiệc tối lung linh ánh nến Sảnh Hoa Mai", likes: 41 },
+      { id: "p7", url: heroWedding, caption: "Cắt bánh kem & nâng ly chúc mừng", likes: 38 },
     ],
   },
   {
-    id: "alb-engagement",
-    name: "Ảnh Pre-Wedding & Đính hôn",
-    kind: "custom",
-    visibility: "Public",
+    id: "alb-decor",
+    name: "Không gian trang trí & Hậu trường",
+    kind: "system",
+    visibility: "Công khai",
     likesOn: true,
     commentsOn: true,
+    cover: galleryBouquet,
     photos: [
-      { id: "p7", url: heroWedding, caption: "Chụp tại Đà Lạt" },
-      { id: "p8", url: galleryBouquet, caption: "Hoa cưới" },
-      { id: "p9", url: galleryCeremony, caption: "Lễ đính hôn" },
+      { id: "p8", url: galleryBouquet, caption: "Cổng hoa tươi nhập khẩu tông màu pastel", likes: 27 },
+      { id: "p9", url: galleryDining, caption: "Chi tiết set bàn tiệc & bảng tên từng khách", likes: 33 },
     ],
   },
 ];
 
+const SAMPLE_PHOTO_PRESETS = [
+  { name: "Bàn tiệc tối lung linh", url: galleryDining },
+  { name: "Cổng hoa lễ đường", url: galleryCeremony },
+  { name: "Hoa cưới cầm tay", url: galleryBouquet },
+  { name: "Cô dâu chú rể hạnh phúc", url: weddingCouple },
+  { name: "Ảnh kỷ niệm ngoài trời", url: heroWedding },
+];
+
 export default function PhotoMomentsPage() {
   const toast = useToast();
-  const navigate = useNavigate();
   const { wedding } = useCurrentWedding();
+
+  const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
+  const photoSlug = wedding?.slug || "khang-an";
+  const shareUrl = `https://everweb.vn/${photoSlug}/photos`;
+  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shareUrl)}`;
 
   const { data: webConfig, saveSection } = useWeddingFeature(
     wedding,
     "website_config",
     {
       photoAlbums: DEFAULT_ALBUMS,
+      allowGuestUpload: true,
+      requireModeration: false,
     }
   );
 
   const albums = useMemo(
-    () =>
-      Array.isArray(webConfig.photoAlbums) && webConfig.photoAlbums.length > 0
-        ? webConfig.photoAlbums
-        : DEFAULT_ALBUMS,
+    () => (Array.isArray(webConfig.photoAlbums) && webConfig.photoAlbums.length > 0 ? webConfig.photoAlbums : DEFAULT_ALBUMS),
     [webConfig.photoAlbums]
   );
+  const allowGuestUpload = webConfig.allowGuestUpload ?? true;
+  const requireModeration = webConfig.requireModeration ?? false;
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedView, setSelectedView] = useState("overview"); // "overview" | "all" | albumId
+  const [activeTab, setActiveTab] = useState("all"); // all | albums | qr | settings
+  const [selectedAlbumId, setSelectedAlbumId] = useState("all");
+
+  // Modals
   const [isAddAlbumOpen, setIsAddAlbumOpen] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState("");
-  const [isAddMediaOpen, setIsAddMediaOpen] = useState(false);
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [mediaCaption, setMediaCaption] = useState("");
-  const [targetAlbumId, setTargetAlbumId] = useState("alb-engagement");
-  const [isQrOpen, setIsQrOpen] = useState(false);
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
-  const [renameDraft, setRenameDraft] = useState("");
+  const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
+  const [targetAlbumId, setTargetAlbumId] = useState(albums[0]?.id || "alb-engagement");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [photoCaption, setPhotoCaption] = useState("");
+  const [activeLightboxPhoto, setActiveLightboxPhoto] = useState(null);
+  const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
+  const [slideshowIndex, setSlideshowIndex] = useState(0);
 
-  const activeAlbum = albums.find((a) => a.id === selectedView) || null;
+  // Flattened photos
   const allPhotos = useMemo(
     () =>
       albums.flatMap((a) =>
-        a.photos.map((p) => ({ ...p, albumId: a.id, albumName: a.name }))
+        a.photos.map((p) => ({
+          ...p,
+          albumId: a.id,
+          albumName: a.name,
+        }))
       ),
     [albums]
   );
 
-  const shareUrl = `https://everwed.vn/${wedding?.slug || "khang-an"}/photos`;
-  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    shareUrl
-  )}`;
+  // Filtered photos based on album filter
+  const displayedPhotos = useMemo(() => {
+    if (selectedAlbumId === "all") return allPhotos;
+    return allPhotos.filter((p) => p.albumId === selectedAlbumId);
+  }, [allPhotos, selectedAlbumId]);
 
-  const handleAddAlbum = (e) => {
+  const totalLikes = useMemo(
+    () => allPhotos.reduce((sum, p) => sum + (Number(p.likes) || 0), 0),
+    [allPhotos]
+  );
+
+  const handleCopy = (text, label) => {
+    navigator.clipboard?.writeText(text);
+    toast.success(`Đã sao chép ${label}`);
+  };
+
+  const handleCreateAlbum = (e) => {
     e.preventDefault();
     if (!newAlbumName.trim()) return;
     const created = {
       id: `alb-${Date.now()}`,
       name: newAlbumName.trim(),
       kind: "custom",
-      visibility: "Public",
+      visibility: "Công khai",
       likesOn: true,
       commentsOn: true,
+      cover: heroWedding,
       photos: [],
     };
     saveSection({ photoAlbums: [...albums, created] });
-    setSelectedView(created.id);
     setNewAlbumName("");
     setIsAddAlbumOpen(false);
-    toast.success(`Đã tạo Album "${created.name}" & lưu Neon DB`);
+    toast.success(`Đã tạo album mới: "${created.name}"`);
   };
 
-  const handleAddPhoto = (urlToAdd, captionToAdd) => {
-    const finalUrl = (urlToAdd || mediaUrl).trim();
-    if (!finalUrl) return;
-    const destId = activeAlbum?.id || targetAlbumId || albums[0]?.id;
-    saveSection({
-      photoAlbums: albums.map((a) =>
-        a.id === destId
-          ? {
-              ...a,
-              photos: [
-                {
-                  id: `ph-${Date.now()}`,
-                  url: finalUrl,
-                  caption: (captionToAdd || mediaCaption).trim() || "Ảnh cưới",
-                },
-                ...a.photos,
-              ],
-            }
-          : a
-      ),
-    });
-    setMediaUrl("");
-    setMediaCaption("");
-    setIsAddMediaOpen(false);
-    toast.success("Đã thêm ảnh vào Album & lưu Neon DB");
+  const handleAddPhoto = (e) => {
+    e.preventDefault();
+    const finalUrl = photoUrl.trim();
+    if (!finalUrl) {
+      toast.error("Vui lòng nhập đường dẫn hoặc chọn ảnh mẫu");
+      return;
+    }
+    const destId = targetAlbumId || albums[0]?.id;
+    const newPhoto = {
+      id: `ph-${Date.now()}`,
+      url: finalUrl,
+      caption: photoCaption.trim() || "Khoảnh khắc tiệc cưới đáng nhớ",
+      likes: 1,
+    };
+
+    const next = albums.map((a) =>
+      a.id === destId ? { ...a, photos: [newPhoto, ...a.photos], cover: finalUrl } : a
+    );
+
+    saveSection({ photoAlbums: next });
+    setPhotoUrl("");
+    setPhotoCaption("");
+    setIsAddPhotoOpen(false);
+    toast.success("Đã thêm ảnh vào album");
   };
 
   const handleDeletePhoto = (albumId, photoId) => {
-    saveSection({
-      photoAlbums: albums.map((a) =>
-        a.id === albumId
-          ? { ...a, photos: a.photos.filter((p) => p.id !== photoId) }
-          : a
-      ),
-    });
-    toast.info("Đã xoá ảnh khỏi Album");
+    const next = albums.map((a) =>
+      a.id === albumId ? { ...a, photos: a.photos.filter((p) => p.id !== photoId) } : a
+    );
+    saveSection({ photoAlbums: next });
+    if (activeLightboxPhoto?.id === photoId) setActiveLightboxPhoto(null);
+    toast.info("Đã xóa ảnh khỏi album");
   };
 
-  const updateActiveAlbum = (patch) => {
-    if (!activeAlbum) return;
-    saveSection({
-      photoAlbums: albums.map((a) =>
-        a.id === activeAlbum.id ? { ...a, ...patch } : a
-      ),
-    });
+  const handleLikePhoto = (albumId, photoId) => {
+    const next = albums.map((a) =>
+      a.id === albumId
+        ? {
+            ...a,
+            photos: a.photos.map((p) => (p.id === photoId ? { ...p, likes: (p.likes || 0) + 1 } : p)),
+          }
+        : a
+    );
+    saveSection({ photoAlbums: next });
+    if (activeLightboxPhoto?.id === photoId) {
+      setActiveLightboxPhoto((prev) => (prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null));
+    }
+    toast.success("Đã thả tim khoảnh khắc ❤️");
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F6F3] text-[#2C2117]">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[#EAE6DF] bg-white/95 px-4 backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() =>
-              navigate(ROUTE_PATHS.EVENT_HUB, { state: { wedding } })
-            }
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold text-[#5E5042] transition hover:bg-[#F3F0EA] hover:text-[#2C2117]"
-          >
-            <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Trung tâm sự kiện</span>
-          </button>
-          <span className="hidden h-4 w-px bg-[#E6DFD3] sm:block" />
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((p) => !p)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3 py-1.5 text-xs font-medium text-[#5E5042] hover:border-[#3B52DE]"
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose size={14} />
-            ) : (
-              <PanelLeftOpen size={14} />
-            )}
-            <span className="hidden md:inline">
-              {sidebarOpen ? "Thu gọn" : "Menu Album"}
-            </span>
-          </button>
-        </div>
-
+    <FeatureShell
+      title="Album ảnh & QR Khoảnh khắc"
+      subtitle={`Lưu trữ ${allPhotos.length} ảnh kỷ niệm · Khách quét mã QR gửi ảnh trực tiếp`}
+      wedding={wedding}
+      actions={
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsQrOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2D9CB] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE]"
-          >
-            <QrCode size={13} /> Link & Mã QR
-          </button>
+          {/* Nút Live Slideshow cho màn hình LED */}
           <button
             type="button"
             onClick={() => {
-              if (activeAlbum) setTargetAlbumId(activeAlbum.id);
-              setIsAddMediaOpen(true);
+              setSlideshowIndex(0);
+              setIsSlideshowOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#3B52DE] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#2F43C2]"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE] hover:bg-stone-50 transition"
           >
-            <Plus size={14} /> Thêm ảnh
+            <Play size={13} className="text-[#3B52DE]" /> Chiếu màn hình LED
           </button>
+
+          {/* Nút In Standee / QR */}
           <button
             type="button"
-            onClick={() => navigate(`${ROUTE_PATHS.DASHBOARD}/album`)}
-            title="Mở trang Album & VietQR trong Dashboard"
-            className="hidden rounded-full border border-[#E2D9CB] bg-white p-1.5 text-[#5E5042] hover:border-[#3B52DE] sm:inline-flex"
+            onClick={() => setActiveTab("qr")}
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE] hover:bg-stone-50 transition"
           >
-            <LayoutGrid size={14} />
+            <QrCode size={13} /> QR để bàn tiệc
+          </button>
+
+          {/* Nút Thêm ảnh mới */}
+          <button
+            type="button"
+            onClick={() => setIsAddPhotoOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1F1A17] px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 transition shadow-xs active:scale-95"
+          >
+            <Plus size={14} /> Thêm ảnh mới
           </button>
         </div>
-      </header>
-
-      <div className="flex flex-1 items-start">
-        {/* Left WithJoy Photos Sidebar */}
-        {sidebarOpen && (
-          <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-72 shrink-0 overflow-y-auto border-r border-[#EAE6DF] bg-white p-4">
-            <p className="px-2 text-[11px] font-medium text-[#8C7A68]">
-              Website /{" "}
-              <span className="font-semibold text-[#2C2117]">
-                Ảnh & Khoảnh khắc
+      }
+    >
+      {/* =========================================================================
+          HERO OVERVIEW CARD: THỐNG KÊ KHOẢNH KHẮC & TÍNH NĂNG QUÉT QR BÀN TIỆC
+         ========================================================================= */}
+      <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-12">
+        {/* Khối Cổng Live Photo Stream cho khách tiệc cưới */}
+        <div className="lg:col-span-7 rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-[11px] font-bold tracking-wider text-stone-700 uppercase">
+                <Camera size={13} className="text-[#3B52DE]" /> Cổng thu thập ảnh tiệc cưới trực tiếp
               </span>
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#3B52DE] hover:underline"
+              >
+                <span>Xem Album công khai</span>
+                <ExternalLink size={12} />
+              </a>
+            </div>
+
+            <h2 className="mt-4 text-xl sm:text-2xl font-bold tracking-tight text-[#1F1A17]">
+              Lưu giữ mọi góc nhìn & nụ cười từ khách mời
+            </h2>
+            <p className="mt-1.5 text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Khách tham dự chỉ cần dùng camera điện thoại quét mã QR đặt tại bàn tiệc để tải ảnh và gửi lời chúc lên album chung mà không cần cài đặt bất kỳ ứng dụng nào.
             </p>
 
-            <button
-              type="button"
-              onClick={() => setSelectedView("overview")}
-              className={`mt-3 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold transition ${
-                selectedView === "overview"
-                  ? "bg-[#EEF2FF] text-[#3B52DE]"
-                  : "text-[#2C2117] hover:bg-[#FAF8F5]"
-              }`}
-            >
-              <ImageIcon size={14} /> Tổng quan Album
-            </button>
-
-            <div className="mt-5">
-              <p className="px-2 text-[10px] font-bold tracking-wider text-[#8C7A68] uppercase">
-                Albums
-              </p>
-              <div className="mt-2 space-y-1">
-                {albums.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setSelectedView(a.id)}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition ${
-                      selectedView === a.id
-                        ? "bg-[#EEF2FF] font-semibold text-[#3B52DE]"
-                        : "text-[#5E5042] hover:bg-[#FAF8F5]"
-                    }`}
-                  >
-                    <span className="truncate">{a.name}</span>
-                    <span className="text-[11px] text-[#8C7A68] tabular-nums">
-                      {a.photos.length}
-                    </span>
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setIsAddAlbumOpen(true)}
-                  className="flex w-full items-center gap-1.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-[#3B52DE] hover:bg-[#EEF2FF]/50"
-                >
-                  <FolderPlus size={14} /> + Thêm Album
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-[#F1ECE3] pt-4">
-              <p className="px-2 text-[10px] font-bold tracking-wider text-[#8C7A68] uppercase">
-                Tải lên
-              </p>
-              <div className="mt-2 space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedView("all")}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition ${
-                    selectedView === "all"
-                      ? "bg-[#EEF2FF] font-semibold text-[#3B52DE]"
-                      : "text-[#5E5042] hover:bg-[#FAF8F5]"
-                  }`}
-                >
-                  <span>Thư viện ảnh (Tất cả)</span>
-                  <span className="text-[11px] text-[#8C7A68] tabular-nums">
-                    {allPhotos.length}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddMediaOpen(true)}
-                  className="flex w-full items-center gap-1.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-[#2C2117] hover:bg-[#FAF8F5]"
-                >
-                  <Upload size={14} /> + Thêm ảnh mới
-                </button>
-              </div>
-            </div>
-          </aside>
-        )}
-
-        {/* Main Content */}
-        <main className="min-w-0 flex-1 p-5 sm:p-8">
-          {/* OVERVIEW */}
-          {selectedView === "overview" && (
-            <div className="mx-auto max-w-5xl space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E6DFD3] bg-white p-6">
-                <div>
-                  <h2 className="font-display text-2xl font-semibold text-[#2C2117]">
-                    Lưu giữ trọn vẹn mọi khoảnh khắc ngày cưới
-                  </h2>
-                  <p className="mt-1 text-xs text-[#6D5B4B]">
-                    Tải lên tới 100 ảnh miễn phí và chia sẻ mã QR để khách mời
-                    cùng gửi ảnh chụp tại tiệc.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddMediaOpen(true)}
-                  className="rounded-full bg-[#3B52DE] px-5 py-2 text-xs font-semibold text-white hover:bg-[#2F43C2]"
-                >
-                  + Thêm ảnh ngay
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-[#2C2117]">
-                  Danh sách Album ({albums.length})
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setIsAddAlbumOpen(true)}
-                  className="text-xs font-semibold text-[#3B52DE] hover:underline"
-                >
-                  + Tạo Album mới
-                </button>
-              </div>
-
-              {/* WithJoy 3-Photo Collage Album Cards */}
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {albums.map((a) => {
-                  const p0 = a.photos[0]?.url;
-                  const p1 = a.photos[1]?.url;
-                  const p2 = a.photos[2]?.url;
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => setSelectedView(a.id)}
-                      className="group overflow-hidden rounded-2xl border border-[#E6DFD3] bg-white text-left transition hover:border-[#3B52DE] hover:shadow-md"
-                    >
-                      <div className="grid h-44 grid-cols-3 gap-1 bg-[#FAF7F2] p-1">
-                        <div className="col-span-2 overflow-hidden rounded-l-xl bg-[#EFEAE1]">
-                          {p0 ? (
-                            <img
-                              src={p0}
-                              alt={a.name}
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-[#9C8B7A]">
-                              Chưa có ảnh
-                            </div>
-                          )}
-                        </div>
-                        <div className="grid grid-rows-2 gap-1">
-                          <div className="overflow-hidden rounded-tr-xl bg-[#EFEAE1]">
-                            {p1 && (
-                              <img
-                                src={p1}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <div className="overflow-hidden rounded-br-xl bg-[#EFEAE1]">
-                            {p2 && (
-                              <img
-                                src={p2}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-4">
-                        <div>
-                          <p className="text-sm font-bold text-[#2C2117]">
-                            {a.name}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-[#8C7A68]">
-                            {a.photos.length} ảnh ·{" "}
-                            {a.visibility === "Public" ? "Công khai" : "Riêng tư"}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ALL PHOTOS */}
-          {selectedView === "all" && (
-            <div className="mx-auto max-w-5xl space-y-4">
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setSelectedView("overview")}
-                  className="text-xs font-semibold text-[#3B52DE] hover:underline"
-                >
-                  ← Quay lại Albums
-                </button>
-                <span className="text-xs text-[#8C7A68]">
-                  Tổng cộng {allPhotos.length} ảnh
+            {/* Link box sao chép nhanh */}
+            <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-2 sm:p-2.5">
+              <div className="flex items-center gap-2 pl-2 overflow-hidden">
+                <Globe size={16} className="text-stone-400 shrink-0" />
+                <span className="font-mono text-xs font-semibold text-[#1F1A17] truncate">
+                  {shareUrl}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {allPhotos.map((p) => (
-                  <div
-                    key={`${p.albumId}-${p.id}`}
-                    className="group relative aspect-square overflow-hidden rounded-2xl border border-[#E6DFD3] bg-white"
-                  >
-                    <img
-                      src={p.url}
-                      alt={p.caption}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/55 px-2.5 py-1.5 text-[10px] text-white">
-                      <p className="truncate font-semibold">{p.caption}</p>
-                      <p className="truncate opacity-80">{p.albumName}</p>
-                    </div>
-                  </div>
-                ))}
+              <button
+                type="button"
+                onClick={() => handleCopy(shareUrl, "link album ảnh")}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F1A17] px-4 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition shrink-0 cursor-pointer"
+              >
+                <Copy size={13} />
+                <span>Sao chép link</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-2.5 pt-4 border-t border-stone-100 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setSlideshowIndex(0);
+                setIsSlideshowOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 font-semibold text-stone-700 hover:bg-stone-100 transition"
+            >
+              <Play size={13} className="text-[#3B52DE]" /> Bật trình chiếu Live Slideshow (LED)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("qr")}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 font-semibold text-stone-700 hover:bg-stone-100 transition"
+            >
+              <QrCode size={13} /> Tải mã Standee in để bàn
+            </button>
+          </div>
+        </div>
+
+        {/* Khối Thống kê & Trạng thái tải ảnh */}
+        <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-stone-50/70 p-6 sm:p-7 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                Thống kê tương tác
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                {allowGuestUpload ? "Khách gửi ảnh tự do" : "Chỉ CD-CR tải ảnh"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <div className="rounded-2xl border border-stone-200 bg-white p-3.5 text-center">
+                <ImageIcon size={18} className="mx-auto text-blue-600 mb-1" />
+                <span className="text-[10px] font-bold text-stone-500 uppercase block">Tổng Ảnh</span>
+                <span className="text-xl font-bold text-[#1F1A17] tabular-nums">{allPhotos.length}</span>
+                <span className="text-[10px] text-stone-400 block">khoảnh khắc</span>
+              </div>
+
+              <div className="rounded-2xl border border-stone-200 bg-white p-3.5 text-center">
+                <FolderPlus size={18} className="mx-auto text-amber-600 mb-1" />
+                <span className="text-[10px] font-bold text-stone-500 uppercase block">Số Album</span>
+                <span className="text-xl font-bold text-[#1F1A17] tabular-nums">{albums.length}</span>
+                <span className="text-[10px] text-stone-400 block">chủ đề</span>
+              </div>
+
+              <div className="rounded-2xl border border-stone-200 bg-white p-3.5 text-center">
+                <Heart size={18} className="mx-auto text-rose-600 mb-1 fill-rose-500" />
+                <span className="text-[10px] font-bold text-stone-500 uppercase block">Thả Tim</span>
+                <span className="text-xl font-bold text-[#1F1A17] tabular-nums">{totalLikes}</span>
+                <span className="text-[10px] text-stone-400 block">yêu thích</span>
               </div>
             </div>
-          )}
 
-          {/* SINGLE ALBUM + QUICK ACTIONS */}
-          {activeAlbum && (
-            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="space-y-4 lg:col-span-8">
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedView("overview")}
-                    className="text-xs font-semibold text-[#3B52DE] hover:underline"
+            <div className="rounded-2xl border border-stone-200 bg-white p-3.5 text-xs space-y-1">
+              <span className="font-semibold text-[#1F1A17] flex items-center gap-1.5">
+                <Sparkles size={14} className="text-amber-500" /> Đặc quyền tiệc cưới WithJoy:
+              </span>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Ảnh do khách chụp tại bàn tiệc sẽ tự động hiển thị mượt mà trên màn hình LED chính của sân khấu khi bạn bật chế độ Live Slideshow.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 pt-3 border-t border-stone-200/60 flex items-center justify-between text-xs">
+            <span className="text-stone-500">Dung lượng: Không giới hạn</span>
+            <button
+              type="button"
+              onClick={() => setIsAddAlbumOpen(true)}
+              className="font-semibold text-[#3B52DE] hover:underline"
+            >
+              + Tạo album chủ đề mới →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          TAB NAVIGATION CÂN ĐỐI
+         ========================================================================= */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "all", label: "Tất cả khoảnh khắc", count: allPhotos.length, icon: ImageIcon },
+            { key: "albums", label: "Danh sách Album cưới", count: albums.length, icon: FolderPlus },
+            { key: "qr", label: "Mã QR & Standee bàn tiệc", count: null, icon: QrCode },
+            { key: "settings", label: "Cài đặt & Kiểm duyệt", count: null, icon: Settings },
+          ].map((t) => {
+            const Icon = t.icon;
+            const active = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+                  active
+                    ? "bg-[#1F1A17] text-white shadow-xs"
+                    : "bg-stone-100 text-stone-600 hover:bg-stone-200/70 hover:text-stone-900"
+                }`}
+              >
+                <Icon size={14} />
+                <span>{t.label}</span>
+                {t.count !== null && (
+                  <span
+                    className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                      active ? "bg-white/20 text-white" : "bg-stone-200 text-stone-700"
+                    }`}
                   >
-                    ← Albums / {activeAlbum.name}
-                  </button>
-                  <span className="text-xs text-[#8C7A68]">
-                    {activeAlbum.photos.length} ảnh
+                    {t.count}
                   </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeTab === "all" && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-stone-400 text-[11px] font-medium hidden sm:inline">Album:</span>
+            <select
+              value={selectedAlbumId}
+              onChange={(e) => setSelectedAlbumId(e.target.value)}
+              className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#1F1A17] outline-none"
+            >
+              <option value="all">Tất cả Album ({allPhotos.length} ảnh)</option>
+              {albums.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.photos.length} ảnh)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================================
+          TAB 1: LƯỚI ẢNH KHOẢNG KHẮC (MASONRY GRID CAO CẤP)
+         ========================================================================= */}
+      {activeTab === "all" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {displayedPhotos.map((p) => (
+              <div
+                key={p.id}
+                className="group relative rounded-3xl border border-stone-200 bg-white overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+              >
+                {/* Khung ảnh */}
+                <div className="relative h-56 w-full bg-stone-100 overflow-hidden cursor-pointer" onClick={() => setActiveLightboxPhoto(p)}>
+                  <img
+                    src={p.url}
+                    alt={p.caption}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 opacity-60 group-hover:opacity-80 transition-opacity" />
+
+                  {/* Nút phóng to ảnh */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-xs shadow-xs hover:bg-black">
+                      <Maximize2 size={14} />
+                    </span>
+                  </div>
+
+                  {/* Tag Album */}
+                  <div className="absolute top-3 left-3">
+                    <span className="rounded-full bg-black/50 backdrop-blur-xs text-white px-2.5 py-0.5 text-[10px] font-semibold">
+                      {p.albumName}
+                    </span>
+                  </div>
+
+                  {/* Lượt thả tim */}
+                  <div className="absolute bottom-3 right-3">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-xs text-white px-2 py-0.5 text-[11px] font-bold">
+                      <Heart size={11} className="fill-rose-500 text-rose-500" /> {p.likes || 1}
+                    </span>
+                  </div>
                 </div>
 
-                {activeAlbum.photos.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#D6CFC4] bg-white p-12 text-center">
-                    <ImageIcon
-                      size={28}
-                      className="mx-auto text-[#9C8B7A]"
-                    />
-                    <p className="mt-2 text-sm font-bold text-[#2C2117]">
-                      Album chưa có ảnh nào
+                {/* Footer ảnh: Caption & Tác vụ */}
+                <div className="p-4 flex items-center justify-between gap-2 border-t border-stone-100">
+                  <p className="text-xs font-medium text-[#1F1A17] line-clamp-1 flex-1" title={p.caption}>
+                    {p.caption}
+                  </p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleLikePhoto(p.albumId, p.id)}
+                      className="p-1.5 text-stone-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition"
+                      title="Thả tim"
+                    >
+                      <Heart size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePhoto(p.albumId, p.id)}
+                      className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
+                      title="Xóa ảnh"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 2: DANH SÁCH ALBUM CƯỚI (ALBUMS MANAGER)
+         ========================================================================= */}
+      {activeTab === "albums" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {albums.map((a) => (
+              <div
+                key={a.id}
+                className="rounded-3xl border border-stone-200 bg-white overflow-hidden shadow-2xs flex flex-col justify-between"
+              >
+                {/* Ảnh bìa Album */}
+                <div className="relative h-44 w-full bg-stone-100 overflow-hidden">
+                  <img
+                    src={a.cover || a.photos[0]?.url || heroWedding}
+                    alt={a.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
+                    <span className="rounded-md bg-white/20 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      {a.visibility || "Công khai"}
+                    </span>
+                    <span className="text-xs font-semibold">
+                      {a.photos.length} hình ảnh
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-[#1F1A17]">{a.name}</h3>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {a.kind === "event" ? "Khách mời quét mã QR gửi ảnh vào album này" : "Album tuyển chọn bởi cô dâu & chú rể"}
                     </p>
+                  </div>
+
+                  <div className="border-t border-stone-100 pt-3 flex items-center justify-between text-xs">
                     <button
                       type="button"
                       onClick={() => {
-                        setTargetAlbumId(activeAlbum.id);
-                        setIsAddMediaOpen(true);
+                        setSelectedAlbumId(a.id);
+                        setActiveTab("all");
                       }}
-                      className="mt-4 rounded-full bg-[#3B52DE] px-4 py-2 text-xs font-semibold text-white"
+                      className="font-semibold text-[#3B52DE] hover:underline"
                     >
-                      + Thêm ảnh đầu tiên
+                      Xem ảnh trong album ({a.photos.length}) →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetAlbumId(a.id);
+                        setIsAddPhotoOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 font-semibold text-stone-700 hover:text-black"
+                    >
+                      <Plus size={13} /> Thêm ảnh
                     </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                    {activeAlbum.photos.map((p) => (
-                      <div
-                        key={p.id}
-                        className="group relative aspect-square overflow-hidden rounded-2xl border border-[#E6DFD3] bg-white"
-                      >
-                        <img
-                          src={p.url}
-                          alt={p.caption}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePhoto(activeAlbum.id, p.id)}
-                          aria-label="Xoá ảnh"
-                          className="absolute top-2 right-2 rounded-full bg-white/90 p-1.5 text-rose-600 opacity-0 shadow-sm transition group-hover:opacity-100"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: MÃ QR & IN STANDEE ĐỂ BÀN TIỆC
+         ========================================================================= */}
+      {activeTab === "qr" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-6 rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs space-y-5">
+            <div>
+              <h3 className="text-base font-bold text-[#1F1A17]">Mã QR chia sẻ Album cho khách mời</h3>
+              <p className="mt-0.5 text-xs text-stone-500">
+                In Standee đặt tại mỗi bàn tiệc hoặc quầy đón khách (Reception desk) để khách quét mã tải ảnh trực tiếp
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs space-y-2">
+              <span className="font-semibold text-[#1F1A17] flex items-center gap-1.5">
+                <Check size={14} className="text-emerald-600" /> Cách hoạt động tiện lợi:
+              </span>
+              <ul className="space-y-1.5 text-stone-600 list-disc pl-4 text-[11px]">
+                <li>Khách mời dùng Camera iPhone/Android hoặc Zalo quét mã QR tại bàn tiệc.</li>
+                <li>Không cần đăng ký tài khoản hay cài đặt app phức tạp.</li>
+                <li>Chọn ảnh chụp trong buổi tiệc và gửi ngay lên màn hình LED tiệc cưới.</li>
+              </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => handleCopy(shareUrl, "link album")}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+              >
+                <Copy size={13} /> Sao chép link album
+              </button>
+              <a
+                href={qrImgUrl}
+                download="QR-Album-Tiec-Cuoi.png"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1F1A17] px-4 py-2.5 text-xs font-semibold text-white hover:bg-stone-800 transition"
+              >
+                <Download size={13} /> Tải file in Standee (PNG)
+              </a>
+            </div>
+          </div>
+
+          {/* MÔ PHỎNG TẤM STANDEE ĐỂ BÀN */}
+          <div className="lg:col-span-6 flex justify-center">
+            <div className="w-full max-w-xs rounded-3xl border-2 border-stone-300 bg-white p-7 text-center shadow-lg space-y-4">
+              <span className="font-display italic text-2xl font-bold text-[#1F1A17] block">
+                .EverWeb
+              </span>
+              <h4 className="text-base font-bold text-[#1F1A17]">
+                Cùng lưu giữ khoảnh khắc!
+              </h4>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Hãy mở camera quét mã QR bên dưới để tải ảnh chụp cùng cô dâu chú rể lên màn hình tiệc cưới nhé!
+              </p>
+
+              <div className="p-3 rounded-2xl border border-stone-200 bg-stone-50 inline-block shadow-inner">
+                <img
+                  src={qrImgUrl}
+                  alt="QR Code"
+                  className="h-44 w-44 rounded-xl"
+                />
               </div>
 
-              {/* Right Quick Actions Panel (WithJoy Style) */}
-              <aside className="space-y-2 rounded-2xl border border-[#E6DFD3] bg-white p-5 lg:col-span-4">
-                <h3 className="mb-3 text-sm font-bold text-[#2C2117]">
-                  Thao tác nhanh (Quick actions)
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTargetAlbumId(activeAlbum.id);
-                    setIsAddMediaOpen(true);
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE]"
-                >
-                  <Upload size={14} className="text-[#3B52DE]" /> Thêm ảnh mới
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsQrOpen(true)}
-                  className="flex w-full items-center gap-2.5 rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE]"
-                >
-                  <QrCode size={14} className="text-[#3B52DE]" /> Link & Mã QR
-                  chia sẻ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRenameDraft(activeAlbum.name);
-                    setIsRenameOpen(true);
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117] hover:border-[#3B52DE]"
-                >
-                  <Link2 size={14} className="text-[#3B52DE]" /> Đổi tên Album
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextVis =
-                      activeAlbum.visibility === "Public"
-                        ? "Private"
-                        : "Public";
-                    updateActiveAlbum({ visibility: nextVis });
-                    toast.info(
-                      nextVis === "Public"
-                        ? "Đã chuyển Album sang Công khai"
-                        : "Đã chuyển Album sang Riêng tư"
-                    );
-                  }}
-                  className="flex w-full items-center justify-between rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117]"
-                >
-                  <span className="flex items-center gap-2.5">
-                    {activeAlbum.visibility === "Public" ? (
-                      <Globe size={14} className="text-emerald-600" />
-                    ) : (
-                      <Lock size={14} className="text-amber-600" />
-                    )}
-                    Hiển thị Album
-                  </span>
-                  <span className="text-[11px] text-[#6D5B4B]">
-                    {activeAlbum.visibility === "Public"
-                      ? "Công khai"
-                      : "Riêng tư"}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateActiveAlbum({ likesOn: !activeAlbum.likesOn })
-                  }
-                  className="flex w-full items-center justify-between rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117]"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Heart size={14} className="text-rose-500" /> Lượt thích
-                  </span>
-                  <span className="text-[11px] text-[#3B52DE]">
-                    {activeAlbum.likesOn ? "Đang bật" : "Đang tắt"}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateActiveAlbum({ commentsOn: !activeAlbum.commentsOn })
-                  }
-                  className="flex w-full items-center justify-between rounded-xl border border-[#EFEAE1] px-3.5 py-2.5 text-left text-xs font-semibold text-[#2C2117]"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <MessageCircle size={14} className="text-[#3B52DE]" /> Bình
-                    luận
-                  </span>
-                  <span className="text-[11px] text-[#3B52DE]">
-                    {activeAlbum.commentsOn ? "Đang bật" : "Đang tắt"}
-                  </span>
-                </button>
-              </aside>
+              <div className="pt-2">
+                <p className="font-display italic text-sm font-bold text-[#1F1A17]">{coupleNames}</p>
+                <p className="text-[10px] text-stone-400 mt-0.5">Sảnh Hoa Mai · Cảm ơn bạn đã chung vui!</p>
+              </div>
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* Add Album Modal */}
+      {/* =========================================================================
+          TAB 4: CÀI ĐẶT & KIỂM DUYỆT ẢNH
+         ========================================================================= */}
+      {activeTab === "settings" && (
+        <div className="max-w-2xl rounded-3xl border border-stone-200 bg-white p-6 sm:p-7 shadow-2xs space-y-6 text-xs">
+          <div>
+            <h3 className="text-base font-bold text-[#1F1A17]">Cài đặt tương tác & Quyền tải ảnh</h3>
+            <p className="mt-0.5 text-stone-500">Quản lý cách khách mời đóng góp ảnh và bình luận vào album tiệc cưới</p>
+          </div>
+
+          <div className="space-y-4 divide-y divide-stone-100">
+            <div className="flex items-center justify-between pt-3">
+              <div>
+                <span className="font-semibold text-[#1F1A17] block">Cho phép khách mời tải ảnh lên qua QR</span>
+                <span className="text-stone-500 text-[11px]">Khách tham dự có thể tải ảnh chụp tại bàn tiệc lên album chung</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={allowGuestUpload}
+                onChange={(e) => {
+                  saveSection({ allowGuestUpload: e.target.checked });
+                  toast.success(e.target.checked ? "Đã bật cho phép khách tải ảnh" : "Đã tắt cho phép khách tải ảnh");
+                }}
+                className="h-4 w-4 rounded-sm border-stone-300 accent-[#1F1A17]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-3">
+              <div>
+                <span className="font-semibold text-[#1F1A17] block">Kiểm duyệt trước khi chiếu màn hình LED</span>
+                <span className="text-stone-500 text-[11px]">Ảnh khách gửi cần cô dâu chú rể duyệt trước khi hiện lên slideshow</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={requireModeration}
+                onChange={(e) => {
+                  saveSection({ requireModeration: e.target.checked });
+                  toast.info(e.target.checked ? "Đã bật kiểm duyệt ảnh" : "Đã tắt kiểm duyệt ảnh");
+                }}
+                className="h-4 w-4 rounded-sm border-stone-300 accent-[#1F1A17]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: THÊM ẢNH MỚI
+         ========================================================================= */}
       <Modal
-        isOpen={isAddAlbumOpen}
-        onClose={() => setIsAddAlbumOpen(false)}
-        title="Tạo Album ảnh mới"
-        size="sm"
+        isOpen={isAddPhotoOpen}
+        onClose={() => setIsAddPhotoOpen(false)}
+        title="Thêm ảnh vào Album cưới"
+        size="md"
       >
-        <form onSubmit={handleAddAlbum} className="space-y-3 text-xs">
-          <input
-            type="text"
-            value={newAlbumName}
-            onChange={(e) => setNewAlbumName(e.target.value)}
-            placeholder="Tên Album (VD: Lễ Gia Tiên, Tiệc Tối)"
-            className="w-full rounded-xl border border-[#E2D9CB] px-3 py-2 outline-none focus:border-[#3B52DE]"
-            autoFocus
-          />
-          <div className="flex justify-end gap-2">
+        <form onSubmit={handleAddPhoto} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-stone-700 block mb-1">Chọn Album lưu ảnh</label>
+            <select
+              value={targetAlbumId}
+              onChange={(e) => setTargetAlbumId(e.target.value)}
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 outline-none focus:border-[#3B52DE]"
+            >
+              {albums.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="font-semibold text-stone-700 block mb-1">Chọn ảnh mẫu có sẵn</label>
+            <div className="grid grid-cols-5 gap-2">
+              {SAMPLE_PHOTO_PRESETS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setPhotoUrl(preset.url);
+                    setPhotoCaption(preset.name);
+                  }}
+                  className={`relative rounded-xl overflow-hidden border h-16 transition ${
+                    photoUrl === preset.url ? "border-[#1F1A17] ring-2 ring-[#1F1A17]" : "border-stone-200 hover:border-stone-400"
+                  }`}
+                >
+                  <img src={preset.url} alt={preset.name} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="font-semibold text-stone-700 block mb-1">Hoặc nhập đường dẫn ảnh (Image URL)</label>
+            <input
+              type="text"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="VD: https://images.unsplash.com/photo-..."
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 outline-none focus:border-[#3B52DE]"
+            />
+          </div>
+
+          <div>
+            <label className="font-semibold text-stone-700 block mb-1">Chú thích ảnh (Caption)</label>
+            <input
+              type="text"
+              value={photoCaption}
+              onChange={(e) => setPhotoCaption(e.target.value)}
+              placeholder="VD: Bàn tiệc tối ấm cúng cùng bạn thân"
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 outline-none focus:border-[#3B52DE]"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
             <button
               type="button"
-              onClick={() => setIsAddAlbumOpen(false)}
-              className="rounded-lg border border-[#E2D9CB] px-4 py-2 font-medium"
+              onClick={() => setIsAddPhotoOpen(false)}
+              className="rounded-full border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
             >
-              Huỷ
+              Hủy
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-[#3B52DE] px-4 py-2 font-semibold text-white"
+              className="rounded-full bg-[#1F1A17] px-5 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition"
+            >
+              Lưu vào Album
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* =========================================================================
+          MODAL: TẠO ALBUM MỚI
+         ========================================================================= */}
+      <Modal
+        isOpen={isAddAlbumOpen}
+        onClose={() => setIsAddAlbumOpen(false)}
+        title="Tạo Album chủ đề mới"
+        size="sm"
+      >
+        <form onSubmit={handleCreateAlbum} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-stone-700 block mb-1">Tên Album mới *</label>
+            <input
+              type="text"
+              required
+              value={newAlbumName}
+              onChange={(e) => setNewAlbumName(e.target.value)}
+              placeholder="VD: Tiệc độc thân & Hậu trường"
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 outline-none focus:border-[#3B52DE]"
+              autoFocus
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+            <button
+              type="button"
+              onClick={() => setIsAddAlbumOpen(false)}
+              className="rounded-full border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="rounded-full bg-[#1F1A17] px-5 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition"
             >
               Tạo Album
             </button>
@@ -661,153 +829,104 @@ export default function PhotoMomentsPage() {
         </form>
       </Modal>
 
-      {/* Add Media Modal */}
+      {/* =========================================================================
+          MODAL: LIGHTBOX XEM ẢNH PHÓNG TO
+         ========================================================================= */}
       <Modal
-        isOpen={isAddMediaOpen}
-        onClose={() => setIsAddMediaOpen(false)}
-        title="Thêm ảnh vào Album"
-        size="md"
+        isOpen={Boolean(activeLightboxPhoto)}
+        onClose={() => setActiveLightboxPhoto(null)}
+        title={activeLightboxPhoto?.albumName || "Chi tiết khoảnh khắc"}
+        size="lg"
       >
-        <div className="space-y-4 text-xs">
-          <div>
-            <label className="font-semibold text-[#5E5042]">
-              Dán đường dẫn ảnh (URL)
-            </label>
-            <input
-              type="url"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="https://..."
-              className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 outline-none focus:border-[#3B52DE]"
-            />
-          </div>
-          <div>
-            <label className="font-semibold text-[#5E5042]">
-              Chú thích ảnh
-            </label>
-            <input
-              type="text"
-              value={mediaCaption}
-              onChange={(e) => setMediaCaption(e.target.value)}
-              placeholder="VD: Khoảnh khắc trao nhẫn"
-              className="mt-1 w-full rounded-xl border border-[#E2D9CB] px-3 py-2 outline-none focus:border-[#3B52DE]"
-            />
-          </div>
-
-          <div>
-            <p className="mb-2 font-semibold text-[#5E5042]">
-              Hoặc chọn nhanh ảnh cưới mẫu:
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { src: heroWedding, label: "Sảnh hoa" },
-                { src: galleryCeremony, label: "Cổng hoa" },
-                { src: galleryBouquet, label: "Hoa cầm tay" },
-                { src: galleryDining, label: "Bàn tiệc" },
-              ].map((sample) => (
+        {activeLightboxPhoto && (
+          <div className="space-y-4 text-xs">
+            <div className="relative max-h-[70vh] overflow-hidden rounded-2xl bg-black flex items-center justify-center">
+              <img
+                src={activeLightboxPhoto.url}
+                alt={activeLightboxPhoto.caption}
+                className="max-h-[65vh] w-auto object-contain mx-auto"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <div>
+                <p className="text-sm font-bold text-[#1F1A17]">{activeLightboxPhoto.caption}</p>
+                <p className="text-stone-500 text-[11px] mt-0.5">{activeLightboxPhoto.albumName}</p>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
-                  key={sample.label}
                   type="button"
-                  onClick={() => handleAddPhoto(sample.src, sample.label)}
-                  className="overflow-hidden rounded-xl border border-[#E6DFD3] hover:border-[#3B52DE]"
+                  onClick={() => handleLikePhoto(activeLightboxPhoto.albumId, activeLightboxPhoto.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-600 px-3.5 py-1.5 font-bold hover:bg-rose-100 transition"
                 >
-                  <img
-                    src={sample.src}
-                    alt={sample.label}
-                    className="h-16 w-full object-cover"
-                  />
+                  <Heart size={14} className="fill-rose-500" />
+                  <span>{activeLightboxPhoto.likes || 1} yêu thích</span>
                 </button>
-              ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* =========================================================================
+          MODAL: FULLSCREEN LIVE SLIDESHOW CHO MÀN HÌNH LED TIỆC CƯỚI
+         ========================================================================= */}
+      {isSlideshowOpen && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between text-white select-none">
+          {/* Header Slideshow */}
+          <div className="h-16 flex items-center justify-between px-8 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="flex items-center gap-3">
+              <span className="font-display italic text-xl font-bold tracking-wider">.EverWeb Live</span>
+              <span className="text-stone-400">|</span>
+              <span className="text-sm font-semibold">{coupleNames}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-stone-400 font-mono">
+                {slideshowIndex + 1} / {allPhotos.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsSlideshowOpen(false)}
+                className="p-2 text-white hover:text-stone-300 rounded-full hover:bg-white/10 transition"
+              >
+                <X size={22} />
+              </button>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsAddMediaOpen(false)}
-              className="rounded-lg border border-[#E2D9CB] px-4 py-2 font-medium"
-            >
-              Đóng
-            </button>
-            <button
-              type="button"
-              onClick={() => handleAddPhoto()}
-              className="rounded-lg bg-[#3B52DE] px-4 py-2 font-semibold text-white"
-            >
-              Thêm ảnh
-            </button>
+          {/* Ảnh trung tâm */}
+          <div className="flex-1 flex items-center justify-center p-6 relative">
+            <img
+              src={allPhotos[slideshowIndex]?.url || heroWedding}
+              alt="Slide"
+              className="max-h-[80vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl transition-all duration-700"
+            />
+          </div>
+
+          {/* Footer Slideshow */}
+          <div className="h-20 flex items-center justify-between px-8 bg-gradient-to-t from-black/80 to-transparent">
+            <div>
+              <p className="text-base font-bold">{allPhotos[slideshowIndex]?.caption}</p>
+              <p className="text-xs text-stone-400">{allPhotos[slideshowIndex]?.albumName}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSlideshowIndex((prev) => (prev > 0 ? prev - 1 : allPhotos.length - 1))}
+                className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-semibold backdrop-blur-xs"
+              >
+                ← Ảnh trước
+              </button>
+              <button
+                type="button"
+                onClick={() => setSlideshowIndex((prev) => (prev < allPhotos.length - 1 ? prev + 1 : 0))}
+                className="px-4 py-2 rounded-xl bg-white text-black hover:bg-stone-200 text-xs font-bold backdrop-blur-xs"
+              >
+                Ảnh kế tiếp →
+              </button>
+            </div>
           </div>
         </div>
-      </Modal>
-
-      {/* Link & QR Modal */}
-      <Modal
-        isOpen={isQrOpen}
-        onClose={() => setIsQrOpen(false)}
-        title="Link & Mã QR Album ảnh cưới"
-        size="sm"
-      >
-        <div className="space-y-4 text-center text-xs">
-          <img
-            src={qrImgUrl}
-            alt="QR Album"
-            className="mx-auto h-44 w-44 rounded-2xl border border-[#E6DFD3] p-2"
-          />
-          <p className="text-[#6D5B4B]">
-            In mã QR này đặt tại bàn tiệc để khách mời quét và xem / chia sẻ
-            ảnh kỷ niệm cùng bạn.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard?.writeText(shareUrl);
-              toast.success("Đã sao chép link Album ảnh");
-            }}
-            className="w-full rounded-xl bg-[#3B52DE] py-2 font-semibold text-white"
-          >
-            Sao chép link: {shareUrl}
-          </button>
-        </div>
-      </Modal>
-
-      {/* Rename Album Modal */}
-      <Modal
-        isOpen={isRenameOpen}
-        onClose={() => setIsRenameOpen(false)}
-        title="Đổi tên Album"
-        size="sm"
-      >
-        <div className="space-y-3 text-xs">
-          <input
-            type="text"
-            value={renameDraft}
-            onChange={(e) => setRenameDraft(e.target.value)}
-            className="w-full rounded-xl border border-[#E2D9CB] px-3 py-2 outline-none focus:border-[#3B52DE]"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsRenameOpen(false)}
-              className="rounded-lg border border-[#E2D9CB] px-4 py-2"
-            >
-              Huỷ
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (renameDraft.trim()) {
-                  updateActiveAlbum({ name: renameDraft.trim() });
-                  toast.success("Đã đổi tên Album");
-                }
-                setIsRenameOpen(false);
-              }}
-              className="rounded-lg bg-[#3B52DE] px-4 py-2 font-semibold text-white"
-            >
-              Lưu
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+      )}
+    </FeatureShell>
   );
 }

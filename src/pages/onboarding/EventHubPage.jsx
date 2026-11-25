@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -326,11 +326,12 @@ export default function EventHubPage() {
         <div className="flex flex-1 flex-col">
           <button
             type="button"
-            onClick={() => navigate(ROUTE_PATHS.HOME)}
+            onClick={() => navigate(-1)}
+            title="Quay lại trang trước"
             className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-[11px] font-semibold text-stone-700 transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
           >
             <ArrowLeft size={12} />
-            Trang chủ .EverWeb
+            Quay lại
           </button>
 
           <div className="flex items-start justify-between gap-4">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import weddingApi from "../../services/weddingApi";
 
@@ -60,6 +60,11 @@ export function useCurrentWedding() {
 export function useWeddingFeature(wedding, section, fallback) {
   const [data, setData] = useState(fallback);
   const [isLoaded, setIsLoaded] = useState(false);
+  const dataRef = useRef(data);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   useEffect(() => {
     const weddingId = wedding?.id;
@@ -69,6 +74,7 @@ export function useWeddingFeature(wedding, section, fallback) {
       .getFeatures(weddingId)
       .then((all) => {
         if (!cancelled && all?.[section]) {
+          dataRef.current = all[section];
           setData(all[section]);
         }
         if (!cancelled) setIsLoaded(true);
@@ -85,7 +91,11 @@ export function useWeddingFeature(wedding, section, fallback) {
   useEffect(() => {
     const handleFeatureUpdate = (event) => {
       if (event.detail && event.detail.section === section && event.detail.data) {
-        setData((prev) => ({ ...prev, ...event.detail.data }));
+        setData((prev) => {
+          const updated = { ...prev, ...event.detail.data };
+          dataRef.current = updated;
+          return updated;
+        });
       }
     };
     window.addEventListener("everweb:feature-updated", handleFeatureUpdate);
@@ -94,24 +104,26 @@ export function useWeddingFeature(wedding, section, fallback) {
     };
   }, [section]);
 
+  const weddingId = wedding?.id;
+
   const saveSection = useCallback(
     async (patchOrUpdater) => {
-      let nextValue;
-      setData((prev) => {
-        nextValue =
-          typeof patchOrUpdater === "function"
-            ? patchOrUpdater(prev)
-            : { ...prev, ...patchOrUpdater };
-        return nextValue;
-      });
-      if (!wedding?.id) return;
+      const prev = dataRef.current;
+      const nextValue =
+        typeof patchOrUpdater === "function"
+          ? patchOrUpdater(prev)
+          : { ...prev, ...patchOrUpdater };
+      dataRef.current = nextValue;
+      setData(nextValue);
+
+      if (!weddingId) return;
       try {
-        await weddingApi.updateFeatureSection(wedding.id, section, nextValue);
+        await weddingApi.updateFeatureSection(weddingId, section, nextValue);
       } catch {
         // Optimistic state remains; caller may toast if needed
       }
     },
-    [wedding?.id, section]
+    [weddingId, section]
   );
 
   return { data, setData, saveSection, isLoaded };

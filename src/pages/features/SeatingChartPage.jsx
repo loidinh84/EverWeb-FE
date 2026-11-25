@@ -10,6 +10,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  UtensilsCrossed,
   X,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
@@ -138,7 +139,7 @@ function getInitials(name) {
  * Thành phần Sơ đồ Bàn tròn (Round Table Floor Plan Visual)
  * Vẽ đĩa bàn tròn ở trung tâm và các ghế ngồi hình tròn bao quanh theo hình học lượng giác
  */
-function RoundTableVisual({ table, isSelected, onSelectTable, onSeatClick, onRemoveSeat }) {
+function RoundTableVisual({ table, isSelected, onSelectTable, onOpenMenu, onSeatClick, onRemoveSeat }) {
   const capacity = table.capacity || 8;
   const seatedCount = table.guests.filter(Boolean).length;
   const isFull = seatedCount >= capacity;
@@ -154,9 +155,16 @@ function RoundTableVisual({ table, isSelected, onSelectTable, onSeatClick, onRem
     >
       {/* Khung chứa bàn tròn và các ghế xung quanh */}
       <div className="relative w-56 h-56 flex items-center justify-center my-2">
-        {/* Đĩa bàn tròn ở giữa */}
-        <div
-          className={`w-28 h-28 rounded-full border-2 flex flex-col items-center justify-center text-center p-2 transition-all ${
+        {/* Đĩa bàn tròn ở giữa — Bấm để mở Thực đơn bàn */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectTable();
+            onOpenMenu?.();
+          }}
+          title="Bấm vào trung tâm bàn để xem & chọn thực đơn"
+          className={`w-28 h-28 rounded-full border-2 flex flex-col items-center justify-center text-center p-2 transition-all cursor-pointer hover:border-[#3B52DE] ${
             isSelected
               ? "border-[#1F1A17] bg-stone-50/80 shadow-inner"
               : "border-stone-200 bg-white shadow-2xs"
@@ -175,7 +183,10 @@ function RoundTableVisual({ table, isSelected, onSelectTable, onSeatClick, onRem
           >
             {seatedCount}/{capacity} ghế
           </span>
-        </div>
+          <span className="mt-0.5 text-[9px] font-semibold text-[#3B52DE]">
+            Thực đơn ▾
+          </span>
+        </button>
 
         {/* Các ghế ngồi hình tròn bao quanh bàn tròn */}
         {Array.from({ length: capacity }).map((_, seatIdx) => {
@@ -239,6 +250,46 @@ function RoundTableVisual({ table, isSelected, onSelectTable, onSeatClick, onRem
   );
 }
 
+const DEFAULT_MENU_SETS = [
+  {
+    id: "set-main",
+    name: "Thực đơn Tiệc Chính (Mặn)",
+    dishes: [
+      { id: "d1", course: "Khai vị", name: "Gỏi ngó sen tôm thịt & Chả giò hải sản" },
+      { id: "d2", course: "Khai vị", name: "Súp cua măng tây trứng cút" },
+      { id: "d3", course: "Món chính", name: "Gà ta quay mật ong & Xôi gấc" },
+      { id: "d4", course: "Món chính", name: "Bò nấu tiêu xanh kèm bánh mì" },
+      { id: "d5", course: "Món chính", name: "Lẩu hải sản chua cay & Bún tươi" },
+      { id: "d6", course: "Tráng miệng", name: "Chè hạt sen long nhãn thanh mát" },
+      { id: "d7", course: "Đồ uống", name: "Bia, Nước ngọt, Nước suối" },
+    ],
+  },
+  {
+    id: "set-veg",
+    name: "Thực đơn Chay Thanh Đạm",
+    dishes: [
+      { id: "v1", course: "Khai vị", name: "Gỏi nấm bào ngư & Chả giò chay" },
+      { id: "v2", course: "Khai vị", name: "Súp bí đỏ kem tươi hạt bí" },
+      { id: "v3", course: "Món chính", name: "Đậu hũ non sốt nấm đông cô" },
+      { id: "v4", course: "Món chính", name: "Lẩu nấm thiên nhiên & Mì udon" },
+      { id: "v5", course: "Tráng miệng", name: "Rau câu dừa lá dứa" },
+      { id: "v6", course: "Đồ uống", name: "Trà hoa cúc & Nước suối" },
+    ],
+  },
+  {
+    id: "set-vip",
+    name: "Thực đơn VIP Đặc Biệt",
+    dishes: [
+      { id: "p1", course: "Khai vị", name: "Súp bào ngư vi cá hải vị" },
+      { id: "p2", course: "Món chính", name: "Tôm hùm nướng phô mai" },
+      { id: "p3", course: "Món chính", name: "Thăn bò Úc sốt rượu vang đỏ" },
+      { id: "p4", course: "Món chính", name: "Cá mú hấp Hong Kong" },
+      { id: "p5", course: "Tráng miệng", name: "Panna Cotta chanh dây & Trái cây" },
+      { id: "p6", course: "Đồ uống", name: "Rượu vang đỏ, Bia & Nước ép" },
+    ],
+  },
+];
+
 export default function SeatingChartPage() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -254,12 +305,14 @@ export default function SeatingChartPage() {
     }
   );
 
-  // 2. Quản lý sơ đồ bàn tiệc từ feature "website_config"
+  // 2. Quản lý sơ đồ bàn tiệc & thực đơn từ feature "website_config"
   const { data: webConfig, saveSection: saveSeatingData } = useWeddingFeature(
     wedding,
     "website_config",
     {
       seatingTables: DEFAULT_TABLES,
+      menuSets: DEFAULT_MENU_SETS,
+      tableMenus: {},
     }
   );
 
@@ -273,9 +326,21 @@ export default function SeatingChartPage() {
     [webConfig.seatingTables]
   );
 
+  const menuSets = useMemo(
+    () => (Array.isArray(webConfig.menuSets) && webConfig.menuSets.length > 0 ? webConfig.menuSets : DEFAULT_MENU_SETS),
+    [webConfig.menuSets]
+  );
+  const tableMenus = webConfig.tableMenus || {};
+
   // State
-  const [seatingViewMode, setSeatingViewMode] = useState("floor"); // "floor" | "cards"
+  const [seatingViewMode, setSeatingViewMode] = useState("floor"); // "floor" | "cards" | "menu"
   const [selectedTableId, setSelectedTableId] = useState(tables[0]?.id || "t1");
+  const [activeSetId, setActiveSetId] = useState("set-main");
+  const [newDishCourse, setNewDishCourse] = useState("Món chính");
+  const [newDishName, setNewDishName] = useState("");
+  const [menuModalTableId, setMenuModalTableId] = useState(null);
+  const [isAddSetOpen, setIsAddSetOpen] = useState(false);
+  const [newSetName, setNewSetName] = useState("");
   const [isAddTableOpen, setIsAddTableOpen] = useState(false);
   const [newTableName, setNewTableName] = useState("");
   const [newTableCap, setNewTableCap] = useState(8);
@@ -480,6 +545,17 @@ export default function SeatingChartPage() {
             >
               <List size={14} /> Dạng danh sách chi tiết
             </button>
+            <button
+              type="button"
+              onClick={() => setSeatingViewMode("menu")}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 font-semibold transition cursor-pointer ${
+                seatingViewMode === "menu"
+                  ? "bg-[#1F1A17] text-white shadow-2xs"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <UtensilsCrossed size={14} /> Thực đơn bàn tiệc
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -656,6 +732,7 @@ export default function SeatingChartPage() {
                       table={t}
                       isSelected={selectedTableId === t.id}
                       onSelectTable={() => setSelectedTableId(t.id)}
+                      onOpenMenu={() => setMenuModalTableId(t.id)}
                       onSeatClick={handleSeatClick}
                       onRemoveSeat={handleRemoveFromSeat}
                     />
@@ -667,7 +744,7 @@ export default function SeatingChartPage() {
                   ↓ Lối vào sảnh tiệc & bàn lễ tân
                 </div>
               </div>
-            ) : (
+            ) : seatingViewMode === "cards" ? (
               /* DẠNG DANH SÁCH CHI TIẾT */
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {tables.map((t) => (
@@ -707,6 +784,233 @@ export default function SeatingChartPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              /* THỰC ĐƠN BÀN TIỆC (MENU LIST) */
+              <div className="space-y-6">
+                {/* 1. Quản lý danh sách món trong từng Set thực đơn */}
+                <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-2xs space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-[#1F1A17]">
+                        Danh sách món ăn theo Set thực đơn
+                      </h4>
+                      <p className="text-xs text-stone-500">
+                        Chỉnh sửa món ăn trong từng Set và gán cho từng bàn tiệc bên dưới
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextMenus = {};
+                        for (const t of tables) {
+                          nextMenus[t.id] = {
+                            ...(tableMenus[t.id] || {}),
+                            setId: activeSetId,
+                          };
+                        }
+                        saveSeatingData({ tableMenus: nextMenus });
+                        toast.success("Đã áp dụng Set này cho tất cả các bàn");
+                      }}
+                      className="rounded-full bg-[#3B52DE] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#2F43C2]"
+                    >
+                      Áp dụng cho tất cả bàn
+                    </button>
+                  </div>
+
+                  {/* Chọn Set + Tạo Set mới */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {menuSets.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setActiveSetId(s.id)}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                          activeSetId === s.id
+                            ? "bg-[#1F1A17] text-white"
+                            : "border border-stone-200 bg-stone-50 text-stone-600 hover:border-[#3B52DE]"
+                        }`}
+                      >
+                        {s.name} ({s.dishes.length} món)
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setIsAddSetOpen(true)}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3B52DE]/50 bg-[#EEF2FF]/50 px-3.5 py-1.5 text-xs font-semibold text-[#3B52DE] hover:bg-[#EEF2FF]"
+                    >
+                      <Plus size={12} /> Tạo Set mới
+                    </button>
+                  </div>
+
+                  {/* Form thêm món mới vào Set */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!newDishName.trim()) return;
+                      const updatedSets = menuSets.map((s) =>
+                        s.id === activeSetId
+                          ? {
+                              ...s,
+                              dishes: [
+                                ...s.dishes,
+                                {
+                                  id: `dish-${s.dishes.length + 1}-${newDishName.trim().length}`,
+                                  course: newDishCourse,
+                                  name: newDishName.trim(),
+                                },
+                              ],
+                            }
+                          : s
+                      );
+                      saveSeatingData({ menuSets: updatedSets });
+                      setNewDishName("");
+                      toast.success("Đã thêm món mới vào thực đơn");
+                    }}
+                    className="flex flex-wrap gap-2 text-xs"
+                  >
+                    <select
+                      value={newDishCourse}
+                      onChange={(e) => setNewDishCourse(e.target.value)}
+                      className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 font-medium outline-none focus:border-[#3B52DE]"
+                    >
+                      <option value="Khai vị">Khai vị</option>
+                      <option value="Món chính">Món chính</option>
+                      <option value="Tráng miệng">Tráng miệng</option>
+                      <option value="Đồ uống">Đồ uống</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={newDishName}
+                      onChange={(e) => setNewDishName(e.target.value)}
+                      placeholder="Nhập tên món ăn mới (VD: Cá tầm nướng muối ớt)..."
+                      className="flex-1 min-w-[200px] rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-[#3B52DE]"
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1 rounded-xl bg-[#1F1A17] px-4 py-2 font-semibold text-white hover:bg-[#3B52DE]"
+                    >
+                      <Plus size={13} /> Thêm món
+                    </button>
+                  </form>
+
+                  {/* Danh sách món của Set đang chọn */}
+                  <div className="divide-y divide-stone-100 rounded-2xl border border-stone-100 bg-stone-50/50">
+                    {(
+                      menuSets.find((s) => s.id === activeSetId)?.dishes || []
+                    ).map((dish, i) => (
+                      <div
+                        key={dish.id || i}
+                        className="flex items-center justify-between px-4 py-2.5 text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-[#3B52DE] border border-stone-200">
+                            {dish.course}
+                          </span>
+                          <span className="font-medium text-[#1F1A17]">
+                            {dish.name}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedSets = menuSets.map((s) =>
+                              s.id === activeSetId
+                                ? {
+                                    ...s,
+                                    dishes: s.dishes.filter(
+                                      (d) => d.id !== dish.id
+                                    ),
+                                  }
+                                : s
+                            );
+                            saveSeatingData({ menuSets: updatedSets });
+                            toast.info("Đã xoá món khỏi thực đơn");
+                          }}
+                          className="rounded-lg p-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+                          title="Xoá món"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Gán thực đơn & ghi chú cho từng bàn */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tables.map((t) => {
+                    const cfg = tableMenus[t.id] || {};
+                    const currentSetId = cfg.setId || "set-main";
+                    const currentNote = cfg.note || "";
+                    const currentSet =
+                      menuSets.find((s) => s.id === currentSetId) ||
+                      menuSets[0];
+
+                    return (
+                      <div
+                        key={t.id}
+                        className="rounded-3xl border border-stone-200 bg-white p-5 shadow-2xs space-y-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <h5 className="text-sm font-bold text-[#1F1A17]">
+                              {t.name}
+                            </h5>
+                            <p className="text-[11px] text-stone-500">
+                              {t.guests.filter(Boolean).length}/{t.capacity} khách
+                            </p>
+                          </div>
+                          <select
+                            value={currentSetId}
+                            onChange={(e) => {
+                              saveSeatingData({
+                                tableMenus: {
+                                  ...tableMenus,
+                                  [t.id]: { ...cfg, setId: e.target.value },
+                                },
+                              });
+                              toast.success(`Đã đổi thực đơn cho ${t.name}`);
+                            }}
+                            className="rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-semibold text-[#1F1A17] outline-none focus:border-[#3B52DE]"
+                          >
+                            {menuSets.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {currentSet?.dishes.map((d) => (
+                            <span
+                              key={d.id}
+                              className="rounded-lg bg-stone-100 px-2 py-1 text-[11px] text-stone-700"
+                            >
+                              {d.name}
+                            </span>
+                          ))}
+                        </div>
+
+                        <input
+                          type="text"
+                          value={currentNote}
+                          onChange={(e) =>
+                            saveSeatingData({
+                              tableMenus: {
+                                ...tableMenus,
+                                [t.id]: { ...cfg, note: e.target.value },
+                              },
+                            })
+                          }
+                          placeholder="Ghi chú bàn (VD: 2 suất chay, không hải sản)..."
+                          className="w-full rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-1.5 text-xs outline-none focus:border-[#3B52DE]"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -763,6 +1067,158 @@ export default function SeatingChartPage() {
               className="rounded-full bg-[#1F1A17] px-5 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition cursor-pointer"
             >
               Tạo bàn tiệc
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Xem & Gán Thực đơn khi bấm vào trung tâm bàn */}
+      <Modal
+        isOpen={Boolean(menuModalTableId)}
+        onClose={() => setMenuModalTableId(null)}
+        title={`Thực đơn · ${
+          tables.find((t) => t.id === menuModalTableId)?.name || "Bàn tiệc"
+        }`}
+        size="md"
+      >
+        {menuModalTableId && (() => {
+          const cfg = tableMenus[menuModalTableId] || {};
+          const currentSetId = cfg.setId || menuSets[0]?.id || "set-main";
+          const currentSet =
+            menuSets.find((s) => s.id === currentSetId) || menuSets[0];
+          const currentNote = cfg.note || "";
+
+          return (
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-[#1F1A17] mb-1.5">
+                  Chọn Set thực đơn cho bàn này
+                </label>
+                <select
+                  value={currentSetId}
+                  onChange={(e) => {
+                    saveSeatingData({
+                      tableMenus: {
+                        ...tableMenus,
+                        [menuModalTableId]: { ...cfg, setId: e.target.value },
+                      },
+                    });
+                    toast.success("Đã cập nhật thực đơn cho bàn");
+                  }}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 font-semibold outline-none focus:border-[#3B52DE]"
+                >
+                  {menuSets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.dishes.length} món)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="max-h-56 overflow-y-auto divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-stone-50/50">
+                {(currentSet?.dishes || []).map((d, idx) => (
+                  <div
+                    key={d.id || idx}
+                    className="flex items-center justify-between px-3.5 py-2.5"
+                  >
+                    <span className="font-medium text-[#1F1A17]">{d.name}</span>
+                    <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-[#3B52DE] border border-stone-200">
+                      {d.course}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#1F1A17] mb-1">
+                  Ghi chú món chay / dị ứng riêng của bàn
+                </label>
+                <input
+                  type="text"
+                  value={currentNote}
+                  onChange={(e) =>
+                    saveSeatingData({
+                      tableMenus: {
+                        ...tableMenus,
+                        [menuModalTableId]: { ...cfg, note: e.target.value },
+                      },
+                    })
+                  }
+                  placeholder="VD: 2 suất chay, không hải sản..."
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-[#3B52DE]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuModalTableId(null);
+                    setSeatingViewMode("menu");
+                  }}
+                  className="font-semibold text-[#3B52DE] hover:underline"
+                >
+                  Chỉnh sửa / Tạo Set thực đơn mới →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMenuModalTableId(null)}
+                  className="rounded-full bg-[#1F1A17] px-4 py-2 font-semibold text-white"
+                >
+                  Xong
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Modal Tạo Set Thực đơn mới */}
+      <Modal
+        isOpen={isAddSetOpen}
+        onClose={() => setIsAddSetOpen(false)}
+        title="Tạo Set thực đơn mới"
+        size="sm"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newSetName.trim()) return;
+            const created = {
+              id: `set-${menuSets.length + 1}-${newSetName.trim().length}`,
+              name: newSetName.trim(),
+              dishes: [],
+            };
+            saveSeatingData({ menuSets: [...menuSets, created] });
+            setActiveSetId(created.id);
+            setNewSetName("");
+            setIsAddSetOpen(false);
+            toast.success(`Đã tạo "${created.name}", bạn có thể thêm món ngay!`);
+          }}
+          className="space-y-3 text-xs"
+        >
+          <input
+            type="text"
+            required
+            autoFocus
+            value={newSetName}
+            onChange={(e) => setNewSetName(e.target.value)}
+            placeholder="Tên Set thực đơn (VD: Thực đơn Hải sản cao cấp)"
+            className="w-full rounded-xl border border-stone-200 px-3 py-2.5 outline-none focus:border-[#3B52DE]"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAddSetOpen(false)}
+              className="rounded-lg border border-stone-200 px-4 py-2 font-medium"
+            >
+              Huỷ
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-[#3B52DE] px-4 py-2 font-semibold text-white"
+            >
+              Tạo Set
             </button>
           </div>
         </form>

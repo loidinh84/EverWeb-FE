@@ -141,6 +141,21 @@ export const weddingApi = {
     );
     return response.data?.data ?? response.data;
   },
+
+  async sendEmail(weddingId, payload) {
+    const response = await api.post(`/weddings/${weddingId}/send-email`, payload);
+    return response.data?.data ?? response.data;
+  },
+
+  async getPublicContactForm(slug) {
+    const response = await api.get(`/weddings/public/contact/${slug}`);
+    return response.data?.data ?? response.data;
+  },
+
+  async submitPublicContactForm(slug, payload) {
+    const response = await api.post(`/weddings/public/contact/${slug}`, payload);
+    return response.data?.data ?? response.data;
+  },
 };
 
 export default weddingApi;

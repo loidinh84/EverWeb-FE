@@ -17,8 +17,9 @@ export default function ToastProvider({ children }) {
         pauseOnHover
         pauseOnFocusLoss={false}
         draggable
-        theme="colored"
+        theme="light"
         transition={Bounce}
+        toastClassName="!rounded-[18px] !border !border-white/75 !bg-white/65 !text-[#1F1A17] !shadow-xl !backdrop-blur-xl"
       />
     </>
   );

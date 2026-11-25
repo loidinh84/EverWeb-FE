@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -20,6 +20,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useToast } from "../../components/common";
+import weddingApi from "../../services/weddingApi";
+import { extractApiError } from "../../services/api";
 import { ROUTE_PATHS } from "../../constants/roles";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 import weddingCouple from "../../assets/image/wedding-couple.jpg";
@@ -234,6 +236,7 @@ export default function MessagingPage() {
   });
 
   const [previewTab, setPreviewTab] = useState("text");
+  const [isSending, setIsSending] = useState(false);
 
   const handleSelectTemplate = (template) => {
     setComposeForm((prev) => ({
@@ -309,10 +312,40 @@ export default function MessagingPage() {
     setViewMode("hub");
   };
 
-  const handleSendOrSchedule = () => {
+  const handleSendOrSchedule = async () => {
     if (!composeForm.message.trim()) {
       toast.error("Vui lòng nhập nội dung tin nhắn!");
       return;
+    }
+
+    if (
+      composeForm.sendTime !== "scheduled" &&
+      composeForm.deliveryMethod !== "text" &&
+      wedding?.id
+    ) {
+      setIsSending(true);
+      try {
+        const res = await weddingApi.sendEmail(wedding.id, {
+          senderName: composeForm.fromName,
+          subject: composeForm.subject || `Thông báo từ ${composeForm.fromName}`,
+          body: composeForm.message,
+          buttonText: composeForm.buttonText || "Xem Website cưới",
+          ctaUrl:
+            composeForm.linkUrl && !composeForm.linkUrl.startsWith("https://everweb.vn")
+              ? composeForm.linkUrl
+              : `${window.location.origin}/contact/${wedding?.slug || "khang-an"}`,
+        });
+        toast.success(
+          `Đã gửi Email thật tới ${res?.sentCount || 1} khách mời!`
+        );
+      } catch (err) {
+        toast.error(
+          extractApiError(err, "Không thể gửi Email").message
+        );
+        return;
+      } finally {
+        setIsSending(false);
+      }
     }
 
     if (composeForm.sendTime === "scheduled") {
@@ -666,11 +699,14 @@ export default function MessagingPage() {
             <div className="pt-2 flex items-center gap-3">
               <button
                 type="button"
+                disabled={isSending}
                 onClick={handleSendOrSchedule}
-                className="flex-1 py-3 px-6 rounded-2xl bg-[#1F1A17] text-white text-xs sm:text-sm font-semibold hover:bg-stone-800 transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                className="flex-1 py-3 px-6 rounded-2xl bg-[#1F1A17] text-white text-xs sm:text-sm font-semibold hover:bg-stone-800 transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-60"
               >
                 <span>
-                  {composeForm.sendTime === "scheduled"
+                  {isSending
+                    ? "Đang gửi Email..."
+                    : composeForm.sendTime === "scheduled"
                     ? "Lên lịch gửi tin nhắn"
                     : "Gửi ngay cho khách"}
                 </span>

@@ -21,6 +21,8 @@ import {
   Users,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
+import weddingApi from "../../services/weddingApi";
+import { extractApiError } from "../../services/api";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
@@ -98,7 +100,7 @@ export default function CollectContactsPage() {
 
   const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
   const collectorSlug = wedding?.slug || "khang-an";
-  const collectorUrl = `https://everweb.vn/contact/${collectorSlug}`;
+  const collectorUrl = `${window.location.origin}/contact/${collectorSlug}`;
 
   const { data: ccData, saveSection } = useWeddingFeature(
     wedding,
@@ -144,6 +146,7 @@ export default function CollectContactsPage() {
     body,
     buttonText,
   });
+  const [isSending, setIsSending] = useState(false);
 
   // Filtered Submissions
   const filteredSubmissions = useMemo(() => {
@@ -163,18 +166,42 @@ export default function CollectContactsPage() {
     toast.success(`Đã sao chép ${label}`);
   };
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (sendTime === "scheduled" && !scheduledAt) {
       toast.error("Vui lòng chọn thời gian hẹn giờ gửi tin nhắn");
       return;
     }
 
-    toast.success(
-      sendTime === "scheduled"
-        ? `Đã lên lịch gửi tin nhắn thu thập liên hệ lúc ${scheduledAt}`
-        : "Đã gửi yêu cầu thu thập liên hệ tới danh sách khách mời!"
-    );
+    if (sendTime === "now" && channel !== "sms" && wedding?.id) {
+      setIsSending(true);
+      try {
+        const res = await weddingApi.sendEmail(wedding.id, {
+          senderName: formState.senderName,
+          subject: formState.subject,
+          body: formState.body,
+          buttonText: formState.buttonText,
+          ctaUrl: collectorUrl,
+        });
+        toast.success(
+          `Đã gửi Email thật tới ${res?.sentCount || 1} địa chỉ thành công!`
+        );
+      } catch (err) {
+        toast.error(
+          extractApiError(err, "Không thể gửi Email, vui lòng kiểm tra cấu hình SMTP").message
+        );
+        setIsSending(false);
+        return;
+      } finally {
+        setIsSending(false);
+      }
+    } else {
+      toast.success(
+        sendTime === "scheduled"
+          ? `Đã lên lịch gửi tin nhắn thu thập liên hệ lúc ${scheduledAt}`
+          : "Đã gửi yêu cầu thu thập liên hệ tới danh sách khách mời!"
+      );
+    }
 
     // Thêm bản ghi mẫu vào danh sách phản hồi để kiểm thử
     const newSubmission = {
@@ -630,11 +657,14 @@ export default function CollectContactsPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1F1A17] py-3.5 text-xs sm:text-sm font-semibold text-white hover:bg-stone-800 transition shadow-md cursor-pointer active:scale-[0.99]"
+                disabled={isSending}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1F1A17] py-3.5 text-xs sm:text-sm font-semibold text-white hover:bg-stone-800 transition shadow-md cursor-pointer active:scale-[0.99] disabled:opacity-60"
               >
                 <Send size={15} />
                 <span>
-                  {sendTime === "scheduled"
+                  {isSending
+                    ? "Đang gửi Email..."
+                    : sendTime === "scheduled"
                     ? "Lên lịch gửi tin nhắn tự động"
                     : "Gửi tin nhắn thu thập liên hệ ngay"}
                 </span>

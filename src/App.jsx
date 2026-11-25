@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import Landing from "./pages/landing/Landing";
 import InvitationPreview from "./pages/InvitationPreview";
+import PublicContactPage from "./pages/PublicContactPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
@@ -76,6 +77,7 @@ function App() {
           path={`${ROUTE_PATHS.INVITATION}/:token`}
           element={<InvitationPreview />}
         />
+        <Route path="/contact/:slug" element={<PublicContactPage />} />
         <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<UnauthorizedPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 

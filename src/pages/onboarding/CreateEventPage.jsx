@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,13 +12,14 @@ import {
   MapPin,
   Plus,
   Search,
+  Trash2,
   User,
-  Sparkles,
 } from "lucide-react";
 import { Modal, useToast, UserProfileModal } from "../../components/common";
 import { ROUTE_PATHS } from "../../constants/roles";
 import { useAuth } from "../../hooks/useAuth";
 import weddingApi from "../../services/weddingApi";
+import everwebLogo from "../../assets/image/everweb-logo.jpg";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 
 export default function CreateEventPage() {
@@ -27,6 +28,8 @@ export default function CreateEventPage() {
   const toast = useToast();
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [weddings, setWeddings] = useState(() => {
     try {
@@ -46,6 +49,33 @@ export default function CreateEventPage() {
   const handleLogout = () => {
     logout();
     navigate(ROUTE_PATHS.LOGIN, { replace: true });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?.id) return;
+    setIsDeleting(true);
+    try {
+      await weddingApi.remove(deleteTarget.id);
+      setWeddings((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      try {
+        const cached = sessionStorage.getItem("everweb_pending_wedding");
+        if (cached && JSON.parse(cached)?.id === deleteTarget.id) {
+          sessionStorage.removeItem("everweb_pending_wedding");
+        }
+        const recent = localStorage.getItem("everweb_recent_wedding");
+        if (recent && JSON.parse(recent)?.id === deleteTarget.id) {
+          localStorage.removeItem("everweb_recent_wedding");
+        }
+      } catch (err) {
+        void err;
+      }
+      toast.success("Đã xoá sự kiện thành công");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Không thể xoá sự kiện, vui lòng thử lại.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleOpenWedding = useCallback(
@@ -99,14 +129,21 @@ export default function CreateEventPage() {
     <div className="flex min-h-screen flex-col bg-stone-50 text-[#1F1A17]">
       {/* Minimal Header */}
       <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#EAE3DB] bg-white/95 px-6 sm:px-10 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3B52DE] text-white">
-            <Flower2 size={17} />
-          </div>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          title="Quay lại trang trước"
+          className="flex cursor-pointer items-center gap-2.5 transition hover:opacity-80"
+        >
+          <img
+            src={everwebLogo}
+            alt="EverWeb Logo"
+            className="h-8 w-8 rounded-lg object-cover shadow-2xs"
+          />
           <span className="text-base font-bold tracking-tight text-[#1F1A17]">
             EverWeb
           </span>
-        </div>
+        </button>
 
         <div className="flex items-center gap-3">
           {weddings.length > 0 && (
@@ -163,10 +200,7 @@ export default function CreateEventPage() {
           {/* Header Bar */}
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#EAE3DB] pb-6">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] px-3 py-1 text-xs font-semibold text-[#3B52DE]">
-                <Sparkles size={13} /> Dự án đã lưu
-              </span>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#1F1A17] sm:text-3xl">
+              <h1 className="text-2xl font-bold tracking-tight text-[#1F1A17] sm:text-3xl">
                 Dự án sự kiện của bạn
               </h1>
               <p className="mt-1 text-xs sm:text-sm text-stone-500">
@@ -245,14 +279,25 @@ export default function CreateEventPage() {
 
                     {/* Card Action */}
                     <div className="mt-5 pt-3 border-t border-[#F0EAE1] flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => navigate(ROUTE_PATHS.EVENT_SETTINGS, { state: { wedding: w } })}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-[#3B52DE] transition cursor-pointer"
-                      >
-                        <User size={12} />
-                        <span>Xem hồ sơ cưới</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => navigate(ROUTE_PATHS.EVENT_SETTINGS, { state: { wedding: w } })}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 hover:text-[#3B52DE] transition cursor-pointer"
+                        >
+                          <User size={12} />
+                          <span>Hồ sơ</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(w)}
+                          title="Xoá sự kiện"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-rose-500 hover:text-rose-700 transition cursor-pointer"
+                        >
+                          <Trash2 size={12} />
+                          <span>Xoá</span>
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleOpenWedding(w)}
@@ -266,23 +311,6 @@ export default function CreateEventPage() {
                 </div>
               );
             })}
-
-            {/* Dashed Add New Card */}
-            <button
-              type="button"
-              onClick={() => setIsTypeModalOpen(true)}
-              className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-white/60 p-6 text-center transition hover:border-[#3B52DE] hover:bg-white active:scale-98 group cursor-pointer"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-[#1F1A17] font-bold shadow-2xs transition group-hover:scale-110">
-                <Plus size={22} />
-              </div>
-              <h3 className="mt-3 text-sm font-bold text-[#1F1A17]">
-                Tạo thêm sự kiện mới
-              </h3>
-              <p className="mt-1 text-xs text-stone-500 max-w-xs">
-                Lên kế hoạch cho một đám cưới hoặc sự kiện kỷ niệm tiếp theo
-              </p>
-            </button>
           </div>
         </main>
       ) : (
@@ -366,6 +394,40 @@ export default function CreateEventPage() {
         onClose={() => setIsProfileModalOpen(false)}
         wedding={weddings[0]}
       />
+
+      {/* Confirm Delete Event Modal */}
+      <Modal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        title="Xác nhận xoá sự kiện"
+        size="sm"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="leading-relaxed text-stone-600">
+            Bạn có chắc chắn muốn xoá sự kiện{" "}
+            <b className="text-[#1F1A17]">{deleteTarget?.title || "này"}</b>{" "}
+            không? Toàn bộ dữ liệu cấu hình liên quan sẽ bị xoá khỏi hệ thống.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setDeleteTarget(null)}
+              className="rounded-lg border border-stone-200 px-4 py-2 font-medium text-stone-600 hover:bg-stone-50"
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleConfirmDelete}
+              className="rounded-lg bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+            >
+              {isDeleting ? "Đang xoá..." : "Xoá vĩnh viễn"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

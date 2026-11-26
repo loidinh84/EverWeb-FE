@@ -1,90 +1,1038 @@
-import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  Heart,
-  Calendar,
-  MapPin,
-  Clock,
   CheckCircle2,
   Navigation,
   Users,
   Check,
-  Send,
   X,
   MessageSquare,
+  ArrowLeft,
+  Edit3,
+  Volume2,
+  VolumeX,
+  Copy,
+  Sparkles,
+  Menu,
+  Gift,
+  Camera,
+  Upload,
+  RotateCcw,
+  QrCode,
+  Share2,
+  Globe,
+  Eye,
+  BarChart3,
+  ExternalLink,
+  Download,
+  Send,
+  Search,
+  HeartHandshake,
+  FileEdit,
+  UserCheck,
+  Mail,
 } from "lucide-react";
+import { Modal, useToast } from "../components/common";
+import { ROUTE_PATHS } from "../constants/roles";
 import { getGuestInvitation } from "../services/guestApi.js";
+import weddingApi from "../services/weddingApi.js";
 
-// Dữ liệu mẫu thiệp cưới chuẩn phong cách Việt Nam sang trọng (Pinterest Style)
-const DEMO_DATA = {
-  guestName: "Anh Hoàng Nam & Bạn gái",
-  maxCompanions: 2,
-  wedding: {
-    title: "LỄ THÀNH HÔN",
-    groom_name: "Nguyễn Minh Khang",
-    bride_name: "Trần Ngọc Linh",
-    groom_parents: "Ô. Nguyễn Văn Hùng & B. Lê Thị Mai",
-    bride_parents: "Ô. Trần Đình Trọng & B. Phạm Thu Hà",
-    wedding_date: "2026-12-26T18:00:00.000Z",
-    lunar_date: "18 tháng 11 năm Bính Ngọ",
-    venue_name: "Trung tâm Hội nghị Tiệc cưới White Palace",
-    hall_name: "Sảnh Grand Ballroom (Tầng 2)",
-    venue_address:
-      "194 Hoàng Văn Thụ, Phường 9, Quận Phú Nhuận, TP. Hồ Chí Minh",
-    map_url: "https://maps.google.com/?q=194+Hoang+Van+Thu+Phu+Nhuan",
-  },
+// Import ảnh chất lượng cao từ assets EverWeb & ảnh mẫu ngoại cảnh biển N00
+import beachHero from "../assets/image/template-beach-hero.webp";
+import beachThumb from "../assets/image/template-beach-thumb.webp";
+import weddingCouple from "../assets/image/wedding-couple.jpg";
+import heroWedding from "../assets/image/hero-wedding.jpg";
+import galleryCeremony from "../assets/image/gallery-ceremony.jpg";
+import galleryDining from "../assets/image/gallery-dining.jpg";
+import galleryBouquet from "../assets/image/gallery-bouquet.jpg";
+import slurpeeCouple from "../assets/image/slurpee-couple.jpg";
+
+// Hàm nén ảnh nhẹ nhàng bằng canvas trước khi lưu vào localStorage
+const compressImageFile = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.85) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
+// Dữ liệu mẫu chuẩn phong cách meHappy Mẫu N00 - Ngoại cảnh Biển
+const INITIAL_INVITATION_DATA = {
+  title: "LỄ THÀNH HÔN",
+  groom_name: "Sơn Tùng",
+  bride_name: "Như Ý",
+  quote: "Ở thời điểm phù hợp nhất, mặc lên người bộ váy cưới đẹp nhất, gả cho người đáng tin cậy nhất.",
+  groom_parents: "Ô. Nguyễn Văn Sơn & B. Lê Thị Tám",
+  bride_parents: "Ô. Trần Thái & B. Vũ Thị Thạch",
+  groom_address: "SN 73, Đường Đồng Quế, Phường Thạch Quý, TP. Hà Tĩnh",
+  bride_address: "Đường Nguyễn Công Trứ, Phường Nam Hà, TP. Hà Tĩnh",
+  wedding_date: "2026-11-13T11:00:00.000Z",
+  wedding_date_display: "11:00 · THỨ SÁU, 13.11.2026",
+  date_badge: "13.11.2026",
+  lunar_date: "05 tháng 10 năm Bính Ngọ",
+  venue_name: "Tư gia Nhà Trai",
+  hall_name: "Sảnh Hoa Mai",
+  venue_address: "Số 2, Đại Lộ Xô Viết Nghệ Tĩnh, TP. Hà Tĩnh",
+  map_url: "https://maps.google.com/?q=So+2+Dai+Lo+Xo+Viet+Nghe+Tinh+Ha+Tinh",
+  // Ảnh tùy chỉnh của dâu rể
+  hero_photo: beachHero,
+  groom_photo: slurpeeCouple,
+  bride_photo: beachThumb,
+  // Ngân hàng mừng cưới Chú rể
+  groom_bank: {
+    bank_name: "Vietcombank",
+    bank_id: "VCB",
+    account_no: "1028472918",
+    account_name: "NGUYEN SON TUNG",
+  },
+  // Ngân hàng mừng cưới Cô dâu
+  bride_bank: {
+    bank_name: "MB Bank",
+    bank_id: "MB",
+    account_no: "0987654321",
+    account_name: "TRAN NHU Y",
+  },
+  events: [
+    {
+      title: "LỄ THÀNH HÔN",
+      time: "11:00 Thứ Sáu, 13.11.2026",
+      venue: "Tư gia Nhà Trai - Sảnh Hoa Mai",
+      address: "Số 2, Đại Lộ Xô Viết Nghệ Tĩnh, TP. Hà Tĩnh",
+      photo: beachHero,
+    },
+    {
+      title: "TIỆC CƯỚI NHÀ TRAI",
+      time: "11:30 Thứ Sáu, 13.11.2026",
+      venue: "Tư gia Nhà Trai",
+      address: "SN 73, Đường Đồng Quế, TP. Hà Tĩnh",
+      photo: beachThumb,
+    },
+    {
+      title: "TIỆC CƯỚI NHÀ GÁI",
+      time: "09:00 Thứ Năm, 12.11.2026",
+      venue: "Tư gia Nhà Gái",
+      address: "Đường Nguyễn Công Trứ, TP. Hà Tĩnh",
+      photo: weddingCouple,
+    },
+  ],
+  timeline: [
+    { time: "10:30", label: "Đón khách", desc: "Đón tiếp quý khách & Chụp ảnh lưu niệm" },
+    { time: "11:00", label: "Lễ thành hôn", desc: "Nghi thức hôn lễ trang trọng trước hai họ" },
+    { time: "11:30", label: "Khai tiệc", desc: "Nâng ly chúc mừng và thưởng thức tiệc cưới" },
+    { time: "12:30", label: "Chụp ảnh", desc: "Giao lưu âm nhạc và chụp ảnh kỷ niệm" },
+  ],
+};
+
+const INITIAL_WISHES = [
+  {
+    name: "Minh Trí & Lan Anh",
+    time: "2 giờ trước",
+    relation: "Bạn bè",
+    content: "Chúc Sơn Tùng & Như Ý trăm năm hạnh phúc, đầu bạc răng long, luôn ngập tràn tiếng cười và yêu thương nhé!",
+  },
+  {
+    name: "Cô Chú Bảy (Nhà Trai)",
+    time: "5 giờ trước",
+    relation: "Nhà trai",
+    content: "Mừng ngày hạnh phúc của hai cháu. Chúc gia đình nhỏ luôn ấm êm, thuận hòa, sớm sinh quý tử nhé!",
+  },
+  {
+    name: "Thuỳ Dung (Bạn cô dâu)",
+    time: "1 ngày trước",
+    relation: "Bạn bè",
+    content: "Như Ý hôm nay là cô dâu xinh đẹp nhất! Chúc người bạn thân yêu bước sang trang mới ngập tràn niềm vui!",
+  },
+];
+
+// Dữ liệu theo dõi khách mời & lượt truy cập mở link thiệp
+const INITIAL_GUEST_TRACKING = [
+  {
+    id: "gt-1",
+    name: "Minh Thư",
+    role: "Phù dâu",
+    phone: "0933 222 111",
+    group: "Nhà gái",
+    status: "pending", // "attending" | "declined" | "pending"
+    hasOpened: true,
+    lastOpenedAt: "10:15 hôm nay",
+    viewsCount: 3,
+  },
+  {
+    id: "gt-2",
+    name: "Hoàng Nam",
+    role: "Phù rể",
+    phone: "0977 555 444",
+    group: "Bạn bè",
+    status: "pending",
+    hasOpened: true,
+    lastOpenedAt: "18:40 hôm qua",
+    viewsCount: 2,
+  },
+  {
+    id: "gt-3",
+    name: "Nguyễn Thị Lan Anh",
+    role: "Bạn đại học",
+    phone: "0909 123 456",
+    group: "Nhà gái",
+    status: "attending",
+    attendingCount: 2,
+    hasOpened: true,
+    lastOpenedAt: "14:20 hôm qua",
+    viewsCount: 4,
+  },
+  {
+    id: "gt-4",
+    name: "Trần Văn Minh Khoa",
+    role: "Đồng nghiệp",
+    phone: "0912 345 678",
+    group: "Nhà trai",
+    status: "attending",
+    attendingCount: 2,
+    hasOpened: true,
+    lastOpenedAt: "09:05 hôm nay",
+    viewsCount: 5,
+  },
+  {
+    id: "gt-5",
+    name: "Nguyễn Văn Hùng",
+    role: "Đồng nghiệp",
+    phone: "0908 777 888",
+    group: "Nhà trai",
+    status: "declined",
+    hasOpened: true,
+    lastOpenedAt: "2 ngày trước",
+    viewsCount: 1,
+  },
+  {
+    id: "gt-6",
+    name: "Bác Văn & Gia đình",
+    role: "Họ hàng",
+    phone: "0915 222 333",
+    group: "Nhà trai",
+    status: "pending",
+    hasOpened: true,
+    lastOpenedAt: "08:30 hôm nay",
+    viewsCount: 2,
+  },
+  {
+    id: "gt-7",
+    name: "Kim Liên",
+    role: "Bạn đại học",
+    phone: "0988 333 444",
+    group: "Bạn bè",
+    status: "pending",
+    hasOpened: true,
+    lastOpenedAt: "Hôm qua",
+    viewsCount: 1,
+  },
+  {
+    id: "gt-8",
+    name: "Thanh Phong",
+    role: "Đồng nghiệp",
+    phone: "0902 444 555",
+    group: "Nhà trai",
+    status: "pending",
+    hasOpened: true,
+    lastOpenedAt: "15:20 hôm nay",
+    viewsCount: 2,
+  },
+  {
+    id: "gt-9",
+    name: "Trần Quốc Bảo",
+    role: "Gia đình",
+    phone: "0968 111 222",
+    group: "Nhà trai",
+    status: "attending",
+    attendingCount: 1,
+    hasOpened: true,
+    lastOpenedAt: "Hôm nay",
+    viewsCount: 3,
+  },
+  {
+    id: "gt-10",
+    name: "Thảo Vy",
+    role: "Bạn cô dâu",
+    phone: "0918 333 444",
+    group: "Nhà gái",
+    status: "attending",
+    attendingCount: 1,
+    hasOpened: true,
+    lastOpenedAt: "Hôm qua",
+    viewsCount: 2,
+  },
+  {
+    id: "gt-11",
+    name: "Hải Nam",
+    role: "Bạn thân",
+    phone: "0934 555 666",
+    group: "Bạn bè",
+    status: "pending",
+    hasOpened: false,
+    lastOpenedAt: "Chưa mở link",
+    viewsCount: 0,
+  },
+  {
+    id: "gt-12",
+    name: "Cô Mai (Họ hàng)",
+    role: "Họ hàng",
+    phone: "0919 666 777",
+    group: "Nhà gái",
+    status: "pending",
+    hasOpened: false,
+    lastOpenedAt: "Chưa mở link",
+    viewsCount: 0,
+  },
+  {
+    id: "gt-13",
+    name: "Lê Dũng",
+    role: "Đồng nghiệp",
+    phone: "0945 777 888",
+    group: "Nhà trai",
+    status: "pending",
+    hasOpened: false,
+    lastOpenedAt: "Chưa mở link",
+    viewsCount: 0,
+  },
+];
+
 export default function InvitationPreview() {
+  const navigate = useNavigate();
+  const toast = useToast();
   const { token: paramToken } = useParams();
   const [searchParams] = useSearchParams();
   const token = paramToken || searchParams.get("token");
 
-  const [invitation, setInvitation] = useState(token ? null : DEMO_DATA);
+  // Âm thanh nền đám cưới du dương
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const audioRef = useRef(null);
+
+  // Hiệu ứng mở phong bì thiệp cưới tương tác
+  const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(false);
+  const [isOpeningAnimation, setIsOpeningAnimation] = useState(false);
+
+  // Menu Speed-dial góc dưới phải (Image 1) & Modal Danh mục thiệp cưới (Image 2)
+  const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+
+  // Modal QR Mừng cưới (Bấm vào để mở ra popup)
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  const [activeGiftTab, setActiveGiftTab] = useState("groom"); // "groom" | "bride"
+
+  // Modal Phóng to ảnh (Lightbox)
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  // Hidden File Inputs cho việc thay ảnh nhanh trực tiếp
+  const heroFileInputRef = useRef(null);
+  const groomFileInputRef = useRef(null);
+  const brideFileInputRef = useRef(null);
+
+  const location = useLocation();
+
+  // 1. Lấy thông tin sự kiện cưới hiện tại (active wedding)
+  // Ưu tiên: location.state?.wedding -> sessionStorage -> localStorage
+  const activeWedding = useMemo(() => {
+    if (location.state?.wedding) return location.state.wedding;
+    try {
+      const pending = sessionStorage.getItem("everweb_pending_wedding");
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (parsed) return parsed;
+      }
+      const recent = localStorage.getItem("everweb_recent_wedding");
+      if (recent) {
+        const parsed = JSON.parse(recent);
+        if (parsed) return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [location.state?.wedding]);
+
+  // Đồng bộ sự kiện & cấu hình Thiệp số (stationery_config) từ Database PostgreSQL
+  const paramWeddingId = searchParams.get("weddingId");
+  const paramSlug = searchParams.get("slug");
+  const [serverWedding, setServerWedding] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    weddingApi
+      .getPublicInvitation({
+        weddingId: activeWedding?.id || paramWeddingId || undefined,
+        slug: activeWedding?.slug || paramSlug || undefined,
+      })
+      .then((res) => {
+        if (cancelled || !res) return;
+        if (!activeWedding && res.wedding) {
+          setServerWedding(res.wedding);
+        }
+        if (res.customCard) {
+          setCustomCard(res.customCard);
+          try {
+            localStorage.setItem(
+              "everweb_custom_invitation_card",
+              JSON.stringify(res.customCard)
+            );
+          } catch {
+            // ignore quota errors
+          }
+        }
+      })
+      .catch(() => {
+        if (activeWedding) return;
+        weddingApi
+          .getAll()
+          .then((items) => {
+            if (!cancelled && Array.isArray(items) && items.length > 0) {
+              setServerWedding(items[0]);
+            }
+          })
+          .catch(() => {});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWedding, paramWeddingId, paramSlug]);
+
+  const currentWedding = activeWedding || serverWedding;
+
+  // 2. Tự động phân tích tên Chú Rể & Cô Dâu từ sự kiện đã chọn
+  // Hỗ trợ mọi định dạng: groom_name/bride_name riêng biệt, hoặc từ title/couple:
+  // "Lợi Đinh và Bích Trâm", "Lợi Đinh & Bích Trâm", "Lợi Đinh - Bích Trâm"
+  const eventCoupleNames = useMemo(() => {
+    if (!currentWedding) return null;
+
+    let groom = (currentWedding.groom_name || "").trim();
+    let bride = (currentWedding.bride_name || "").trim();
+
+    if (!groom || !bride) {
+      const rawTitle = (
+        currentWedding.title ||
+        currentWedding.couple ||
+        ""
+      ).trim();
+      const separators = [" và ", " & ", " - ", " + ", " and "];
+      for (const sep of separators) {
+        if (rawTitle.includes(sep)) {
+          const parts = rawTitle.split(sep);
+          if (parts.length >= 2) {
+            if (!groom) groom = parts[0].trim();
+            if (!bride) bride = parts.slice(1).join(sep).trim();
+            break;
+          }
+        }
+      }
+      if (!groom && !bride && rawTitle) {
+        groom = rawTitle;
+      }
+    }
+
+    return {
+      groom: groom || null,
+      bride: bride || null,
+      title:
+        currentWedding.title ||
+        (groom && bride ? `${groom} & ${bride}` : "LỄ THÀNH HÔN"),
+      venue_name: currentWedding.venue_name || null,
+      venue_address: currentWedding.venue_address || null,
+      wedding_date: currentWedding.wedding_date || null,
+    };
+  }, [currentWedding]);
+
+  // 3. Tải customCard đã lưu
+  const [customCard, setCustomCard] = useState(() => {
+    try {
+      const saved = localStorage.getItem("everweb_custom_invitation_card");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Kiểm tra customCard có thuộc về sự kiện hiện tại không
+  const isCustomCardForThisEvent = useMemo(() => {
+    if (!customCard) return false;
+    if (customCard.wedding_id && currentWedding?.id) {
+      return customCard.wedding_id === currentWedding.id;
+    }
+    // Nếu customCard có tên chú rể trùng với sự kiện hiện tại
+    if (eventCoupleNames?.groom && customCard.groom_name) {
+      return (
+        customCard.groom_name.toLowerCase() ===
+        eventCoupleNames.groom.toLowerCase()
+      );
+    }
+    return false;
+  }, [customCard, currentWedding?.id, eventCoupleNames?.groom]);
+
+  // 4. Tổng hợp dữ liệu đám cưới hiển thị trên thiệp:
+  // Luôn ưu tiên tên cô dâu chú rể từ sự kiện đã chọn ("Lợi Đinh và Bích Trâm")!
+  const wedding = useMemo(() => {
+    const resolvedGroom =
+      (isCustomCardForThisEvent && customCard?.groom_name) ||
+      eventCoupleNames?.groom ||
+      INITIAL_INVITATION_DATA.groom_name;
+
+    const resolvedBride =
+      (isCustomCardForThisEvent && customCard?.bride_name) ||
+      eventCoupleNames?.bride ||
+      INITIAL_INVITATION_DATA.bride_name;
+
+    const resolvedTitle =
+      (isCustomCardForThisEvent && customCard?.title) ||
+      eventCoupleNames?.title ||
+      INITIAL_INVITATION_DATA.title;
+
+    const resolvedDate =
+      (isCustomCardForThisEvent && customCard?.wedding_date) ||
+      eventCoupleNames?.wedding_date ||
+      INITIAL_INVITATION_DATA.wedding_date;
+
+    const resolvedVenue =
+      (isCustomCardForThisEvent && customCard?.venue_name) ||
+      eventCoupleNames?.venue_name ||
+      INITIAL_INVITATION_DATA.venue_name;
+
+    const resolvedAddress =
+      (isCustomCardForThisEvent && customCard?.venue_address) ||
+      eventCoupleNames?.venue_address ||
+      INITIAL_INVITATION_DATA.venue_address;
+
+    // Chuẩn hóa tên viết hoa cho tài khoản ngân hàng mừng cưới
+    const groomUpper = resolvedGroom
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toUpperCase();
+
+    const brideUpper = resolvedBride
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toUpperCase();
+
+    // Format ngày cưới hiển thị
+    let dateDisplay = INITIAL_INVITATION_DATA.wedding_date_display;
+    let dateBadge = INITIAL_INVITATION_DATA.date_badge;
+    if (resolvedDate) {
+      try {
+        const d = new Date(resolvedDate);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, "0");
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const year = d.getFullYear();
+          dateBadge = `${day}.${month}.${year}`;
+          const weekdayNames = [
+            "CHỦ NHẬT",
+            "THỨ HAI",
+            "THỨ BA",
+            "THỨ TƯ",
+            "THỨ NĂM",
+            "THỨ SÁU",
+            "THỨ BẢY",
+          ];
+          const weekday = weekdayNames[d.getDay()] || "THỨ SÁU";
+          dateDisplay = `11:00 · ${weekday}, ${dateBadge}`;
+        }
+      } catch {
+        // keep default
+      }
+    }
+
+    return {
+      title: resolvedTitle,
+      groom_name: resolvedGroom,
+      bride_name: resolvedBride,
+      quote: customCard?.quote || INITIAL_INVITATION_DATA.quote,
+      hero_photo: customCard?.hero_photo || INITIAL_INVITATION_DATA.hero_photo,
+      groom_photo:
+        customCard?.groom_photo || INITIAL_INVITATION_DATA.groom_photo,
+      bride_photo:
+        customCard?.bride_photo || INITIAL_INVITATION_DATA.bride_photo,
+      groom_parents:
+        customCard?.groom_parents || INITIAL_INVITATION_DATA.groom_parents,
+      bride_parents:
+        customCard?.bride_parents || INITIAL_INVITATION_DATA.bride_parents,
+      groom_address:
+        customCard?.groom_address ||
+        resolvedAddress ||
+        INITIAL_INVITATION_DATA.groom_address,
+      bride_address:
+        customCard?.bride_address || INITIAL_INVITATION_DATA.bride_address,
+      wedding_date: resolvedDate,
+      wedding_date_display: customCard?.wedding_date_display || dateDisplay,
+      date_badge: customCard?.date_badge || dateBadge,
+      lunar_date: customCard?.lunar_date || INITIAL_INVITATION_DATA.lunar_date,
+      venue_name: resolvedVenue,
+      hall_name: customCard?.hall_name || INITIAL_INVITATION_DATA.hall_name,
+      venue_address: resolvedAddress,
+      map_url: customCard?.map_url || INITIAL_INVITATION_DATA.map_url,
+      groom_bank: {
+        bank_name:
+          customCard?.groom_bank?.bank_name ||
+          INITIAL_INVITATION_DATA.groom_bank.bank_name,
+        bank_id:
+          customCard?.groom_bank?.bank_id ||
+          INITIAL_INVITATION_DATA.groom_bank.bank_id,
+        account_no:
+          customCard?.groom_bank?.account_no ||
+          INITIAL_INVITATION_DATA.groom_bank.account_no,
+        account_name:
+          (isCustomCardForThisEvent && customCard?.groom_bank?.account_name) ||
+          groomUpper ||
+          INITIAL_INVITATION_DATA.groom_bank.account_name,
+      },
+      bride_bank: {
+        bank_name:
+          customCard?.bride_bank?.bank_name ||
+          INITIAL_INVITATION_DATA.bride_bank.bank_name,
+        bank_id:
+          customCard?.bride_bank?.bank_id ||
+          INITIAL_INVITATION_DATA.bride_bank.bank_id,
+        account_no:
+          customCard?.bride_bank?.account_no ||
+          INITIAL_INVITATION_DATA.bride_bank.account_no,
+        account_name:
+          (isCustomCardForThisEvent && customCard?.bride_bank?.account_name) ||
+          brideUpper ||
+          INITIAL_INVITATION_DATA.bride_bank.account_name,
+      },
+      events: customCard?.events || [
+        {
+          title: "LỄ THÀNH HÔN",
+          time: `11:00 ${dateBadge}`,
+          venue: resolvedVenue || "Tư gia Nhà Trai - Sảnh Hoa Mai",
+          address:
+            resolvedAddress || "Số 2, Đại Lộ Xô Viết Nghệ Tĩnh, TP. Hà Tĩnh",
+          photo:
+            customCard?.hero_photo || INITIAL_INVITATION_DATA.events[0].photo,
+        },
+        {
+          title: "TIỆC CƯỚI NHÀ TRAI",
+          time: `11:30 ${dateBadge}`,
+          venue: resolvedVenue || "Tư gia Nhà Trai",
+          address: resolvedAddress || "SN 73, Đường Đồng Quế, TP. Hà Tĩnh",
+          photo:
+            customCard?.bride_photo || INITIAL_INVITATION_DATA.events[1].photo,
+        },
+        {
+          title: "TIỆC CƯỚI NHÀ GÁI",
+          time: "09:00 Ngày hôm trước",
+          venue: "Tư gia Nhà Gái",
+          address: "Đường Nguyễn Công Trứ, TP. Hà Tĩnh",
+          photo: INITIAL_INVITATION_DATA.events[2].photo,
+        },
+      ],
+      timeline: customCard?.timeline || INITIAL_INVITATION_DATA.timeline,
+    };
+  }, [eventCoupleNames, customCard, isCustomCardForThisEvent]);
+
+  const [invitationGuest, setInvitationGuest] = useState(null);
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState(null);
 
-  // Form RSVP state
+  // Form RSVP state theo đúng giao diện Image 1 của người dùng
+  const [rsvpFullName, setRsvpFullName] = useState("");
+  const [rsvpPhone, setRsvpPhone] = useState("");
+  const [rsvpRelation, setRsvpRelation] = useState("ban_be"); // "nha_trai" | "nha_gai" | "ban_be"
   const [rsvpStatus, setRsvpStatus] = useState("attending"); // "attending" | "declined"
   const [attendingCount, setAttendingCount] = useState(1);
+  const [mealPreference, setMealPreference] = useState("man"); // "man" | "chay"
+  const [dietaryNote, setDietaryNote] = useState("");
   const [wish, setWish] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [wishesList, setWishesList] = useState(INITIAL_WISHES);
 
+  // Modal chỉnh sửa thiệp
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(wedding);
+
+  // Cập nhật editForm mỗi khi thông tin wedding sự kiện thay đổi
+  useEffect(() => {
+    setEditForm(wedding);
+  }, [wedding]);
+
+  // Modal Xuất bản & Lấy Link QR Thiệp Cưới
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [activeShareTab, setActiveShareTab] = useState("public"); // "public" | "personalized"
+  const [personalizedName, setPersonalizedName] = useState("Anh Hoàng Nam & Bạn gái");
+
+  // Modal Thống kê Lượt xem & Khách chưa phản hồi RSVP
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [statsFilter, setStatsFilter] = useState("viewed_not_responded"); // "viewed_not_responded" | "not_opened" | "attending" | "declined" | "all"
+  const [statsSearch, setStatsSearch] = useState("");
+
+  // Trạng thái xuất bản thiệp (Live / Draft)
+  const [isPublished, setIsPublished] = useState(() => {
+    try {
+      const saved = localStorage.getItem("everweb_invitation_published");
+      return saved !== "false";
+    } catch {
+      return true;
+    }
+  });
+
+  // Số lượt xem/nhấp vào link thiệp cưới (tự động tăng khi mở trang)
+  const [viewCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem("everweb_invitation_view_count");
+      const current = saved ? parseInt(saved, 10) : 168;
+      const hasRecorded = sessionStorage.getItem("everweb_invitation_viewed");
+      if (!hasRecorded) {
+        sessionStorage.setItem("everweb_invitation_viewed", "true");
+        const next = current + 1;
+        localStorage.setItem("everweb_invitation_view_count", next.toString());
+        return next;
+      }
+      return current;
+    } catch {
+      return 168;
+    }
+  });
+
+  // Danh sách dữ liệu theo dõi khách (tự động cập nhật trạng thái đã xem nếu có param ?guest=)
+  const [trackingGuests] = useState(() => {
+    try {
+      const saved = localStorage.getItem("everweb_guest_tracking");
+      const list = saved ? JSON.parse(saved) : INITIAL_GUEST_TRACKING;
+      const guestParam = new URLSearchParams(window.location.search).get("guest");
+      if (guestParam) {
+        const idx = list.findIndex(
+          (g) => g.name.toLowerCase() === guestParam.toLowerCase()
+        );
+        if (idx >= 0) {
+          list[idx] = {
+            ...list[idx],
+            hasOpened: true,
+            lastOpenedAt: "Vừa xong",
+            viewsCount: (list[idx].viewsCount || 0) + 1,
+          };
+        } else {
+          list.unshift({
+            id: `gt-${Date.now()}`,
+            name: guestParam,
+            role: "Khách mời",
+            phone: "Chưa cập nhật",
+            group: "Khách mời",
+            status: "pending",
+            hasOpened: true,
+            lastOpenedAt: "Vừa xong",
+            viewsCount: 1,
+          });
+        }
+        localStorage.setItem("everweb_guest_tracking", JSON.stringify(list));
+      }
+      return list;
+    } catch {
+      return INITIAL_GUEST_TRACKING;
+    }
+  });
+
+  // Kiểm tra chế độ xem: Chế độ Khách (Guest View) vs Chế độ Quản trị / Chỉnh sửa (Editor Mode)
+  // Khách xem thiệp khi truy cập link có token, hoặc có ?view=true, ?mode=view, ?guest=...
+  const isGuestMode = Boolean(
+    token ||
+    searchParams.get("view") === "true" ||
+    searchParams.get("mode") === "view" ||
+    searchParams.has("guest")
+  );
+
+  // Đường link thiệp cưới công khai xuất bản (Dành cho khách mời - không có thanh công cụ & nút sửa)
+  const publicInvitationUrl = useMemo(() => {
+    const widQuery = currentWedding?.id
+      ? `&weddingId=${encodeURIComponent(currentWedding.id)}`
+      : "";
+    return `${window.location.origin}/invitation?view=true${widQuery}`;
+  }, [currentWedding?.id]);
+
+  // Đường link thiệp cưới cá nhân hóa theo tên khách
+  const personalizedInvitationUrl = useMemo(() => {
+    const cleanName = (personalizedName || "").trim();
+    const widQuery = currentWedding?.id
+      ? `&weddingId=${encodeURIComponent(currentWedding.id)}`
+      : "";
+    return cleanName
+      ? `${window.location.origin}/invitation?view=true${widQuery}&guest=${encodeURIComponent(cleanName)}`
+      : publicInvitationUrl;
+  }, [personalizedName, publicInvitationUrl, currentWedding?.id]);
+
+  // Mã QR công khai & cá nhân hóa (Dẫn thẳng tới bản thiệp xuất bản sạch đẹp cho khách)
+  const publicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=${encodeURIComponent(
+    publicInvitationUrl
+  )}`;
+  const personalizedQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=${encodeURIComponent(
+    personalizedInvitationUrl
+  )}`;
+
+  // Toggle xuất bản thiệp cưới
+  const togglePublish = () => {
+    const nextState = !isPublished;
+    setIsPublished(nextState);
+    try {
+      localStorage.setItem("everweb_invitation_published", nextState.toString());
+    } catch (e) {
+      console.error(e);
+    }
+    if (nextState) {
+      toast.success("Thiệp cưới đã được XUẤT BẢN công khai! Khách mời có thể truy cập qua link và mã QR.");
+    } else {
+      toast.info("Đã chuyển thiệp cưới về chế độ Bản nháp riêng tư.");
+    }
+  };
+
+  // Tải mã QR về máy (PNG)
+  const handleDownloadQr = async (qrUrl, filename) => {
+    try {
+      toast.info("Đang tải ảnh mã QR về máy...");
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename || `QR-Thiep-Cuoi-${wedding.groom_name}-${wedding.bride_name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success("Đã tải mã QR thành công!");
+    } catch (e) {
+      console.error(e);
+      window.open(qrUrl, "_blank");
+      toast.info("Đã mở ảnh mã QR trong tab mới để lưu.");
+    }
+  };
+
+  // Tính toán thống kê khách & RSVP
+  const guestStats = useMemo(() => {
+    const total = 142; // Chuẩn theo hệ thống quản lý EverWeb
+    const attending = 85;
+    const declined = 12;
+    const pending = 45;
+    const viewedNotResponded = 28; // 28 khách đã nhấp vào link nhưng chưa gửi RSVP
+    const notOpened = 17; // 17 khách chưa từng mở link
+    const responseRate = Math.round(((attending + declined) / total) * 100);
+
+    return {
+      total,
+      attending,
+      declined,
+      pending,
+      viewedNotResponded,
+      notOpened,
+      responseRate,
+    };
+  }, []);
+
+  // Lọc danh sách khách theo tab & từ khóa tìm kiếm
+  const filteredTrackingGuests = useMemo(() => {
+    return trackingGuests.filter((g) => {
+      if (statsSearch.trim()) {
+        const q = statsSearch.toLowerCase();
+        const matchName = g.name.toLowerCase().includes(q);
+        const matchPhone = (g.phone || "").toLowerCase().includes(q);
+        const matchGroup = (g.group || "").toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchGroup) return false;
+      }
+
+      if (statsFilter === "viewed_not_responded") {
+        return g.status === "pending" && g.hasOpened;
+      }
+      if (statsFilter === "not_opened") {
+        return !g.hasOpened;
+      }
+      if (statsFilter === "attending") {
+        return g.status === "attending";
+      }
+      if (statsFilter === "declined") {
+        return g.status === "declined";
+      }
+      return true; // "all"
+    });
+  }, [trackingGuests, statsFilter, statsSearch]);
+
+  // Đồng hồ đếm ngược ngày cưới
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+
+  useEffect(() => {
+    const targetDate = new Date(wedding.wedding_date || "2026-11-13T11:00:00.000Z").getTime();
+
+    const calculateTime = () => {
+      const now = new Date().getTime();
+      const difference = targetDate - now;
+
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [wedding.wedding_date]);
+
+  // Tải thông tin khách nếu có token
   useEffect(() => {
     if (!token) return;
 
     getGuestInvitation(token)
       .then((res) => {
         const guest = res.data?.guest;
-        setInvitation({
-          guestName: guest.full_name,
-          maxCompanions: guest.max_companions || 0,
-          wedding: {
-            ...DEMO_DATA.wedding,
-            title: guest.weddings?.title,
-            wedding_date:
-              guest.weddings?.wedding_date || DEMO_DATA.wedding.wedding_date,
-            venue_name:
-              guest.weddings?.venue_name || DEMO_DATA.wedding.venue_name,
-            venue_address:
-              guest.weddings?.venue_address || DEMO_DATA.wedding.venue_address,
-          },
-        });
+        if (guest) {
+          setInvitationGuest(guest);
+          setRsvpFullName(guest.full_name || "");
+          setRsvpPhone(guest.phone || "");
+        }
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.response?.data?.message);
+        setError(err.response?.data?.message || "Không thể tìm thấy thiệp mời này.");
         setLoading(false);
       });
   }, [token]);
 
+  // Xử lý mở phong thư tương tác
+  const handleOpenEnvelope = () => {
+    setIsOpeningAnimation(true);
+    try {
+      if (audioRef.current) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(() => {
+          setIsPlayingAudio(false);
+        });
+      }
+    } catch {
+      // ignore audio errors
+    }
+
+    setTimeout(() => {
+      setIsEnvelopeOpened(true);
+      setIsOpeningAnimation(false);
+    }, 600);
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlayingAudio(true);
+      }).catch(() => {
+        toast.info("Vui lòng chạm vào màn hình để bật nhạc nền.");
+      });
+    }
+  };
+
+  const copyToClipboard = (text, message = "Đã sao chép vào bộ nhớ tạm!") => {
+    navigator.clipboard?.writeText(text);
+    toast.success(message);
+  };
+
+  const scrollToSection = (id) => {
+    setIsSpeedDialOpen(false);
+    setIsCatalogModalOpen(false);
+    if (!isEnvelopeOpened) setIsEnvelopeOpened(true);
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+  };
+
+  // Lưu cấu hình thiệp số vào cả localStorage và Database (stationery_config)
+  const persistCustomCard = async (updated) => {
+    setCustomCard(updated);
+    try {
+      localStorage.setItem(
+        "everweb_custom_invitation_card",
+        JSON.stringify(updated)
+      );
+    } catch {
+      // ignore quota errors
+    }
+    if (currentWedding?.id) {
+      await weddingApi
+        .updateFeatureSection(currentWedding.id, "stationery_config", {
+          customCard: updated,
+        })
+        .catch(() => {});
+    }
+  };
+
+  // Xử lý thay đổi ảnh nhanh trực tiếp từ giao diện
+  const handleQuickImageUpload = async (file, photoKey) => {
+    if (!file) return;
+    try {
+      toast.info("Đang xử lý ảnh...");
+      const compressedDataUrl = await compressImageFile(file);
+      const updated = {
+        ...wedding,
+        ...customCard,
+        wedding_id: currentWedding?.id || null,
+        [photoKey]: compressedDataUrl,
+      };
+      await persistCustomCard(updated);
+      toast.success("Đã cập nhật & lưu ảnh lên hệ thống thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể tải ảnh lên. Vui lòng thử lại!");
+    }
+  };
+
+  const guestName =
+    invitationGuest?.full_name ||
+    searchParams.get("guest") ||
+    "Quý Khách";
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F6F3ED] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FDFCF7] flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-[#8C6D3F]/30 border-t-[#8C6D3F] animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-[#D4A034]/30 border-t-[#D4A034] animate-spin" />
           <p className="text-stone-700 font-display italic text-lg">
-            Đang mở phong thư thiệp cưới...
+            Đang mở thiệp cưới...
           </p>
         </div>
       </div>
@@ -93,8 +1041,8 @@ export default function InvitationPreview() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F6F3ED] flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-stone-200">
+      <div className="min-h-screen bg-[#FDFCF7] flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center border border-stone-200">
           <div className="w-12 h-12 bg-rose-50 text-rose-700 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-200">
             <X className="w-6 h-6" />
           </div>
@@ -107,267 +1055,2394 @@ export default function InvitationPreview() {
     );
   }
 
-  const { guestName, maxCompanions, wedding } = invitation;
+  // VietQR Links
+  const groomQrUrl = `https://img.vietqr.io/image/${wedding.groom_bank.bank_id}-${wedding.groom_bank.account_no}-compact2.png?amount=0&addInfo=${encodeURIComponent(
+    `Mung cuoi ${wedding.groom_name} va ${wedding.bride_name}`
+  )}&accountName=${encodeURIComponent(wedding.groom_bank.account_name)}`;
+
+  const brideQrUrl = `https://img.vietqr.io/image/${wedding.bride_bank.bank_id}-${wedding.bride_bank.account_no}-compact2.png?amount=0&addInfo=${encodeURIComponent(
+    `Mung cuoi ${wedding.groom_name} va ${wedding.bride_name}`
+  )}&accountName=${encodeURIComponent(wedding.bride_bank.account_name)}`;
 
   return (
-    <div className="min-h-screen bg-[#F4EFEA] py-10 px-4 flex justify-center items-center selection:bg-amber-100 selection:text-stone-900 font-sans">
-      {/* Tấm thiệp cưới */}
-      <div className="max-w-xl w-full bg-[#FCFAF6] rounded-2xl shadow-xl border border-[#D8C7A5] p-6 sm:p-10 relative overflow-hidden text-stone-900">
-        {/* Khung viền chỉ vàng kim đôi thanh nhã chạy quanh thiệp */}
-        <div className="absolute inset-2.5 sm:inset-3 border border-[#C5A86E]/40 rounded-xl pointer-events-none" />
-        <div className="absolute inset-3.5 sm:inset-4.5 border border-[#D8C7A5]/30 rounded-lg pointer-events-none" />
+    <div className="min-h-screen bg-[#FBFBF9] text-[#221F1C] selection:bg-amber-100 selection:text-stone-900 relative font-sans">
+      {/* Audio Element cho nhạc nền cưới */}
+      <audio
+        ref={audioRef}
+        loop
+        src="https://s3-hcm-r2.s3cloud.vn/thiepcuoi-mehappy/audio-templates/custom/1929/363f8830-f18c-4328-86d4-2fc843e20951.mp3"
+        preload="auto"
+      />
 
-        {/* 1. Phần Đầu Thiệp: */}
-        <div className="text-center pt-3 pb-5 relative z-10">
-          {/* Con dấu sáp đỏ hoàng gia */}
-          <div className="inline-flex items-center justify-center w-11 h-11 bg-[#721531] text-[#EAD8B1] rounded-full shadow-md shadow-[#721531]/25 border border-[#C5A86E]/60 mb-3">
-            <Heart className="w-4 h-4 fill-[#EAD8B1] text-[#EAD8B1]" />
-          </div>
+      {/* Hidden File Inputs cho việc thay ảnh nhanh trực tiếp */}
+      <input
+        type="file"
+        ref={heroFileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleQuickImageUpload(e.target.files[0], "hero_photo")}
+      />
+      <input
+        type="file"
+        ref={groomFileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleQuickImageUpload(e.target.files[0], "groom_photo")}
+      />
+      <input
+        type="file"
+        ref={brideFileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleQuickImageUpload(e.target.files[0], "bride_photo")}
+      />
 
-          <p className="text-[11px] uppercase tracking-[0.3em] text-[#8C6D3F] font-medium">
-            Wedding Invitation
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-display font-semibold text-[#2C1810] mt-1 tracking-wider">
-            {wedding.title}
-          </h1>
-
-          <div className="w-20 h-px bg-gradient-to-r from-transparent via-[#C5A86E] to-transparent mx-auto my-3" />
-
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500 font-medium">
-            Trân trọng báo tin hôn lễ của hai con
-          </p>
-        </div>
-
-        {/* 2. Đại diện Song Thân Hai Họ */}
-        <div className="grid grid-cols-2 gap-4 text-center py-4 border-y border-[#EAE0CD] relative z-10 text-xs sm:text-sm">
-          <div className="space-y-0.5">
-            <p className="font-semibold text-[#8C6D3F] uppercase tracking-wider text-[11px]">
-              Nhà Trai
-            </p>
-            <p className="font-display text-base text-stone-800">
-              {wedding.groom_parents}
-            </p>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-semibold text-[#8C6D3F] uppercase tracking-wider text-[11px]">
-              Nhà Gái
-            </p>
-            <p className="font-display text-base text-stone-800">
-              {wedding.bride_parents}
-            </p>
-          </div>
-        </div>
-
-        {/* 3. Tên Cô Dâu & Chú Rể  */}
-        <div className="text-center py-7 relative z-10">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-            <span className="text-2xl sm:text-3xl font-display font-semibold text-[#721531] tracking-wide">
-              {wedding.groom_name}
-            </span>
-            <span className="text-xl sm:text-2xl font-display italic text-[#8C6D3F]">
-              &
-            </span>
-            <span className="text-2xl sm:text-3xl font-display font-semibold text-[#721531] tracking-wide">
-              {wedding.bride_name}
-            </span>
-          </div>
-        </div>
-
-        {/* 4. Tấm Thẻ Mời Cá Nhân Hóa */}
-        <div className="bg-[#F8F4EC] rounded-xl border border-[#DCCBB0] p-5 text-center relative z-10 shadow-sm">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-[#8C6D3F] font-semibold">
-            Kính Mời
-          </p>
-          <h2 className="text-xl sm:text-2xl font-display font-semibold text-[#1C1613] mt-1">
-            {guestName}
-          </h2>
-          <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
-            {maxCompanions > 0
-              ? `Thiệp mời trân trọng gửi tới bạn cùng ${maxCompanions} người đồng hành`
-              : "Thiệp mời trân quý gửi riêng tới bạn"}
-          </p>
-        </div>
-
-        {/* 5. Chi tiết Thời Gian & Địa Điểm Tiệc Cưới */}
-        <div className="py-6 space-y-3.5 relative z-10">
-          {/* Khối Thời Gian */}
-          <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-[#E4D9C4] shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-[#F8F4EC] flex items-center justify-center flex-shrink-0 text-[#8C6D3F] border border-[#DCCBB0]">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#8C6D3F]">
-                Thời Gian Tổ Chức
-              </p>
-              <p className="text-base font-display font-semibold text-stone-900 mt-0.5">
-                Thứ Bảy, ngày 26 tháng 12 năm 2026
-              </p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-stone-600">
-                <span className="inline-flex items-center gap-1 font-medium text-stone-800">
-                  <Clock className="w-3.5 h-3.5 text-[#8C6D3F]" /> 17:30 Đón
-                  khách — 18:30 Khai tiệc
+      {/* ============================================================
+          THANH CÔNG CỤ DÀNH CHO CÔ DÂU CHÚ RỂ (NỔI PHÍA TRÊN)
+          CHỈ HIỂN THỊ TRONG CHẾ ĐỘ QUẢN TRỊ / CHỈNH SỬA (!isGuestMode)
+          ============================================================ */}
+      {!isGuestMode && (
+        <aside aria-label="Thanh công cụ quản lý thiệp" className="fixed top-3 left-0 right-0 z-50 px-2 sm:px-4 pointer-events-none">
+          <div className="max-w-2xl mx-auto flex items-center justify-between pointer-events-auto gap-2">
+            {/* Nhóm trái: Nút quay lại, Tên sự kiện hiện tại, và trạng thái Xuất bản Live */}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-stone-200 text-xs">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTE_PATHS.EVENT_HUB)}
+                className="inline-flex items-center gap-1 font-semibold text-stone-700 hover:text-black transition cursor-pointer"
+                title="Quay lại Trung tâm sự kiện"
+              >
+                <ArrowLeft size={13} />
+                <span className="hidden sm:inline">Hub</span>
+              </button>
+              <span className="h-3.5 w-px bg-stone-200" />
+              <span
+                className="font-bold text-stone-900 hidden sm:inline max-w-[160px] truncate"
+                title={`Sự kiện đang chọn: ${wedding.groom_name} & ${wedding.bride_name}`}
+              >
+                {wedding.groom_name} & {wedding.bride_name}
+              </span>
+              <span className="h-3.5 w-px bg-stone-200 hidden sm:inline" />
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="inline-flex items-center gap-1.5 cursor-pointer px-1 py-0.5 rounded-full hover:bg-emerald-50 transition"
+                title="Nhấn để xem trạng thái xuất bản & lấy link"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isPublished ? "bg-emerald-500 animate-pulse" : "bg-stone-400"
+                  }`}
+                />
+                <span
+                  className={`font-semibold text-[11px] ${
+                    isPublished ? "text-emerald-700" : "text-stone-500"
+                  }`}
+                >
+                  {isPublished ? "Đã xuất bản (Live)" : "Bản nháp"}
                 </span>
-                <span>(Tức ngày {wedding.lunar_date})</span>
-              </div>
+              </button>
+            </div>
+
+            {/* Nhóm phải: Thống kê xem/RSVP, Lấy Link & QR, Xem bản khách, Chỉnh sửa thiệp */}
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md px-2 sm:px-3 py-1.5 rounded-full shadow-lg border border-stone-200 text-xs">
+              {/* Nút Thống kê lượt xem & Khách chưa phản hồi RSVP */}
+              <button
+                type="button"
+                onClick={() => setIsStatsModalOpen(true)}
+                className="inline-flex items-center gap-1 font-semibold text-stone-700 hover:text-stone-900 transition cursor-pointer px-2 py-1 rounded-full hover:bg-amber-50"
+                title="Kiểm tra số người đã click link và khách chưa phản hồi RSVP"
+              >
+                <BarChart3 size={13} className="text-amber-600" />
+                <span className="hidden sm:inline font-medium">Thống kê RSVP</span>
+                <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
+                  45 chờ
+                </span>
+              </button>
+
+              <span className="h-3.5 w-px bg-stone-200" />
+
+              {/* Nút Lấy Link & QR xuất bản */}
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="inline-flex items-center gap-1.5 font-bold text-[#8C6D3F] hover:text-[#5E4726] transition cursor-pointer px-2.5 py-1 rounded-full bg-amber-50/70 hover:bg-amber-100/80 shadow-2xs"
+                title="Lấy đường link xuất bản và mã QR vào thiệp này"
+              >
+                <QrCode size={13} />
+                <span>Lấy Link & QR</span>
+              </button>
+
+              <span className="h-3.5 w-px bg-stone-200" />
+
+              {/* Nút Xem bản khách (Mở tab mới xem giao diện thực tế của khách - 100% sạch đẹp) */}
+              <button
+                type="button"
+                onClick={() => window.open(publicInvitationUrl, "_blank")}
+                className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:text-emerald-950 transition cursor-pointer px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100/80 shadow-2xs"
+                title="Mở tab mới xem đúng góc nhìn khách mời (sạch 100%, không có bất kỳ nút sửa hay thanh công cụ nào)"
+              >
+                <Eye size={13} className="text-emerald-600" />
+                <span className="hidden md:inline">Xem bản khách</span>
+              </button>
+
+              <span className="h-3.5 w-px bg-stone-200" />
+
+              {/* Nút Chỉnh sửa */}
+              <button
+                type="button"
+                onClick={() => {
+                  setEditForm(wedding);
+                  setIsEditOpen(true);
+                }}
+                className="inline-flex items-center gap-1 font-medium text-stone-700 hover:text-black transition cursor-pointer px-1.5 py-1 rounded-full hover:bg-stone-100"
+                title="Chỉnh sửa nội dung & ảnh thiệp"
+              >
+                <Edit3 size={13} />
+                <span className="hidden md:inline">Sửa thiệp</span>
+              </button>
             </div>
           </div>
+        </aside>
+      )}
 
-          {/* Khối Địa Điểm */}
-          <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-[#E4D9C4] shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-[#F8F4EC] flex items-center justify-center flex-shrink-0 text-[#8C6D3F] border border-[#DCCBB0]">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#8C6D3F]">
-                Địa Điểm Tổ Chức
-              </p>
-              <p className="text-base font-display font-semibold text-stone-900 mt-0.5">
-                {wedding.venue_name}
-              </p>
-              <p className="text-xs font-medium text-[#721531] mt-0.5">
-                {wedding.hall_name}
-              </p>
-              <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                {wedding.venue_address}
-              </p>
-
-              {/* Nút Xem Bản Đồ */}
-              {wedding.map_url && (
-                <a
-                  href={wedding.map_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8C6D3F] hover:text-[#5E4726] underline mt-2"
-                >
-                  <Navigation className="w-3.5 h-3.5" /> Mở chỉ đường Google
-                  Maps
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 6. Hộp Phản Hồi Tham Dự */}
-        <div className="bg-white rounded-xl border border-[#DCCBB0] p-5 sm:p-6 shadow-sm relative z-10">
-          <div className="text-center mb-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8C6D3F]">
-              Xác Nhận Tham Dự (RSVP)
-            </h3>
-            <p className="text-xs text-stone-500 mt-1">
-              Sự hiện diện của bạn là niềm hạnh phúc trọn vẹn của gia đình chúng
-              tôi
+      {/* ============================================================
+          MÀN HÌNH 1: BÌA PHONG THƯ HOA XANH TÍM & CON DẤU VÀNG (IMAGE 1)
+          ============================================================ */}
+      {!isEnvelopeOpened && (
+        <div className="min-h-screen w-full bg-[#FAF9F5] flex flex-col justify-between items-center py-16 px-4 relative overflow-hidden transition-all duration-700">
+          {/* Header text */}
+          <div className="text-center pt-8 space-y-2 z-10 animate-fade-in">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#332E2B] font-display font-medium">
+              TRÂN TRỌNG KÍNH MỜI
             </p>
+            <h1 className="text-4xl sm:text-5xl font-['Dancing_Script'] font-semibold text-[#1F1B18] tracking-wide pt-1">
+              {guestName}
+            </h1>
           </div>
 
-          {isSubmitted ? (
-            <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 text-center space-y-2">
-              <CheckCircle2 className="w-8 h-8 text-[#721531] mx-auto" />
-              <p className="text-sm font-display font-semibold text-stone-900">
-                Gửi phản hồi thành công
-              </p>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Chúng tôi đã ghi nhận phản hồi của bạn. Hân hạnh được đón tiếp
-                bạn trong ngày vui!
-              </p>
-            </div>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setIsSubmitted(true);
-              }}
-              className="space-y-4"
+          {/* Phong bì thiệp hoa xanh tím với con dấu sáp vàng */}
+          <div
+            className={`w-full max-w-sm my-auto relative transition-all duration-700 transform ${
+              isOpeningAnimation ? "scale-105 opacity-0 -translate-y-10" : "scale-100 opacity-100"
+            }`}
+          >
+            {/* Tấm phong bì nằm ngang */}
+            <div
+              onClick={handleOpenEnvelope}
+              className="w-full aspect-[1.45/1] bg-[#FAF8F5] rounded-xl shadow-xl border border-[#E8E2D5] relative cursor-pointer overflow-hidden group hover:shadow-2xl transition-all"
             >
-              {/* Lựa chọn tham dự: Sử dụng SVG Icons thay cho text icon/emoji */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRsvpStatus("attending")}
-                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    rsvpStatus === "attending"
-                      ? "bg-[#721531] text-white border-[#721531] shadow-sm"
-                      : "bg-[#FCFAF6] text-stone-700 border-stone-300 hover:border-[#721531]/40"
-                  }`}
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Sẽ tham dự</span>
-                </button>
+              {/* Nếp gấp nắp phong bì hình tam giác */}
+              <div
+                className="absolute top-0 left-0 right-0 h-1/2 bg-[#F3EFE6] border-b border-[#DFD8C9] origin-top transition-transform duration-500"
+                style={{
+                  clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+                }}
+              />
 
-                <button
-                  type="button"
-                  onClick={() => setRsvpStatus("declined")}
-                  className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    rsvpStatus === "declined"
-                      ? "bg-stone-800 text-white border-stone-800 shadow-sm"
-                      : "bg-[#FCFAF6] text-stone-700 border-stone-300 hover:border-stone-400"
-                  }`}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Gửi lời chúc từ xa</span>
-                </button>
+              {/* Nhánh hoa màu xanh tím pastel vẽ màu nước ở góc trái nắp phong bì */}
+              <div className="absolute top-2 left-2 z-20 pointer-events-none w-28 sm:w-32 h-28 sm:h-32 opacity-95">
+                <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-xs">
+                  <path d="M15 95 C 25 70, 35 45, 55 25" stroke="#68846D" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M30 65 C 22 55, 18 42, 22 35 C 30 38, 32 52, 30 65" fill="#7D9882" opacity="0.8" />
+                  <path d="M42 45 C 48 35, 58 32, 60 40 C 52 46, 46 48, 42 45" fill="#7D9882" opacity="0.8" />
+                  <path d="M25 80 C 15 78, 12 68, 18 64 C 24 67, 26 75, 25 80" fill="#68846D" opacity="0.75" />
+
+                  {/* Cụm hoa cẩm tú cầu / lưu ly xanh tím pastel */}
+                  <g transform="translate(18, 50)">
+                    <circle cx="8" cy="8" r="7" fill="#889BE8" opacity="0.85" />
+                    <circle cx="16" cy="10" r="6" fill="#A4B3F5" opacity="0.85" />
+                    <circle cx="12" cy="18" r="6.5" fill="#7C8EE0" opacity="0.85" />
+                    <circle cx="4" cy="15" r="6" fill="#95A6F0" opacity="0.85" />
+                    <circle cx="10" cy="13" r="2" fill="#FFFFFF" />
+                  </g>
+                  <g transform="translate(32, 28)">
+                    <circle cx="8" cy="7" r="7.5" fill="#758BE5" opacity="0.9" />
+                    <circle cx="18" cy="9" r="6.5" fill="#9BAEF5" opacity="0.9" />
+                    <circle cx="14" cy="19" r="7" fill="#6A80E0" opacity="0.9" />
+                    <circle cx="5" cy="16" r="6.5" fill="#8FA4F2" opacity="0.9" />
+                    <circle cx="11" cy="13" r="2.5" fill="#FFFFFF" />
+                  </g>
+                  <g transform="translate(6, 75)">
+                    <circle cx="7" cy="7" r="6.5" fill="#A8A0E8" opacity="0.8" />
+                    <circle cx="15" cy="8" r="5.5" fill="#C2BBFA" opacity="0.8" />
+                    <circle cx="11" cy="16" r="6" fill="#9990E0" opacity="0.8" />
+                    <circle cx="4" cy="14" r="5.5" fill="#B4ABF0" opacity="0.8" />
+                    <circle cx="9" cy="11" r="1.8" fill="#FFFFFF" />
+                  </g>
+                </svg>
               </div>
 
-              {/* Lựa chọn số người đi cùng (Pill buttons tinh tế) */}
-              {rsvpStatus === "attending" && (
-                <div>
-                  <label className="block text-xs font-semibold text-stone-800 mb-1.5">
-                    Số lượng người tham dự cùng bạn:
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3].map((num) => {
-                      if (num > maxCompanions + 1) return null;
-                      const isSelected = attendingCount === num;
-                      return (
-                        <button
-                          key={num}
-                          type="button"
-                          onClick={() => setAttendingCount(num)}
-                          className={`py-2 px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                            isSelected
-                              ? "bg-[#F3ECE0] border-[#8C6D3F] text-[#4A381A] font-semibold"
-                              : "bg-[#FCFAF6] border-stone-200 text-stone-700 hover:bg-[#F8F4EC]"
-                          }`}
-                        >
-                          <Users className="w-3.5 h-3.5 text-[#8C6D3F]" />
-                          <span>{num === 1 ? "1 người" : `${num} người`}</span>
-                        </button>
-                      );
-                    })}
+              {/* Con dấu sáp vàng đồng dập nổi bông hoa ở chóp nắp tam giác */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-[#E6C265] via-[#D4A034] to-[#996D14] shadow-xl border-2 border-[#FFF0BA] flex items-center justify-center relative group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-full border border-[#B38318] flex items-center justify-center bg-gradient-to-br from-[#D9A738] to-[#AC791A] shadow-inner">
+                    <svg viewBox="0 0 24 24" fill="#664609" className="w-7 h-7 drop-shadow-xs opacity-90">
+                      <path d="M12 2C13 5 15 7 18 8C15 9 13 11 12 14C11 11 9 9 6 8C9 7 11 5 12 2Z" />
+                      <circle cx="12" cy="12" r="3.5" fill="#543703" />
+                      <path d="M12 12m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0" fill="none" stroke="#664609" strokeWidth="1" />
+                    </svg>
+                  </div>
+
+                  {/* Icon bàn tay chỉ ngón trỏ màu trắng chạm mở thiệp */}
+                  <div className="absolute -bottom-2 -right-2 z-40 animate-bounce pointer-events-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 drop-shadow-md">
+                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                    </svg>
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
 
-              {/* Gửi lời chúc mừng */}
-              <div>
-                <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-[#8C6D3F]" />
-                  <span>Gửi lời chúc mừng:</span>
+          {/* Dòng ngày tháng bên dưới phong bì: 13.11.2026 */}
+          <div className="text-center pb-8 z-10">
+            <p className="text-xl sm:text-2xl font-display font-medium text-[#221F1C] tracking-[0.2em]">
+              {wedding.date_badge}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================
+          MÀN HÌNH 2: NỘI DUNG TOÀN BỘ MẪU N00 (12 PHÂN ĐOẠN ĐẦY ĐỦ)
+          ============================================================ */}
+      {isEnvelopeOpened && (
+        <main className="max-w-[420px] w-full mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden pb-24 animate-fade-in">
+          {/* Header: Nắp phong bì mở phía trên */}
+          <div className="w-full bg-[#FAF9F5] border-b border-[#E8E2D5] py-4 px-6 text-center relative">
+            <button
+              type="button"
+              onClick={() => setIsEnvelopeOpened(false)}
+              className="text-xs text-[#8C6D3F] hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
+            >
+              <span>← Đóng lại phong bì thiệp</span>
+            </button>
+          </div>
+
+          {/* 1. KHỐI ẢNH CƯỚI BÌA CHÍNH (HERO PHOTO: SƠN TÙNG & NHƯ Ý TRÙM KHĂN VOAN) */}
+          <section id="cover-section" className="relative w-full aspect-[9/13] overflow-hidden bg-stone-900 group">
+            <img
+              src={wedding.hero_photo}
+              alt="Ảnh cưới bìa chính"
+              className="w-full h-full object-cover object-top"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/35" />
+
+            {/* Nút đổi ảnh bìa nhanh (cho cặp đôi khi xem thiệp) */}
+            {!isGuestMode && (
+              <button
+                type="button"
+                onClick={() => heroFileInputRef.current?.click()}
+                className="absolute bottom-3 right-3 bg-black/60 hover:bg-black text-white px-2.5 py-1.5 rounded-full text-[11px] backdrop-blur-md flex items-center gap-1.5 cursor-pointer shadow-lg z-20 transition"
+                title="Thay ảnh bìa chính"
+              >
+                <Camera size={13} />
+                <span>Đổi ảnh bìa</span>
+              </button>
+            )}
+
+            <div className="absolute top-8 left-0 right-0 text-center px-4 z-10 text-white space-y-2">
+              <h2 className="text-4xl sm:text-5xl font-['Dancing_Script'] font-semibold drop-shadow-md">
+                {wedding.groom_name} & {wedding.bride_name}
+              </h2>
+              <p className="text-xs sm:text-sm font-sans font-normal leading-relaxed drop-shadow max-w-[280px] mx-auto opacity-95">
+                {wedding.quote}
+              </p>
+            </div>
+          </section>
+
+          {/* 2. THE MOMENTS (KHOẢNH KHẮC NGOẠI CẢNH BIỂN) */}
+          <section id="moments-section" className="py-8 px-4 bg-white text-center">
+            <h2 className="text-3xl sm:text-4xl font-['Dancing_Script'] font-semibold text-[#1F1B18] mb-6">
+              The Moments
+            </h2>
+
+            {/* 2 Cột chân dung: Chú rể bên biển & Cô dâu bên biển */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="relative group">
+                <div
+                  onClick={() => setSelectedPhoto(wedding.groom_photo)}
+                  className="aspect-[3/4] rounded-lg overflow-hidden cursor-pointer bg-stone-100"
+                >
+                  <img
+                    src={wedding.groom_photo}
+                    alt="Chú rể"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                {!isGuestMode && (
+                  <button
+                    type="button"
+                    onClick={() => groomFileInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 bg-black/60 hover:bg-black text-white p-1.5 rounded-full text-xs shadow-md z-20 cursor-pointer"
+                    title="Đổi ảnh Chú rể"
+                  >
+                    <Camera size={12} />
+                  </button>
+                )}
+                <p className="text-[11px] font-medium text-stone-600 mt-1.5">
+                  Chú rể ({wedding.groom_name})
+                </p>
+              </div>
+
+              <div className="relative group">
+                <div
+                  onClick={() => setSelectedPhoto(wedding.bride_photo)}
+                  className="aspect-[3/4] rounded-lg overflow-hidden cursor-pointer bg-stone-100"
+                >
+                  <img
+                    src={wedding.bride_photo}
+                    alt="Cô dâu"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                {!isGuestMode && (
+                  <button
+                    type="button"
+                    onClick={() => brideFileInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 bg-black/60 hover:bg-black text-white p-1.5 rounded-full text-xs shadow-md z-20 cursor-pointer"
+                    title="Đổi ảnh Cô dâu"
+                  >
+                    <Camera size={12} />
+                  </button>
+                )}
+                <p className="text-[11px] font-medium text-stone-600 mt-1.5">
+                  Cô dâu ({wedding.bride_name})
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. KHỐI CỔNG VÒM XÁM GHI (ARCH CARDS - SỰ KIỆN CƯỚI) */}
+          <section id="arch-events-section" className="bg-[#FAF9F5] py-8 px-4 border-t border-[#EAE5D9]">
+            <div className="w-full bg-[#8A8F94] text-white py-4 rounded-t-full text-center mb-6 shadow-xs">
+              <p className="text-[10px] uppercase tracking-[0.25em] font-medium opacity-90">
+                Wedding Celebration
+              </p>
+              <h3 className="text-xl font-display font-semibold mt-0.5">
+                Sự Kiện Cưới
+              </h3>
+            </div>
+
+            <div className="space-y-6">
+              {wedding.events.map((ev, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl p-4 border border-[#EAE5D9] shadow-xs text-center space-y-3"
+                >
+                  <div className="w-36 h-44 mx-auto rounded-t-full overflow-hidden border border-stone-200 shadow-xs">
+                    <img
+                      src={ev.photo}
+                      alt={ev.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="font-display font-bold text-base text-stone-900 tracking-wide">
+                      {ev.title}
+                    </h4>
+                    <p className="text-xs font-semibold text-[#8C6D3F]">
+                      {ev.time}
+                    </p>
+                    <p className="text-xs text-stone-700 font-medium">
+                      {ev.venue}
+                    </p>
+                    <p className="text-[11px] text-stone-500 leading-tight">
+                      {ev.address}
+                    </p>
+                  </div>
+
+                  <div className="pt-1">
+                    <a
+                      href={wedding.map_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-stone-700 hover:text-black border border-stone-300 px-3.5 py-1.5 rounded-full shadow-2xs transition"
+                    >
+                      <Navigation size={11} />
+                      <span>Xem chỉ đường</span>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 4. BANNER BIỂN TỐI SANG TRỌNG - TIMELINE & BẢN ĐỒ MINI */}
+          <section id="dark-timeline-section" className="relative bg-[#1A232D] text-white py-12 px-5 overflow-hidden">
+            <div className="absolute inset-0 opacity-20">
+              <img src={heroWedding} alt="Dark Ocean" className="w-full h-full object-cover" />
+            </div>
+
+            <div className="relative z-10 space-y-6">
+              <div className="text-center space-y-1">
+                <p className="text-[10px] uppercase tracking-[0.25em] text-[#D5C19A] font-medium">
+                  Program Schedule
+                </p>
+                <h3 className="text-2xl font-['Dancing_Script'] font-semibold">
+                  Lịch Trình Hôn Lễ
+                </h3>
+              </div>
+
+              <div className="space-y-4 max-w-xs mx-auto">
+                {wedding.timeline.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/15">
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-[#EAD8B1] font-bold text-xs">
+                      {item.time}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-white">
+                        {item.label}
+                      </p>
+                      <p className="text-[10px] text-stone-300">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white rounded-xl overflow-hidden p-2 shadow-lg max-w-xs mx-auto text-stone-900">
+                <div className="w-full h-32 bg-stone-100 rounded-lg flex items-center justify-center text-xs text-stone-500 border border-stone-200 relative overflow-hidden">
+                  <iframe
+                    title="Bản đồ chỉ đường"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3800.0!2d105.9!3d18.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTjCsDE4JzAwLjAiTiAxMDXCsDU0JzAwLjAiRQ!5e0!3m2!1svi!2s!4v1"
+                    className="w-full h-full border-0 pointer-events-none opacity-85"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <a
+                      href={wedding.map_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md text-stone-900 hover:bg-stone-50"
+                    >
+                      Mở Google Maps →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 5. WEDDING COUNTDOWN & DẢI ẢNH POLAROID */}
+          <section id="countdown-section" className="py-8 px-4 text-center bg-[#FAF9F5] border-b border-[#EAE5D9]">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#8C6D3F] font-semibold mb-3">
+              Wedding Countdown
+            </p>
+
+            <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto mb-6">
+              <div className="bg-white p-2.5 rounded-xl border border-[#DFD8C8] shadow-2xs">
+                <span className="block text-xl font-display font-bold text-stone-900">
+                  {timeLeft.days}
+                </span>
+                <span className="text-[10px] uppercase text-stone-500 font-medium">
+                  Ngày
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-[#DFD8C8] shadow-2xs">
+                <span className="block text-xl font-display font-bold text-stone-900">
+                  {timeLeft.hours}
+                </span>
+                <span className="text-[10px] uppercase text-stone-500 font-medium">
+                  Giờ
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-[#DFD8C8] shadow-2xs">
+                <span className="block text-xl font-display font-bold text-stone-900">
+                  {timeLeft.minutes}
+                </span>
+                <span className="text-[10px] uppercase text-stone-500 font-medium">
+                  Phút
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-[#DFD8C8] shadow-2xs">
+                <span className="block text-xl font-display font-bold text-stone-900">
+                  {timeLeft.seconds}
+                </span>
+                <span className="text-[10px] uppercase text-stone-500 font-medium">
+                  Giây
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+              <div onClick={() => setSelectedPhoto(beachHero)} className="aspect-[3/4] rounded-lg overflow-hidden border border-stone-200 shadow-2xs cursor-pointer">
+                <img src={beachHero} alt="Photo 1" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(weddingCouple)} className="aspect-[3/4] rounded-lg overflow-hidden border border-stone-200 shadow-2xs cursor-pointer">
+                <img src={weddingCouple} alt="Photo 2" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(beachThumb)} className="aspect-[3/4] rounded-lg overflow-hidden border border-stone-200 shadow-2xs cursor-pointer">
+                <img src={beachThumb} alt="Photo 3" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          </section>
+
+          {/* 6. DẢI BANNER TỐI MÀU XÁM GHI (OUR STORY / KỶ NIỆM TÌNH YÊU) */}
+          <section id="our-story-section" className="bg-[#595E63] text-white py-10 px-4">
+            <div className="text-center space-y-1 mb-6">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-stone-300 font-medium">
+                Memories
+              </p>
+              <h3 className="text-3xl font-['Dancing_Script'] font-semibold">
+                Our Story
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 max-w-xs mx-auto">
+              <div onClick={() => setSelectedPhoto(galleryBouquet)} className="aspect-[4/5] rounded-lg overflow-hidden border border-white/20 shadow-md cursor-pointer">
+                <img src={galleryBouquet} alt="Story 1" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(galleryCeremony)} className="aspect-[4/5] rounded-lg overflow-hidden border border-white/20 shadow-md cursor-pointer">
+                <img src={galleryCeremony} alt="Story 2" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(beachThumb)} className="aspect-[4/5] rounded-lg overflow-hidden border border-white/20 shadow-md cursor-pointer">
+                <img src={beachThumb} alt="Story 3" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(beachHero)} className="aspect-[4/5] rounded-lg overflow-hidden border border-white/20 shadow-md cursor-pointer">
+                <img src={beachHero} alt="Story 4" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          </section>
+
+          {/* 7. TRIPTYCH 3 KHUNG ẢNH DỌC (3 VERTICAL FLOATING CARDS) */}
+          <section className="py-8 px-4 bg-white text-center border-b border-[#EAE5D9]">
+            <div className="flex justify-center items-center gap-2 max-w-xs mx-auto">
+              <div onClick={() => setSelectedPhoto(weddingCouple)} className="w-24 aspect-[2/3] rounded-lg overflow-hidden shadow-md -rotate-3 cursor-pointer">
+                <img src={weddingCouple} alt="Triptych 1" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(beachHero)} className="w-28 aspect-[2/3] rounded-lg overflow-hidden shadow-xl z-10 cursor-pointer">
+                <img src={beachHero} alt="Triptych 2" className="w-full h-full object-cover" />
+              </div>
+              <div onClick={() => setSelectedPhoto(galleryDining)} className="w-24 aspect-[2/3] rounded-lg overflow-hidden shadow-md rotate-3 cursor-pointer">
+                <img src={galleryDining} alt="Triptych 3" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          </section>
+
+          {/* 8. FORM XÁC NHẬN THAM DỰ (RSVP CHUẨN IMAGE 1) */}
+          <section id="rsvp-section" className="p-6 bg-[#FAF9F5] border-b border-[#EAE5D9]">
+            <div className="text-center mb-5">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#8C6D3F] font-semibold">
+                Hôn lễ {wedding.groom_name} & {wedding.bride_name}
+              </p>
+              <h3 className="text-2xl font-display font-bold text-stone-900 mt-1">
+                Xác nhận tham dự hôn lễ
+              </h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {wedding.date_badge} · {wedding.hall_name}
+              </p>
+            </div>
+
+            {isSubmitted ? (
+              <div className="bg-white border border-[#DFD8C8] rounded-xl p-6 text-center space-y-2 shadow-xs">
+                <CheckCircle2 className="w-9 h-9 text-[#8C6D3F] mx-auto" />
+                <h4 className="text-base font-display font-bold text-stone-900">
+                  Gửi phản hồi thành công!
+                </h4>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Cảm ơn <strong>{rsvpFullName || guestName}</strong> đã gửi phản hồi. Chúng mình rất mong chờ được đón tiếp bạn trong ngày vui!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsSubmitted(false)}
+                  className="text-xs text-[#8C6D3F] hover:underline pt-2 font-medium cursor-pointer"
+                >
+                  Gửi lại phản hồi khác
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!rsvpFullName.trim()) {
+                    toast.error("Vui lòng nhập họ và tên của bạn");
+                    return;
+                  }
+                  if (wish.trim()) {
+                    setWishesList([
+                      {
+                        name: rsvpFullName,
+                        time: "Vừa xong",
+                        relation:
+                          rsvpRelation === "nha_trai"
+                            ? "Nhà trai"
+                            : rsvpRelation === "nha_gai"
+                            ? "Nhà gái"
+                            : "Bạn bè",
+                        content: wish.trim(),
+                      },
+                      ...wishesList,
+                    ]);
+                  }
+                  setIsSubmitted(true);
+                  toast.success("Đã ghi nhận phản hồi tham dự của bạn!");
+                }}
+                className="space-y-4 text-xs bg-white p-4 rounded-2xl border border-stone-200 shadow-xs"
+              >
+                {/* 1. Thông tin của bạn */}
+                <div className="space-y-2.5">
+                  <label className="font-semibold text-stone-800 flex items-center gap-1.5 text-xs">
+                    <Users size={13} className="text-[#8C6D3F]" />
+                    <span>1. Thông tin của bạn</span>
+                  </label>
+
+                  <div className="space-y-2">
+                    <div>
+                      <span className="block text-[11px] text-stone-600 mb-1">
+                        Họ và tên của bạn *
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={rsvpFullName}
+                        onChange={(e) => setRsvpFullName(e.target.value)}
+                        placeholder="VD: Nguyễn Văn Anh"
+                        className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-stone-900 bg-[#FAF9F5]"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] text-stone-600 mb-1">
+                        Số điện thoại di động *
+                      </span>
+                      <input
+                        type="tel"
+                        required
+                        value={rsvpPhone}
+                        onChange={(e) => setRsvpPhone(e.target.value)}
+                        placeholder="VD: 0909 123 456"
+                        className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-stone-900 bg-[#FAF9F5]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mối quan hệ */}
+                  <div>
+                    <span className="block text-[11px] text-stone-600 mb-1.5">
+                      Mối quan hệ với cô dâu chú rể
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "nha_trai", label: "Nhà trai" },
+                        { id: "nha_gai", label: "Nhà gái" },
+                        { id: "ban_be", label: "Bạn bè" },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setRsvpRelation(item.id)}
+                          className={`py-2 px-3 rounded-full text-xs font-medium border transition cursor-pointer ${
+                            rsvpRelation === item.id
+                              ? "bg-stone-900 text-white border-stone-900"
+                              : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Bạn có thể đến chung vui không? */}
+                <div className="space-y-2 pt-2 border-t border-stone-100">
+                  <label className="font-semibold text-stone-800 flex items-center gap-1.5 text-xs">
+                    <Sparkles size={13} className="text-[#8C6D3F]" />
+                    <span>2. Bạn có thể đến chung vui cùng chúng mình không? *</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRsvpStatus("attending")}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex items-center gap-2 ${
+                        rsvpStatus === "attending"
+                          ? "bg-stone-900 text-white border-stone-900"
+                          : "bg-[#FAF9F5] text-stone-800 border-stone-200"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          rsvpStatus === "attending"
+                            ? "bg-white text-stone-900 border-white"
+                            : "border-stone-400"
+                        }`}
+                      >
+                        {rsvpStatus === "attending" && <Check size={10} />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-xs">Sẽ tham dự</p>
+                        <p className="text-[10px] opacity-80">Vui vẻ nhận lời</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRsvpStatus("declined")}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex items-center gap-2 ${
+                        rsvpStatus === "declined"
+                          ? "bg-stone-900 text-white border-stone-900"
+                          : "bg-[#FAF9F5] text-stone-800 border-stone-200"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          rsvpStatus === "declined"
+                            ? "bg-white text-stone-900 border-white"
+                            : "border-stone-400"
+                        }`}
+                      >
+                        {rsvpStatus === "declined" && <Check size={10} />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-xs">Rất tiếc bận</p>
+                        <p className="text-[10px] opacity-80">Gửi lời chúc từ xa</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Số lượng người đi cùng bạn */}
+                {rsvpStatus === "attending" && (
+                  <div className="space-y-2 pt-2 border-t border-stone-100">
+                    <label className="font-semibold text-stone-800 block text-xs">
+                      3. Số lượng người đi cùng bạn (bao gồm người lớn & trẻ em)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { count: 1, label: "Đi một mình" },
+                        { count: 2, label: "+1 Người" },
+                        { count: 3, label: "+2 Người" },
+                        { count: 4, label: "+3 Người" },
+                      ].map((item) => (
+                        <button
+                          key={item.count}
+                          type="button"
+                          onClick={() => setAttendingCount(item.count)}
+                          className={`py-2 px-2 rounded-xl text-xs font-medium border text-center transition cursor-pointer ${
+                            attendingCount === item.count
+                              ? "bg-stone-900 text-white border-stone-900"
+                              : "bg-[#FAF9F5] text-stone-700 border-stone-200"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Khẩu phần ăn tiệc */}
+                {rsvpStatus === "attending" && (
+                  <div className="space-y-2 pt-2 border-t border-stone-100">
+                    <label className="font-semibold text-stone-800 block text-xs">
+                      4. Lựa chọn khẩu phần ăn tiệc
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMealPreference("man")}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                          mealPreference === "man"
+                            ? "bg-[#FAF9F5] border-stone-900 font-semibold text-stone-900"
+                            : "bg-white border-stone-200 text-stone-700"
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs">Món mặn</p>
+                          <p className="text-[10px] text-stone-500">Truyền thống</p>
+                        </div>
+                        {mealPreference === "man" && <Check size={12} className="text-stone-900" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMealPreference("chay")}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                          mealPreference === "chay"
+                            ? "bg-[#FAF9F5] border-stone-900 font-semibold text-stone-900"
+                            : "bg-white border-stone-200 text-stone-700"
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs">Món chay</p>
+                          <p className="text-[10px] text-stone-500">Thanh tịnh</p>
+                        </div>
+                        {mealPreference === "chay" && <Check size={12} className="text-stone-900" />}
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={dietaryNote}
+                      onChange={(e) => setDietaryNote(e.target.value)}
+                      placeholder="Ghi chú kiêng hoặc dị ứng thực phẩm (nếu có)..."
+                      className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-stone-900 bg-[#FAF9F5]"
+                    />
+                  </div>
+                )}
+
+                {/* 5. Gửi lời chúc mừng */}
+                <div className="space-y-1.5 pt-2 border-t border-stone-100">
+                  <label className="font-semibold text-stone-800 flex items-center gap-1.5 text-xs">
+                    <MessageSquare size={13} className="text-[#8C6D3F]" />
+                    <span>5. Gửi lời chúc mừng tới dâu rể:</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={wish}
+                    onChange={(e) => setWish(e.target.value)}
+                    placeholder="Chúc hai bạn trăm năm hạnh phúc, vẹn tròn duyên thắm..."
+                    className="w-full p-3 rounded-xl border border-stone-200 bg-[#FAF9F5] text-stone-900 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-900 resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#221F1C] hover:bg-black text-white font-semibold rounded-xl shadow-md text-xs tracking-wide transition cursor-pointer"
+                >
+                  Gửi Phản Hồi RSVP
+                </button>
+              </form>
+            )}
+
+            <div className="mt-6 rounded-xl overflow-hidden border border-stone-200 shadow-xs">
+              <img src={wedding.hero_photo} alt="Couple by coastal rail" className="w-full h-48 object-cover" />
+            </div>
+          </section>
+
+          {/* 9. SỔ LƯU BÚT & LỜI CHÚC (GUESTBOOK) */}
+          <section id="wishes-section" className="p-6 bg-white border-b border-[#EAE5D9]">
+            <h4 className="text-xl font-display font-bold text-stone-900 text-center mb-4">
+              Lời Chúc Mừng
+            </h4>
+            <div className="space-y-2.5 mb-6">
+              {wishesList.slice(0, 4).map((w, idx) => (
+                <div
+                  key={idx}
+                  className="bg-[#FAF9F5] rounded-xl p-3 border border-[#EAE5D9] shadow-2xs space-y-1 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-stone-900">
+                      {w.name}
+                    </span>
+                    <span className="text-[10px] text-stone-400">
+                      {w.time}
+                    </span>
+                  </div>
+                  <p className="text-stone-600 text-[11px] leading-relaxed italic">
+                    "{w.content}"
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl overflow-hidden border border-stone-200 shadow-xs">
+              <img src={beachThumb} alt="Couple on yacht" className="w-full h-48 object-cover" />
+            </div>
+          </section>
+
+          {/* 10. HỘP MỪNG CƯỚI (INTERACTIVE GIFT BOX VỚI POPUP) */}
+          <section id="gift-section" className="p-8 bg-[#FAF9F5] border-b border-[#EAE5D9] text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-white border border-[#DFD8C8] mx-auto flex items-center justify-center shadow-xs">
+              <Gift className="w-6 h-6 text-[#8C6D3F]" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#8C6D3F] font-semibold">
+                Wedding Gift
+              </p>
+              <h3 className="text-3xl font-['Dancing_Script'] font-semibold text-[#1F1B18]">
+                Hộp Mừng Cưới
+              </h3>
+              <p className="text-xs text-stone-600 max-w-xs mx-auto leading-relaxed">
+                Cảm ơn tất cả tình cảm và sự chúc phúc mà quý vị đã dành cho hai vợ chồng!
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsGiftModalOpen(true)}
+                className="inline-flex items-center gap-2 bg-[#221F1C] hover:bg-black text-white text-xs font-semibold px-6 py-3 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Gift size={15} className="text-[#E6C265]" />
+                <span>Nhấn vào đây để mừng cưới qua mã QR</span>
+              </button>
+            </div>
+          </section>
+
+          {/* 11. THANK YOU (LỜI CẢM ƠN CUỐI THIỆP VỚI ẢNH ĐÔI BÊN BỜ ĐÁ) */}
+          <section className="relative overflow-hidden bg-stone-900 text-white text-center py-16 px-4">
+            <div className="absolute inset-0 opacity-40">
+              <img src={heroWedding} alt="Thank you couple" className="w-full h-full object-cover" />
+            </div>
+            <div className="relative z-10 space-y-3">
+              <h3 className="text-4xl sm:text-5xl font-['Dancing_Script'] font-semibold drop-shadow-md">
+                Thank You!
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-200 max-w-xs mx-auto leading-relaxed drop-shadow italic">
+                "Sự hiện diện của Quý khách là niềm vinh hạnh cho gia đình chúng tôi!"
+              </p>
+              <p className="text-[10px] uppercase tracking-widest text-stone-400 pt-4">
+                EverWeb · Nền tảng thiệp cưới trực tuyến
+              </p>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ============================================================
+          HAI NÚT ĐIỀU KHIỂN NỔI GÓC DƯỚI (BOTTOM FLOATING CONTROLS)
+          ============================================================ */}
+      <nav aria-label="Điều hướng nhanh thiệp cưới" className="fixed bottom-4 left-0 right-0 z-50 pointer-events-none px-4">
+        <div className="max-w-[420px] mx-auto flex items-end justify-between pointer-events-auto relative">
+          {/* Nút bật/tắt nhạc nền cưới (góc dưới trái) */}
+          <button
+            type="button"
+            onClick={toggleAudio}
+            className={`w-11 h-11 rounded-full bg-white shadow-xl flex items-center justify-center transition-all cursor-pointer border-2 ${
+              isPlayingAudio
+                ? "border-[#E11D48] text-[#E11D48] animate-pulse"
+                : "border-[#E11D48] text-[#E11D48]/80 hover:bg-rose-50"
+            }`}
+            title={isPlayingAudio ? "Tắt nhạc nền" : "Bật nhạc nền"}
+          >
+            {isPlayingAudio ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+
+          {/* Cụm Speed-dial góc dưới phải (Image 1) */}
+          <div className="relative flex flex-col items-center">
+            {/* 4 Nút tròn xếp dọc mở rộng lên trên khi bấm nút */}
+            {isSpeedDialOpen && (
+              <div className="flex flex-col items-center gap-3 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                {/* 1. Mừng cưới (Top-most) */}
+                <div className="relative flex items-center group">
+                  <span className="absolute right-12 px-2.5 py-1.5 bg-[#2B2B2B] text-white text-xs font-medium rounded-md whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:-right-1.5 after:border-y-4 after:border-y-transparent after:border-l-6 after:border-l-[#2B2B2B]">
+                    Mừng cưới
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSpeedDialOpen(false);
+                      setIsGiftModalOpen(true);
+                    }}
+                    className="w-10 h-10 rounded-full bg-[#968E8C] hover:bg-[#7D7472] text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    title="Mừng cưới"
+                  >
+                    <HeartHandshake size={19} />
+                  </button>
+                </div>
+
+                {/* 2. Gửi lời chúc mừng */}
+                <div className="relative flex items-center group">
+                  <span className="absolute right-12 px-2.5 py-1.5 bg-[#2B2B2B] text-white text-xs font-medium rounded-md whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:-right-1.5 after:border-y-4 after:border-y-transparent after:border-l-6 after:border-l-[#2B2B2B]">
+                    Gửi lời chúc mừng
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("wishes-section")}
+                    className="w-10 h-10 rounded-full bg-[#968E8C] hover:bg-[#7D7472] text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    title="Gửi lời chúc mừng"
+                  >
+                    <FileEdit size={19} />
+                  </button>
+                </div>
+
+                {/* 3. Xác nhận tham dự (RSVP) */}
+                <div className="relative flex items-center group">
+                  <span className="absolute right-12 px-2.5 py-1.5 bg-[#2B2B2B] text-white text-xs font-medium rounded-md whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:-right-1.5 after:border-y-4 after:border-y-transparent after:border-l-6 after:border-l-[#2B2B2B]">
+                    Xác nhận tham dự (RSVP)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("rsvp-section")}
+                    className="w-10 h-10 rounded-full bg-[#968E8C] hover:bg-[#7D7472] text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    title="Xác nhận tham dự"
+                  >
+                    <UserCheck size={19} />
+                  </button>
+                </div>
+
+                {/* 4. Danh mục thiệp cưới */}
+                <div className="relative flex items-center group">
+                  <span className="absolute right-12 px-2.5 py-1.5 bg-[#2B2B2B] text-white text-xs font-medium rounded-md whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:-right-1.5 after:border-y-4 after:border-y-transparent after:border-l-6 after:border-l-[#2B2B2B]">
+                    Danh mục thiệp cưới
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSpeedDialOpen(false);
+                      setIsCatalogModalOpen(true);
+                    }}
+                    className="w-10 h-10 rounded-full bg-[#968E8C] hover:bg-[#7D7472] text-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                    title="Danh mục thiệp cưới"
+                  >
+                    <Mail size={19} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Nút bấm chính góc dưới phải (Trigger Button) */}
+            <button
+              type="button"
+              onClick={() => setIsSpeedDialOpen(!isSpeedDialOpen)}
+              className={`w-11 h-11 rounded-full text-white shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                isSpeedDialOpen
+                  ? "bg-[#856578] hover:bg-[#745567]"
+                  : "bg-[#7E7775] hover:bg-[#686260]"
+              }`}
+              title={isSpeedDialOpen ? "Đóng menu" : "Menu danh mục thiệp cưới"}
+            >
+              {isSpeedDialOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* POPUP MODAL DANH MỤC THIỆP CƯỚI (IMAGE 2) */}
+      {isCatalogModalOpen && (
+        <div
+          onClick={() => setIsCatalogModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[320px] bg-white rounded-3xl shadow-2xl p-6 space-y-4 text-xs border border-stone-100"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <span className="font-bold text-stone-900 text-sm">
+                Danh mục thiệp cưới
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCatalogModalOpen(false)}
+                className="text-stone-400 hover:text-stone-700 p-1 rounded-full hover:bg-stone-100 transition cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-1 text-[13px] text-stone-700 font-medium">
+              <button
+                type="button"
+                onClick={() => scrollToSection("cover-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                1. Bìa thiệp cưới & Lời tự sự
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("moments-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                2. The Moments (Ảnh cưới)
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("arch-events-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                3. Sự kiện cưới (Khung vòm)
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("dark-timeline-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                4. Lịch trình hôn lễ & Bản đồ
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("countdown-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                5. Đếm ngược ngày cưới
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("our-story-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                6. Our Story (Kỷ niệm ảnh)
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("rsvp-section")}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                7. Xác nhận tham dự (RSVP)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCatalogModalOpen(false);
+                  setIsGiftModalOpen(true);
+                }}
+                className="w-full text-left py-2 px-2.5 rounded-xl hover:bg-stone-100 hover:text-stone-900 transition cursor-pointer"
+              >
+                8. Hộp mừng cưới & Mã QR
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCatalogModalOpen(false);
+                  setIsSpeedDialOpen(false);
+                  setIsEnvelopeOpened(false);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="w-full text-center py-2 text-stone-500 hover:text-stone-900 text-xs font-semibold cursor-pointer"
+              >
+                Xem lại phong thư mở đầu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================
+          MODAL 1: HỘP MỪNG CƯỚI & MÃ VIETQR (KHI BẤM VÀO ĐỂ MỞ RA)
+          ============================================================ */}
+      <Modal
+        isOpen={isGiftModalOpen}
+        onClose={() => setIsGiftModalOpen(false)}
+        title="Mừng cưới Cô Dâu & Chú Rể"
+        size="md"
+      >
+        <div className="space-y-4 text-xs">
+          {/* Tabs Chú rể / Cô dâu */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setActiveGiftTab("groom")}
+              className={`py-2 rounded-lg font-semibold transition cursor-pointer ${
+                activeGiftTab === "groom"
+                  ? "bg-white text-stone-900 shadow-xs"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              Mừng Chú Rể ({wedding.groom_name})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveGiftTab("bride")}
+              className={`py-2 rounded-lg font-semibold transition cursor-pointer ${
+                activeGiftTab === "bride"
+                  ? "bg-white text-stone-900 shadow-xs"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              Mừng Cô Dâu ({wedding.bride_name})
+            </button>
+          </div>
+
+          <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-stone-200 text-center space-y-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden mx-auto border-2 border-stone-200 shadow-2xs">
+              <img
+                src={activeGiftTab === "groom" ? wedding.groom_photo : wedding.bride_photo}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="bg-white p-3 rounded-xl border border-stone-200 inline-block shadow-xs">
+              <img
+                src={activeGiftTab === "groom" ? groomQrUrl : brideQrUrl}
+                alt="Mã QR mừng cưới"
+                className="w-44 h-44 object-contain mx-auto"
+              />
+            </div>
+
+            <div className="space-y-1 text-xs">
+              <p className="font-bold text-stone-900 text-sm">
+                {activeGiftTab === "groom"
+                  ? wedding.groom_bank.account_name
+                  : wedding.bride_bank.account_name}
+              </p>
+              <p className="text-stone-600">
+                Ngân hàng:{" "}
+                <strong>
+                  {activeGiftTab === "groom"
+                    ? wedding.groom_bank.bank_name
+                    : wedding.bride_bank.bank_name}
+                </strong>
+              </p>
+              <div className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-stone-200 mt-1">
+                <span className="font-mono font-semibold text-stone-900 text-sm">
+                  {activeGiftTab === "groom"
+                    ? wedding.groom_bank.account_no
+                    : wedding.bride_bank.account_no}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      activeGiftTab === "groom"
+                        ? wedding.groom_bank.account_no
+                        : wedding.bride_bank.account_no,
+                      "Đã sao chép số tài khoản!"
+                    )
+                  }
+                  className="text-stone-900 hover:text-black font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  title="Sao chép số tài khoản"
+                >
+                  <Copy size={13} />
+                  <span>Copy</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-[11px] text-stone-500">
+            Quý khách có thể quét mã VietQR bằng bất kỳ ứng dụng ngân hàng hoặc ví điện tử nào.
+          </div>
+        </div>
+      </Modal>
+
+      {/* ============================================================
+          MODAL 2: XEM ẢNH PHÓNG TO (LIGHTBOX)
+          ============================================================ */}
+      {selectedPhoto && (
+        <div
+          onClick={() => setSelectedPhoto(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div className="relative max-w-2xl max-h-[90vh]">
+            <img
+              src={selectedPhoto}
+              alt="Phóng to ảnh"
+              className="max-h-[85vh] w-auto mx-auto object-contain rounded-xl shadow-2xl"
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-2 right-2 bg-black/60 text-white p-2 rounded-full hover:bg-black transition cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================
+          MODAL 3: CHỈNH SỬA THÔNG TIN & TẢI ẢNH CƯỚI (DÀNH CHO CẶP ĐÔI)
+          ============================================================ */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title="Chỉnh sửa thông tin thiệp & Tải ảnh cưới"
+        size="lg"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const updated = {
+              ...editForm,
+              wedding_id: currentWedding?.id || null,
+            };
+            await persistCustomCard(updated);
+            setIsEditOpen(false);
+            toast.success("Đã cập nhật thông tin & lưu lên hệ thống!");
+          }}
+          className="space-y-4 text-xs max-h-[75vh] overflow-y-auto pr-1"
+        >
+          {/* PHẦN 1: QUẢN LÝ & TẢI LÊN ẢNH CƯỚI */}
+          <div className="bg-[#FAF9F5] p-3.5 rounded-xl border border-stone-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-900 flex items-center gap-1.5 text-xs">
+                <Camera size={14} className="text-[#8C6D3F]" />
+                <span>1. Tải lên và Tùy chỉnh ảnh cưới</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditForm({
+                    ...editForm,
+                    hero_photo: beachHero,
+                    groom_photo: slurpeeCouple,
+                    bride_photo: beachThumb,
+                  });
+                  toast.info("Đã khôi phục các ảnh mẫu ban đầu");
+                }}
+                className="text-[11px] text-stone-500 hover:text-stone-800 inline-flex items-center gap-1"
+              >
+                <RotateCcw size={11} />
+                <span>Khôi phục ảnh mẫu</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Ảnh bìa chính */}
+              <div className="p-2.5 bg-white rounded-xl border border-stone-200 space-y-2 text-center">
+                <span className="block font-semibold text-stone-800 text-[11px]">
+                  Ảnh bìa chính
+                </span>
+                <div className="w-full aspect-[9/13] max-h-36 rounded-lg overflow-hidden border border-stone-200 mx-auto bg-stone-100">
+                  <img src={editForm.hero_photo} alt="Hero preview" className="w-full h-full object-cover object-top" />
+                </div>
+                <label className="inline-flex items-center justify-center gap-1.5 w-full bg-stone-100 hover:bg-stone-200 text-stone-800 py-1.5 px-2 rounded-lg cursor-pointer transition text-[11px] font-medium">
+                  <Upload size={12} />
+                  <span>Chọn ảnh từ máy</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const compressed = await compressImageFile(file);
+                        setEditForm({ ...editForm, hero_photo: compressed });
+                        toast.success("Đã chọn ảnh bìa mới!");
+                      }
+                    }}
+                  />
                 </label>
-                <textarea
-                  rows={3}
-                  value={wish}
-                  onChange={(e) => setWish(e.target.value)}
-                  placeholder="Chúc hai bạn trăm năm hạnh phúc, vẹn tròn duyên thắm..."
-                  className="w-full p-3 rounded-lg border border-[#DCCBB0] bg-[#FCFAF6] text-stone-900 text-xs sm:text-sm placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-[#8C6D3F] focus:border-[#8C6D3F] resize-none"
+              </div>
+
+              {/* Ảnh Chú rể */}
+              <div className="p-2.5 bg-white rounded-xl border border-stone-200 space-y-2 text-center">
+                <span className="block font-semibold text-stone-800 text-[11px]">
+                  Ảnh Chú rể
+                </span>
+                <div className="w-full aspect-[3/4] max-h-36 rounded-lg overflow-hidden border border-stone-200 mx-auto bg-stone-100">
+                  <img src={editForm.groom_photo} alt="Groom preview" className="w-full h-full object-cover" />
+                </div>
+                <label className="inline-flex items-center justify-center gap-1.5 w-full bg-stone-100 hover:bg-stone-200 text-stone-800 py-1.5 px-2 rounded-lg cursor-pointer transition text-[11px] font-medium">
+                  <Upload size={12} />
+                  <span>Chọn ảnh Chú rể</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const compressed = await compressImageFile(file);
+                        setEditForm({ ...editForm, groom_photo: compressed });
+                        toast.success("Đã chọn ảnh Chú rể mới!");
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Ảnh Cô dâu */}
+              <div className="p-2.5 bg-white rounded-xl border border-stone-200 space-y-2 text-center">
+                <span className="block font-semibold text-stone-800 text-[11px]">
+                  Ảnh Cô dâu
+                </span>
+                <div className="w-full aspect-[3/4] max-h-36 rounded-lg overflow-hidden border border-stone-200 mx-auto bg-stone-100">
+                  <img src={editForm.bride_photo} alt="Bride preview" className="w-full h-full object-cover" />
+                </div>
+                <label className="inline-flex items-center justify-center gap-1.5 w-full bg-stone-100 hover:bg-stone-200 text-stone-800 py-1.5 px-2 rounded-lg cursor-pointer transition text-[11px] font-medium">
+                  <Upload size={12} />
+                  <span>Chọn ảnh Cô dâu</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const compressed = await compressImageFile(file);
+                        setEditForm({ ...editForm, bride_photo: compressed });
+                        toast.success("Đã chọn ảnh Cô dâu mới!");
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* PHẦN 2: TIÊU ĐỀ & ĐÔI UYÊN ƯƠNG */}
+          <div className="bg-[#FAF9F5] p-3.5 rounded-xl border border-stone-200 space-y-3">
+            <span className="font-bold text-stone-900 block">
+              2. Tiêu đề & Đôi Uyên Ương
+            </span>
+            <div>
+              <label className="font-medium text-stone-700 block mb-1">
+                Tiêu đề lễ cưới
+              </label>
+              <input
+                type="text"
+                value={editForm.title}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, title: e.target.value })
+                }
+                placeholder="VD: LỄ THÀNH HÔN, LỄ VU QUY..."
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Tên Chú rể
+                </label>
+                <input
+                  type="text"
+                  value={editForm.groom_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, groom_name: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Tên Cô dâu
+                </label>
+                <input
+                  type="text"
+                  value={editForm.bride_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bride_name: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-medium text-stone-700 block mb-1">
+                Câu nói / Trích dẫn tình yêu
+              </label>
+              <textarea
+                rows={2}
+                value={editForm.quote}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, quote: e.target.value })
+                }
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white resize-none"
+              />
+            </div>
+          </div>
+
+          {/* PHẦN 3: SONG THÂN HAI HỌ */}
+          <div className="bg-[#FAF9F5] p-3.5 rounded-xl border border-stone-200 space-y-3">
+            <span className="font-bold text-stone-900 block">
+              3. Đại diện Song Thân Hai Họ
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="font-medium text-stone-700 block">
+                  Nhà trai (Họ tên Bố & Mẹ)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.groom_parents}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, groom_parents: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+                <label className="font-medium text-stone-700 block text-[11px]">
+                  Địa chỉ Nhà trai
+                </label>
+                <input
+                  type="text"
+                  value={editForm.groom_address}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, groom_address: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
                 />
               </div>
 
-              {/* Nút gửi phản hồi */}
+              <div className="space-y-2">
+                <label className="font-medium text-stone-700 block">
+                  Nhà gái (Họ tên Bố & Mẹ)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.bride_parents}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bride_parents: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+                <label className="font-medium text-stone-700 block text-[11px]">
+                  Địa chỉ Nhà gái
+                </label>
+                <input
+                  type="text"
+                  value={editForm.bride_address}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, bride_address: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* PHẦN 4: THỜI GIAN & ĐỊA ĐIỂM */}
+          <div className="bg-[#FAF9F5] p-3.5 rounded-xl border border-stone-200 space-y-3">
+            <span className="font-bold text-stone-900 block">
+              4. Thời Gian & Địa Điểm Tiệc Cưới
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Thời gian hiển thị
+                </label>
+                <input
+                  type="text"
+                  value={editForm.wedding_date_display}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      wedding_date_display: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Ngày số trên phong bì
+                </label>
+                <input
+                  type="text"
+                  value={editForm.date_badge}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, date_badge: e.target.value })
+                  }
+                  placeholder="VD: 13.11.2026"
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Tên địa điểm
+                </label>
+                <input
+                  type="text"
+                  value={editForm.venue_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, venue_name: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">
+                  Sảnh tiệc
+                </label>
+                <input
+                  type="text"
+                  value={editForm.hall_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, hall_name: e.target.value })
+                  }
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-medium text-stone-700 block mb-1">
+                Địa chỉ chi tiết
+              </label>
+              <input
+                type="text"
+                value={editForm.venue_address}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, venue_address: e.target.value })
+                }
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="font-medium text-stone-700 block mb-1">
+                Link chỉ đường Google Maps
+              </label>
+              <input
+                type="text"
+                value={editForm.map_url}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, map_url: e.target.value })
+                }
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-stone-900 bg-white"
+              />
+            </div>
+          </div>
+
+          {/* PHẦN 5: TÀI KHOẢN VIETQR MỪNG CƯỚI */}
+          <div className="bg-[#FAF9F5] p-3.5 rounded-xl border border-stone-200 space-y-3">
+            <span className="font-bold text-stone-900 block">
+              5. Tài khoản VietQR mừng cưới
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Chú rể */}
+              <div className="p-3 bg-white rounded-xl border border-stone-200 space-y-2">
+                <span className="font-semibold text-stone-800 block text-[11px]">
+                  Ngân hàng Chú rể
+                </span>
+                <input
+                  type="text"
+                  value={editForm.groom_bank?.bank_name}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      groom_bank: {
+                        ...editForm.groom_bank,
+                        bank_name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Tên ngân hàng"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs"
+                />
+                <input
+                  type="text"
+                  value={editForm.groom_bank?.bank_id}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      groom_bank: {
+                        ...editForm.groom_bank,
+                        bank_id: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Mã VietQR (VD: VCB, MB)"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs"
+                />
+                <input
+                  type="text"
+                  value={editForm.groom_bank?.account_no}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      groom_bank: {
+                        ...editForm.groom_bank,
+                        account_no: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Số tài khoản"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs font-mono"
+                />
+                <input
+                  type="text"
+                  value={editForm.groom_bank?.account_name}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      groom_bank: {
+                        ...editForm.groom_bank,
+                        account_name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Tên chủ tài khoản"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs uppercase"
+                />
+              </div>
+
+              {/* Cô dâu */}
+              <div className="p-3 bg-white rounded-xl border border-stone-200 space-y-2">
+                <span className="font-semibold text-stone-800 block text-[11px]">
+                  Ngân hàng Cô dâu
+                </span>
+                <input
+                  type="text"
+                  value={editForm.bride_bank?.bank_name}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      bride_bank: {
+                        ...editForm.bride_bank,
+                        bank_name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Tên ngân hàng"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs"
+                />
+                <input
+                  type="text"
+                  value={editForm.bride_bank?.bank_id}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      bride_bank: {
+                        ...editForm.bride_bank,
+                        bank_id: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Mã VietQR (VD: MB, VCB)"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs"
+                />
+                <input
+                  type="text"
+                  value={editForm.bride_bank?.account_no}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      bride_bank: {
+                        ...editForm.bride_bank,
+                        account_no: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Số tài khoản"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs font-mono"
+                />
+                <input
+                  type="text"
+                  value={editForm.bride_bank?.account_name}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      bride_bank: {
+                        ...editForm.bride_bank,
+                        account_name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Tên chủ tài khoản"
+                  className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 outline-none text-xs uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditOpen(false)}
+              className="rounded-xl border border-stone-200 px-4 py-2 font-medium text-stone-600 hover:bg-stone-50 transition cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="rounded-xl bg-[#221F1C] px-5 py-2 font-semibold text-white hover:bg-black transition shadow-xs cursor-pointer"
+            >
+              Lưu thay đổi
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ============================================================
+          MODAL 4: XUẤT BẢN & LẤY LINK QR THIỆP CƯỚI
+          ============================================================ */}
+      <Modal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title="Xuất bản & Lấy Link QR Thiệp Cưới"
+        size="lg"
+      >
+        <div className="space-y-5 text-xs text-stone-700">
+          {/* Banner Trạng thái xuất bản */}
+          <div
+            className={`p-4 rounded-2xl border transition-all ${
+              isPublished
+                ? "bg-emerald-50/80 border-emerald-200"
+                : "bg-stone-100 border-stone-200"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    isPublished
+                      ? "bg-emerald-600 text-white"
+                      : "bg-stone-400 text-white"
+                  }`}
+                >
+                  <Globe size={18} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-stone-900 text-sm">
+                      {isPublished
+                        ? "Thiệp cưới đang Hoạt động (Live)"
+                        : "Thiệp cưới đang ở chế độ Bản nháp"}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                        isPublished
+                          ? "bg-emerald-200/80 text-emerald-900"
+                          : "bg-stone-200 text-stone-700"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isPublished
+                            ? "bg-emerald-600 animate-pulse"
+                            : "bg-stone-500"
+                        }`}
+                      />
+                      {isPublished ? "Công khai" : "Riêng tư"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    {isPublished
+                      ? "Khách mời ở bất cứ đâu đều có thể mở link và quét mã QR để xem thiệp cưới và gửi phản hồi RSVP."
+                      : "Chỉ bạn mới có thể xem trước. Hãy xuất bản để tạo đường link và mã QR gửi khách mời."}
+                  </p>
+                </div>
+              </div>
+
               <button
-                type="submit"
-                className="w-full py-3 bg-[#721531] hover:bg-[#5A1027] text-white font-medium rounded-xl shadow-sm text-xs sm:text-sm tracking-wide transition-all cursor-pointer active:scale-[0.99]"
+                type="button"
+                onClick={togglePublish}
+                className={`px-4 py-2 rounded-xl font-bold text-xs shadow-xs transition cursor-pointer shrink-0 ${
+                  isPublished
+                    ? "bg-white text-stone-800 border border-stone-200 hover:bg-stone-50"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                }`}
               >
-                Gửi Phản Hồi RSVP
+                {isPublished ? "Chuyển về Bản nháp" : "Xuất bản thiệp ngay"}
               </button>
-            </form>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setActiveShareTab("public")}
+              className={`py-2 px-3 rounded-lg font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeShareTab === "public"
+                  ? "bg-white text-stone-900 shadow-xs"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <QrCode size={14} />
+              <span>1. Link Chung & Mã QR Thiệp</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveShareTab("personalized")}
+              className={`py-2 px-3 rounded-lg font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeShareTab === "personalized"
+                  ? "bg-white text-stone-900 shadow-xs"
+                  : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <Users size={14} />
+              <span>2. Tạo Link Riêng Có Tên Khách</span>
+            </button>
+          </div>
+
+          {/* TAB 1: LINK CHUNG & MÃ QR */}
+          {activeShareTab === "public" && (
+            <div className="space-y-4 animate-fade-in">
+              {/* Ô hiển thị Link thiệp xuất bản */}
+              <div className="p-3.5 bg-[#FAF9F5] rounded-xl border border-stone-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                    <Globe size={13} className="text-[#8C6D3F]" />
+                    <span>Đường link xuất bản thiệp cưới (Dành cho khách mời):</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                    Bản sạch 100% · Không có nút chỉnh sửa
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={publicInvitationUrl}
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs font-mono text-stone-900 outline-none select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(
+                        publicInvitationUrl,
+                        "Đã sao chép đường link xuất bản gửi khách!"
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 bg-[#221F1C] hover:bg-black text-white px-3.5 py-2 rounded-xl font-bold text-xs shrink-0 cursor-pointer shadow-xs transition"
+                  >
+                    <Copy size={13} />
+                    <span>Copy</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.open(publicInvitationUrl, "_blank")}
+                    className="inline-flex items-center gap-1 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 px-3 py-2 rounded-xl font-bold text-xs shrink-0 cursor-pointer transition"
+                    title="Mở link trong tab mới để kiểm tra giao diện khách xem"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Mở thử bản khách</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-stone-500 italic">
+                  * Khách mở link này hoặc quét mã QR sẽ xem thiệp cưới hoàn chỉnh, không có thanh công cụ quản trị hay các nút đổi ảnh của dâu rể.
+                </p>
+              </div>
+
+              {/* Khung Mã QR Thiệp cưới */}
+              <div className="p-4 bg-white rounded-2xl border border-stone-200 text-center space-y-3 shadow-xs">
+                <span className="text-[11px] uppercase tracking-wider text-[#8C6D3F] font-bold block">
+                  Mã QR Truy Cập Thiệp Cưới
+                </span>
+                <p className="text-stone-600 text-xs max-w-sm mx-auto leading-relaxed">
+                  Khách mời chỉ cần dùng <strong>Camera điện thoại</strong> hoặc{" "}
+                  <strong>ứng dụng Zalo</strong> để quét mã là xem được thiệp
+                  ngay.
+                </p>
+
+                <div className="inline-block p-4 bg-[#FAF9F5] rounded-2xl border-2 border-[#DFD8C8] shadow-sm">
+                  <img
+                    src={publicQrUrl}
+                    alt="Mã QR Thiệp cưới"
+                    className="w-52 h-52 object-contain mx-auto rounded-lg bg-white p-2"
+                  />
+                  <div className="mt-2 text-center">
+                    <p className="font-['Dancing_Script'] font-semibold text-base text-stone-900">
+                      {wedding.groom_name} & {wedding.bride_name}
+                    </p>
+                    <p className="text-[10px] text-stone-500 font-medium">
+                      {wedding.date_badge} · Lễ Thành Hôn
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadQr(
+                        publicQrUrl,
+                        `QR-Thiep-Cuoi-${wedding.groom_name}-${wedding.bride_name}.png`
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 bg-[#8C6D3F] hover:bg-[#6E542D] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition cursor-pointer"
+                  >
+                    <Download size={14} />
+                    <span>Tải ảnh mã QR về máy (PNG)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(
+                        publicInvitationUrl,
+                        "Đã sao chép link để gửi khách!"
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 px-4 py-2.5 rounded-xl font-semibold text-xs transition cursor-pointer"
+                  >
+                    <Share2 size={13} />
+                    <span>Gửi qua Zalo / Facebook</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: TẠO LINK RIÊNG CÁ NHÂN HÓA TÊN KHÁCH */}
+          {activeShareTab === "personalized" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-amber-900 text-xs leading-relaxed">
+                <strong>Đặc quyền cá nhân hóa:</strong> Khi bạn tạo link riêng
+                kèm tên, màn hình bìa phong thư sẽ in trang trọng tên người nhận{" "}
+                <em>(ví dụ: "TRÂN TRỌNG KÍNH MỜI Quý Khách / Anh Hoàng Nam & Bạn gái")</em>.
+              </div>
+
+              <div className="p-3.5 bg-[#FAF9F5] rounded-xl border border-stone-200 space-y-3">
+                <label className="font-bold text-stone-800 block text-xs">
+                  Nhập tên khách mời muốn gửi thiệp:
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={personalizedName}
+                    onChange={(e) => setPersonalizedName(e.target.value)}
+                    placeholder="VD: Anh Hoàng Nam & Bạn gái, Gia đình Bác Hải..."
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs font-semibold text-stone-900 outline-none focus:border-stone-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!personalizedName.trim()) {
+                        toast.error("Vui lòng nhập tên khách mời");
+                        return;
+                      }
+                      copyToClipboard(
+                        personalizedInvitationUrl,
+                        `Đã sao chép link riêng dành cho "${personalizedName}"!`
+                      );
+                    }}
+                    className="inline-flex items-center gap-1 bg-[#221F1C] hover:bg-black text-white px-4 py-2 rounded-xl font-bold text-xs shrink-0 cursor-pointer shadow-xs transition"
+                  >
+                    <Copy size={13} />
+                    <span>Copy Link Riêng</span>
+                  </button>
+                </div>
+
+                {/* Gợi ý khách mời nhanh */}
+                <div className="space-y-1">
+                  <span className="text-[11px] text-stone-500 font-medium">
+                    Gợi ý nhanh từ danh sách khách:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {[
+                      "Anh Hoàng Nam & Bạn gái",
+                      "Minh Thư (Phù dâu)",
+                      "Lan Anh & Minh Trí",
+                      "Cô Chú Bảy (Nhà Trai)",
+                      "Bác Văn & Gia đình",
+                    ].map((nameSuggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setPersonalizedName(nameSuggestion)}
+                        className="px-2.5 py-1 bg-white hover:bg-stone-100 text-stone-800 rounded-lg border border-stone-200 text-[11px] font-medium transition cursor-pointer"
+                      >
+                        + {nameSuggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview Link cá nhân */}
+              <div className="p-4 bg-white rounded-2xl border border-stone-200 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-stone-900 text-xs">
+                    Link riêng cho:{" "}
+                    <span className="text-[#8C6D3F]">
+                      {personalizedName || "Quý Khách"}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => window.open(personalizedInvitationUrl, "_blank")}
+                    className="text-stone-600 hover:text-black inline-flex items-center gap-1 font-semibold text-[11px]"
+                  >
+                    <ExternalLink size={12} />
+                    <span>Mở xem thử bìa thư</span>
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  readOnly
+                  value={personalizedInvitationUrl}
+                  className="w-full bg-[#FAF9F5] border border-stone-200 rounded-xl px-3 py-2 text-xs font-mono text-stone-800 outline-none select-all"
+                />
+
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <div className="w-24 h-24 bg-[#FAF9F5] p-1.5 rounded-xl border border-stone-200 shrink-0">
+                    <img
+                      src={personalizedQrUrl}
+                      alt="QR cá nhân"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="text-left space-y-1 text-xs">
+                    <p className="font-semibold text-stone-900">
+                      Mã QR cá nhân hóa
+                    </p>
+                    <p className="text-[11px] text-stone-500">
+                      Quét vào sẽ hiện đúng thiệp gửi riêng cho:{" "}
+                      <strong>{personalizedName || "Quý Khách"}</strong>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadQr(
+                          personalizedQrUrl,
+                          `QR-Thiep-Cuoi-${encodeURIComponent(personalizedName)}.png`
+                        )
+                      }
+                      className="inline-flex items-center gap-1 text-[11px] text-[#8C6D3F] hover:underline font-bold pt-1 cursor-pointer"
+                    >
+                      <Download size={12} />
+                      <span>Tải QR này</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
+      </Modal>
 
-        {/* Chân Thiệp Trang Trí */}
-        <div className="text-center pt-6 pb-1 text-xs text-[#8C6D3F] font-display italic relative z-10">
-          Rất hân hạnh được đón tiếp Quý Khách
+      {/* ============================================================
+          MODAL 5: THỐNG KÊ LƯỢT XEM & KHÁCH CHƯA PHẢN HỒI RSVP
+          ============================================================ */}
+      <Modal
+        isOpen={isStatsModalOpen}
+        onClose={() => setIsStatsModalOpen(false)}
+        title="Thống kê Lượt xem & Khách chưa phản hồi RSVP"
+        size="xl"
+      >
+        <div className="space-y-5 text-xs text-stone-700">
+          {/* HÀNG 4 THẺ SỐ LIỆU CHÍNH */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* 1. Tổng lượt mở link thiệp */}
+            <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-200 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-blue-800">
+                  Tổng lượt click link
+                </span>
+                <Eye size={14} className="text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-900">{viewCount}</p>
+              <p className="text-[10px] text-blue-700">
+                Lượt mở thiệp từ internet
+              </p>
+            </div>
+
+            {/* 2. Đã xác nhận tham dự */}
+            <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-emerald-800">
+                  Đã xác nhận (Tham dự)
+                </span>
+                <CheckCircle2 size={14} className="text-emerald-600" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-900">
+                {guestStats.attending}
+              </p>
+              <p className="text-[10px] text-emerald-700">
+                Khách chắc chắn sẽ đến
+              </p>
+            </div>
+
+            {/* 3. Từ chối tham dự */}
+            <div className="p-3.5 bg-stone-100 rounded-2xl border border-stone-200 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-stone-700">
+                  Từ chối tham dự
+                </span>
+                <X size={14} className="text-stone-500" />
+              </div>
+              <p className="text-2xl font-bold text-stone-800">
+                {guestStats.declined}
+              </p>
+              <p className="text-[10px] text-stone-600">
+                Gửi lời chúc từ xa
+              </p>
+            </div>
+
+            {/* 4. Khách chưa phản hồi RSVP */}
+            <div className="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-300 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-900">
+                  Chưa phản hồi RSVP
+                </span>
+                <Users size={14} className="text-amber-700" />
+              </div>
+              <p className="text-2xl font-bold text-amber-900">
+                {guestStats.pending}
+              </p>
+              <p className="text-[10px] text-amber-700 font-medium">
+                Cần theo dõi & nhắc nhở
+              </p>
+            </div>
+          </div>
+
+          {/* HỘP CẢNH BÁO CHI TIẾT VỀ KHÁCH CHƯA PHẢN HỒI (GIẢI PHÁP TRỌNG TÂM CỦA USER) */}
+          <div className="p-4 bg-gradient-to-r from-amber-50 via-amber-50/60 to-orange-50 rounded-2xl border border-amber-200 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Phân tích 45 khách chưa phản hồi RSVP:
+                </h5>
+                <div className="mt-1 space-y-1 text-xs text-stone-700">
+                  <p>
+                    • Có <strong>{guestStats.viewedNotResponded} khách ĐÃ NHẤP VÀO LINK XEM THIỆP</strong> nhưng chưa nhấn nút gửi phản hồi RSVP.
+                  </p>
+                  <p>
+                    • Có <strong>{guestStats.notOpened} khách CHƯA TỪNG MỞ LINK</strong> (có thể tin nhắn bị trôi hoặc chưa gửi đúng số).
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStatsModalOpen(false);
+                  navigate(ROUTE_PATHS.MESSAGING);
+                  toast.info("Đã mở công cụ Soạn tin nhắn để gửi thông báo tới nhóm khách này.");
+                }}
+                className="inline-flex items-center justify-center gap-2 bg-[#221F1C] hover:bg-black text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition cursor-pointer shrink-0"
+              >
+                <Send size={13} className="text-amber-400" />
+                <span>Gửi tin nhắn SMS nhắc RSVP</span>
+              </button>
+            </div>
+          </div>
+
+          {/* BỘ LỌC TABS & TÌM KIẾM KHÁCH MỜI */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1 p-1 bg-stone-100 rounded-xl text-xs">
+                <button
+                  type="button"
+                  onClick={() => setStatsFilter("viewed_not_responded")}
+                  className={`py-1.5 px-3 rounded-lg font-bold transition cursor-pointer ${
+                    statsFilter === "viewed_not_responded"
+                      ? "bg-white text-amber-900 shadow-2xs"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Đã xem link - Chưa RSVP ({guestStats.viewedNotResponded})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatsFilter("not_opened")}
+                  className={`py-1.5 px-3 rounded-lg font-medium transition cursor-pointer ${
+                    statsFilter === "not_opened"
+                      ? "bg-white text-stone-900 shadow-2xs font-bold"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Chưa mở link ({guestStats.notOpened})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatsFilter("attending")}
+                  className={`py-1.5 px-3 rounded-lg font-medium transition cursor-pointer ${
+                    statsFilter === "attending"
+                      ? "bg-white text-emerald-800 shadow-2xs font-bold"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Đã xác nhận ({guestStats.attending})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatsFilter("all")}
+                  className={`py-1.5 px-3 rounded-lg font-medium transition cursor-pointer ${
+                    statsFilter === "all"
+                      ? "bg-white text-stone-900 shadow-2xs font-bold"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Tất cả (142)
+                </button>
+              </div>
+
+              {/* Ô tìm kiếm */}
+              <div className="relative w-full sm:w-56">
+                <Search
+                  size={13}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                />
+                <input
+                  type="text"
+                  value={statsSearch}
+                  onChange={(e) => setStatsSearch(e.target.value)}
+                  placeholder="Tìm theo tên hoặc SĐT..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#FAF9F5] border border-stone-200 rounded-xl text-xs outline-none focus:border-stone-800"
+                />
+              </div>
+            </div>
+
+            {/* DANH SÁCH CHI TIẾT KHÁCH THEO BỘ LỌC */}
+            <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+              <div className="max-h-72 overflow-y-auto divide-y divide-stone-100">
+                {filteredTrackingGuests.length === 0 ? (
+                  <div className="p-8 text-center text-stone-400 text-xs">
+                    Không tìm thấy khách mời nào phù hợp với bộ lọc hiện tại.
+                  </div>
+                ) : (
+                  filteredTrackingGuests.map((guest) => {
+                    const guestPersonalUrl = `${window.location.origin}/invitation?guest=${encodeURIComponent(
+                      guest.name
+                    )}`;
+                    return (
+                      <div
+                        key={guest.id}
+                        className="p-3 sm:px-4 flex items-center justify-between hover:bg-stone-50/70 transition gap-2"
+                      >
+                        {/* Cột 1: Thông tin khách */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-stone-900 text-xs truncate">
+                              {guest.name}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 shrink-0 font-medium">
+                              {guest.role || guest.group}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-400 font-mono mt-0.5">
+                            {guest.phone}
+                          </p>
+                        </div>
+
+                        {/* Cột 2: Trạng thái mở thiệp */}
+                        <div className="text-center shrink-0 hidden sm:block">
+                          {guest.hasOpened ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                              <Eye size={11} />
+                              <span>Đã mở ({guest.lastOpenedAt})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
+                              Chưa mở link
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Cột 3: Trạng thái RSVP & Thao tác */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {guest.status === "attending" && (
+                            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                              Tham dự ({guest.attendingCount || 1} người)
+                            </span>
+                          )}
+                          {guest.status === "declined" && (
+                            <span className="text-[11px] text-stone-500 bg-stone-100 px-2.5 py-1 rounded-lg">
+                              Từ chối
+                            </span>
+                          )}
+                          {guest.status === "pending" && (
+                            <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-lg">
+                              Chờ phản hồi
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(
+                                guestPersonalUrl,
+                                `Đã copy link riêng của "${guest.name}"!`
+                              )
+                            }
+                            className="p-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 transition cursor-pointer"
+                            title="Sao chép link riêng của khách này"
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </Modal>
     </div>
   );
 }

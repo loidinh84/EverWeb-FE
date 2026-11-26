@@ -156,6 +156,14 @@ export const weddingApi = {
     const response = await api.post(`/weddings/public/contact/${slug}`, payload);
     return response.data?.data ?? response.data;
   },
+
+  async getPublicInvitation({ weddingId, slug } = {}) {
+    const params = {};
+    if (weddingId) params.weddingId = weddingId;
+    if (slug) params.slug = slug;
+    const response = await api.get("/weddings/public/invitation", { params });
+    return response.data?.data ?? response.data;
+  },
 };
 
 export default weddingApi;

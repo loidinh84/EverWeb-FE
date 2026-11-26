@@ -209,6 +209,36 @@ export default function MessagingPage() {
         typeof updater === "function" ? updater(prev.sentMessages || []) : updater,
     }));
 
+  // Đồng bộ danh bạ khách mời từ collect_contacts để tính số lượng khách thực tế
+  const { data: ccData } = useWeddingFeature(
+    wedding,
+    "collect_contacts",
+    { guestList: [] }
+  );
+
+  const guestList = useMemo(
+    () => (Array.isArray(ccData?.guestList) && ccData.guestList.length > 0 ? ccData.guestList : []),
+    [ccData]
+  );
+
+  const allGuests = guestList;
+  const attendingGuests = useMemo(
+    () => guestList.filter((g) => g.rsvp === "Tham dự"),
+    [guestList]
+  );
+  const pendingGuests = useMemo(
+    () => guestList.filter((g) => g.rsvp === "Chờ phản hồi" || !g.rsvp || g.rsvp === "Chưa phản hồi"),
+    [guestList]
+  );
+  const bridesmaidGuests = useMemo(
+    () => guestList.filter((g) => (g.tag || "").toLowerCase().includes("phù") || (g.tag || "").toLowerCase().includes("bạn")),
+    [guestList]
+  );
+  const vipGuests = useMemo(
+    () => guestList.filter((g) => (g.tag || "").toLowerCase().includes("vip") || (g.tag || "").toLowerCase().includes("họ hàng") || (g.tag || "").toLowerCase().includes("gia đình")),
+    [guestList]
+  );
+
   // Sidebar toggle state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -235,10 +265,48 @@ export default function MessagingPage() {
     linkUrl: "https://everweb.vn/rsvp",
   });
 
+  const currentRecipientsList = useMemo(() => {
+    switch (composeForm.recipientsGroup) {
+      case "attending":
+        return attendingGuests;
+      case "pending":
+        return pendingGuests;
+      case "bridesmaids":
+        return bridesmaidGuests;
+      case "vip":
+        return vipGuests;
+      case "all":
+      default:
+        return allGuests;
+    }
+  }, [composeForm.recipientsGroup, allGuests, attendingGuests, pendingGuests, bridesmaidGuests, vipGuests]);
+
+  const guestsWithEmail = useMemo(
+    () => currentRecipientsList.filter((g) => g.email && String(g.email).trim()),
+    [currentRecipientsList]
+  );
+
+  const guestsWithPhone = useMemo(
+    () => currentRecipientsList.filter((g) => g.phone && String(g.phone).trim()),
+    [currentRecipientsList]
+  );
+
   const [previewTab, setPreviewTab] = useState("text");
   const [isSending, setIsSending] = useState(false);
 
   const handleSelectTemplate = (template) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const weddingSlug = wedding?.slug || "khang-an";
+
+    let targetLink = template.linkUrl;
+    if (template.id === "collect_contacts") {
+      targetLink = `${origin}/contact/${weddingSlug}`;
+    } else if (template.id === "email" || template.id === "text_blast") {
+      targetLink = `${origin}/preview`;
+    } else if (template.id === "hotel" || template.id === "stay_details") {
+      targetLink = `${origin}/preview`;
+    }
+
     setComposeForm((prev) => ({
       ...prev,
       id: `msg-${Date.now()}`,
@@ -247,13 +315,14 @@ export default function MessagingPage() {
       headline: template.headline || prev.headline,
       message: template.message,
       buttonText: template.buttonText,
-      linkUrl: template.linkUrl,
+      linkUrl: targetLink,
     }));
     setPreviewTab(template.deliveryMethod === "email" ? "email" : "text");
     setViewMode("compose");
   };
 
   const handleSelectCard = (card) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     setComposeForm((prev) => ({
       ...prev,
       id: `card-${Date.now()}`,
@@ -262,7 +331,7 @@ export default function MessagingPage() {
       headline: card.subtitle,
       message: `Tụi mình thân gửi bạn ${card.title}. Mọi thông tin chi tiết và lịch trình ngày cưới đã được cập nhật đầy đủ, mời bạn cùng xem nhé!`,
       buttonText: "Xem chi tiết thiệp cưới",
-      linkUrl: "https://everweb.vn/wedding/invitation",
+      linkUrl: `${origin}/invitation`,
     }));
     setPreviewTab("email");
     setViewMode("compose");
@@ -325,15 +394,41 @@ export default function MessagingPage() {
     ) {
       setIsSending(true);
       try {
+        const origin = window.location.origin;
+        const weddingSlug = wedding?.slug || "khang-an";
+        let ctaUrl = composeForm.linkUrl?.trim();
+
+        // Tự động phân giải link nếu để trống hoặc còn placeholder mặc định
+        if (!ctaUrl || ctaUrl.startsWith("https://everweb.vn")) {
+          const btnLower = (composeForm.buttonText || "").toLowerCase();
+          const subjLower = (composeForm.subject || "").toLowerCase();
+          if (
+            btnLower.includes("thu thập") ||
+            btnLower.includes("địa chỉ") ||
+            subjLower.includes("địa chỉ")
+          ) {
+            ctaUrl = `${origin}/contact/${weddingSlug}`;
+          } else if (
+            btnLower.includes("thiệp") ||
+            subjLower.includes("thiệp")
+          ) {
+            ctaUrl = `${origin}/invitation`;
+          } else {
+            ctaUrl = `${origin}/preview`;
+          }
+        }
+
+        const targetEmails = guestsWithEmail
+          .map((g) => String(g.email || "").trim())
+          .filter(Boolean);
+
         const res = await weddingApi.sendEmail(wedding.id, {
           senderName: composeForm.fromName,
           subject: composeForm.subject || `Thông báo từ ${composeForm.fromName}`,
           body: composeForm.message,
           buttonText: composeForm.buttonText || "Xem Website cưới",
-          ctaUrl:
-            composeForm.linkUrl && !composeForm.linkUrl.startsWith("https://everweb.vn")
-              ? composeForm.linkUrl
-              : `${window.location.origin}/contact/${wedding?.slug || "khang-an"}`,
+          ctaUrl,
+          recipients: targetEmails.length > 0 ? targetEmails : undefined,
         });
         toast.success(
           `Đã gửi Email thật tới ${res?.sentCount || 1} khách mời!`
@@ -559,7 +654,7 @@ export default function MessagingPage() {
             </div>
 
             {/* 3. Người nhận */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="text-xs font-semibold text-stone-700">
                 Đối tượng nhận
               </label>
@@ -575,20 +670,78 @@ export default function MessagingPage() {
                   className="w-full rounded-2xl border border-stone-200 py-3 px-4 text-xs sm:text-sm font-semibold text-[#1F1A17] bg-white outline-none focus:border-[#3B52DE] transition cursor-pointer appearance-none shadow-2xs"
                 >
                   <option value="all">
-                    Tất cả khách mời (Toàn bộ 142 khách)
+                    Tất cả khách mời ({allGuests.length > 0 ? `Toàn bộ ${allGuests.length} khách` : "Toàn bộ 142 khách"})
                   </option>
                   <option value="attending">
-                    Khách đã xác nhận tham dự (88 khách)
+                    Khách đã xác nhận tham dự ({attendingGuests.length > 0 ? `${attendingGuests.length} khách` : "88 khách"})
                   </option>
                   <option value="pending">
-                    Khách chưa phản hồi RSVP (45 khách)
+                    Khách chưa phản hồi RSVP ({pendingGuests.length > 0 ? `${pendingGuests.length} khách` : "45 khách"})
                   </option>
                   <option value="bridesmaids">
-                    Phù dâu & Bạn thân (12 khách)
+                    Phù dâu & Bạn thân ({bridesmaidGuests.length > 0 ? `${bridesmaidGuests.length} khách` : "12 khách"})
                   </option>
-                  <option value="vip">Khách VIP & Họ hàng (35 khách)</option>
+                  <option value="vip">
+                    Khách VIP & Họ hàng ({vipGuests.length > 0 ? `${vipGuests.length} khách` : "35 khách"})
+                  </option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-stone-400 absolute right-4 top-4 pointer-events-none" />
+              </div>
+
+              {/* Thông tin chi tiết & danh sách khách chưa phản hồi / đã chọn */}
+              <div className="rounded-2xl bg-stone-50 border border-stone-200/80 p-3.5 text-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#1F1A17]">
+                      {composeForm.recipientsGroup === "pending"
+                        ? "Khách chưa phản hồi RSVP"
+                        : composeForm.recipientsGroup === "attending"
+                        ? "Khách đã xác nhận tham dự"
+                        : "Khách trong nhóm"}
+                    </span>
+                    <span className="rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
+                      {currentRecipientsList.length} khách
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTE_PATHS.GUEST_LIST)}
+                    className="text-[11px] font-semibold text-[#3B52DE] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    Mở Danh sách khách mời →
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4 text-[11px] text-stone-500">
+                  <span>Có Email: <strong className="text-stone-700">{guestsWithEmail.length}</strong></span>
+                  <span>Có SĐT: <strong className="text-stone-700">{guestsWithPhone.length}</strong></span>
+                </div>
+
+                {currentRecipientsList.length > 0 ? (
+                  <div className="pt-2 border-t border-stone-200/60 max-h-32 overflow-y-auto space-y-1.5 pr-1">
+                    {currentRecipientsList.slice(0, 5).map((g) => (
+                      <div key={g.id || g.phone} className="flex items-center justify-between text-[11px] bg-white rounded-lg px-2.5 py-1.5 border border-stone-100">
+                        <span className="font-medium text-[#1F1A17] truncate max-w-[160px]">
+                          {g.lastName ? `${g.lastName} ${g.firstName}` : g.firstName || g.name}
+                        </span>
+                        <div className="flex items-center gap-2 text-[10px] text-stone-500 font-mono">
+                          <span>{g.phone || "—"}</span>
+                          <span className="text-stone-300">·</span>
+                          <span className="truncate max-w-[130px]">{g.email || "Chưa có email"}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {currentRecipientsList.length > 5 && (
+                      <p className="text-[10px] text-stone-400 text-center pt-1">
+                        ...và {currentRecipientsList.length - 5} khách khác (Xem trọn vẹn trong trang Danh sách khách mời)
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-stone-400 italic">
+                    Chưa có khách nào trong nhóm này.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -672,10 +825,15 @@ export default function MessagingPage() {
                   className="w-full rounded-xl border border-stone-200 py-2.5 px-3 text-xs sm:text-sm text-[#1F1A17] outline-none focus:border-[#3B52DE]"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-stone-700">
-                  Đường link đính kèm
-                </label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-stone-700">
+                    Đường link đính kèm
+                  </label>
+                  <span className="text-[10px] text-stone-400">
+                    Chọn nhanh đích đến:
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={composeForm.linkUrl}
@@ -684,6 +842,47 @@ export default function MessagingPage() {
                   }
                   className="w-full rounded-xl border border-stone-200 py-2.5 px-3 text-xs sm:text-sm text-[#1F1A17] outline-none focus:border-[#3B52DE]"
                 />
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setComposeForm((prev) => ({
+                        ...prev,
+                        linkUrl: `${window.location.origin}/preview`,
+                        buttonText: "Xem Website cưới",
+                      }))
+                    }
+                    className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1 text-[11px] font-medium text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                  >
+                    Website cưới (/preview)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setComposeForm((prev) => ({
+                        ...prev,
+                        linkUrl: `${window.location.origin}/invitation`,
+                        buttonText: "Xem thiệp cưới",
+                      }))
+                    }
+                    className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1 text-[11px] font-medium text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                  >
+                    Thiệp cưới online (/invitation)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setComposeForm((prev) => ({
+                        ...prev,
+                        linkUrl: `${window.location.origin}/contact/${wedding?.slug || "khang-an"}`,
+                        buttonText: "Cập nhật địa chỉ nhận thiệp",
+                      }))
+                    }
+                    className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1 text-[11px] font-medium text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                  >
+                    Form thu thập liên hệ (/contact/...)
+                  </button>
+                </div>
               </div>
             </div>
 

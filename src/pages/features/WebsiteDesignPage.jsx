@@ -26,6 +26,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
+import PublicRsvpModal from "../../components/common/PublicRsvpModal";
 import { ROUTE_PATHS } from "../../constants/roles";
 import weddingApi from "../../services/weddingApi";
 import { extractApiError } from "../../services/api";
@@ -263,6 +264,7 @@ export default function WebsiteDesignPage({ previewOnly = false }) {
   const [newPageTitle, setNewPageTitle] = useState("");
   const [newPageContent, setNewPageContent] = useState("");
   const [editingPageKey, setEditingPageKey] = useState(null);
+  const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
 
   const baseTheme =
     COLOR_THEMES.find((t) => t.id === themeId) || COLOR_THEMES[0];
@@ -492,10 +494,8 @@ export default function WebsiteDesignPage({ previewOnly = false }) {
               <div className="mt-5">
                 <button
                   type="button"
-                  onClick={() =>
-                    navigate(ROUTE_PATHS.RSVP_BUILDER, { state: { wedding } })
-                  }
-                  className="rsvp-cta-btn rounded-full px-6 py-2 text-xs font-semibold text-white shadow-sm transition"
+                  onClick={() => setIsRsvpModalOpen(true)}
+                  className="rsvp-cta-btn rounded-full px-6 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
                   style={{ backgroundColor: activeAccent }}
                 >
                   Xác nhận tham dự (RSVP)
@@ -1704,6 +1704,28 @@ export default function WebsiteDesignPage({ previewOnly = false }) {
           </div>
         </form>
       </Modal>
+
+      {/* Modal biểu mẫu điền RSVP công khai khi bấm xác nhận trên website */}
+      <PublicRsvpModal
+        isOpen={isRsvpModalOpen}
+        onClose={() => setIsRsvpModalOpen(false)}
+        wedding={wedding}
+      />
+
+      {/* Nút nổi xác nhận tham dự ở góc dưới trang khi ở chế độ xem web xuất bản */}
+      {previewOnly && (
+        <div className="fixed bottom-5 right-5 z-40">
+          <button
+            type="button"
+            onClick={() => setIsRsvpModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold text-white shadow-xl transition hover:scale-105 active:scale-95 cursor-pointer"
+            style={{ backgroundColor: activeAccent }}
+          >
+            <Heart size={14} className="fill-white" />
+            <span>Xác nhận tham dự</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_PATHS } from "../../constants/roles";
+import {
+  PROMO_CONFIG,
+  getActiveSubscription,
+} from "../../constants/pricingPlans";
 import { useAuth } from "../../hooks/useAuth";
 import { UserProfileModal } from "../../components/common";
 
@@ -24,7 +28,15 @@ export default function LandingNavbar({ onOpenDashboard }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [activeSub, setActiveSub] = useState(() => getActiveSubscription());
   const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const syncSub = () => setActiveSub(getActiveSubscription());
+    window.addEventListener("everweb:subscription-updated", syncSub);
+    return () =>
+      window.removeEventListener("everweb:subscription-updated", syncSub);
+  }, []);
 
   const initials = (user?.full_name || user?.email || "U")
     .slice(0, 1)
@@ -81,7 +93,7 @@ export default function LandingNavbar({ onOpenDashboard }) {
 
           <div className="hidden lg:flex items-center gap-2 text-white/95">
             <span>
-              Ưu đãi mùa cưới: Giảm 25% các mẫu thiệp số & website cưới cao cấp
+              {PROMO_CONFIG.label}: {PROMO_CONFIG.description}
             </span>
             <a
               href="#pricing"
@@ -216,9 +228,22 @@ export default function LandingNavbar({ onOpenDashboard }) {
                       className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#EAE3DB] bg-white p-2 text-[#231F1C] shadow-xl z-50 select-none"
                     >
                       <div className="px-3 py-2 border-b border-[#F0EAE1]">
-                        <p className="text-xs font-bold truncate text-[#231F1C]">
-                          {user?.full_name || "Tài khoản của bạn"}
-                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold truncate text-[#231F1C]">
+                            {user?.full_name || "Tài khoản của bạn"}
+                          </p>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              activeSub?.planId === "vip"
+                                ? "bg-[#FBF6EC] text-[#9F7B34] border border-[#C5A059]/30"
+                                : activeSub?.planId === "pro"
+                                ? "bg-[#EEF0FD] text-[#3446EB]"
+                                : "bg-stone-100 text-stone-600"
+                            }`}
+                          >
+                            {activeSub?.planId || "free"}
+                          </span>
+                        </div>
                         <p className="text-[11px] text-[#8C7A68] truncate mt-0.5">
                           {user?.email}
                         </p>

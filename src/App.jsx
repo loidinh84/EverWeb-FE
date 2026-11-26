@@ -68,6 +68,12 @@ function HomeRoute() {
 }
 
 function App() {
+  const location = useLocation();
+  const isInvitationOrWebsite =
+    location.pathname.startsWith(ROUTE_PATHS.INVITATION) ||
+    location.pathname.startsWith("/w/") ||
+    location.pathname.startsWith("/contact/");
+
   return (
     <>
       <Routes>
@@ -78,6 +84,11 @@ function App() {
           element={<InvitationPreview />}
         />
         <Route path="/contact/:slug" element={<PublicContactPage />} />
+        <Route
+          path={ROUTE_PATHS.WEBSITE_PREVIEW}
+          element={<WebsitePreviewPage />}
+        />
+        <Route path="/w/:slug" element={<WebsitePreviewPage />} />
         <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<UnauthorizedPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
@@ -160,7 +171,7 @@ function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <WeddingAssistantChatbot />
+      {!isInvitationOrWebsite && <WeddingAssistantChatbot />}
     </>
   );
 }

@@ -4,6 +4,7 @@ import FeatureShowcase from "./FeatureShowcase";
 import AiChatShowcase from "./AiChatShowcase";
 import MessagingShowcase from "./MessagingShowcase";
 import SeatingShowcase from "./SeatingShowcase";
+import PricingShowcase from "./PricingShowcase";
 import LandingFooter from "./LandingFooter";
 
 export default function Landing({ onOpenDashboard }) {
@@ -17,6 +18,7 @@ export default function Landing({ onOpenDashboard }) {
         <AiChatShowcase />
         <MessagingShowcase />
         <SeatingShowcase />
+        <PricingShowcase onOpenDashboard={onOpenDashboard} />
       </main>
 
       <LandingFooter onOpenDashboard={onOpenDashboard} />

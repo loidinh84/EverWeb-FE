@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
+  Mail,
   Map,
   Plus,
   Search,
@@ -351,6 +352,13 @@ export default function GuestListPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => navigate(ROUTE_PATHS.MESSAGING)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-[#1F1A17] hover:bg-stone-50 transition cursor-pointer"
+          >
+            <Mail size={13} /> Gửi tin nhắn & Email →
+          </button>
+          <button
+            type="button"
             onClick={() => navigate(ROUTE_PATHS.SEATING_CHART)}
             className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-[#1F1A17] hover:bg-stone-50 transition cursor-pointer"
           >
@@ -553,8 +561,13 @@ export default function GuestListPage() {
                       </td>
 
                       <td className="py-3.5 px-3">
-                        <span className="text-[#1F1A17] block font-mono text-[11px]">{g.phone || "—"}</span>
-                        <span className="text-[10px] text-stone-400 block truncate max-w-[150px]">{g.email || "—"}</span>
+                        <span className="text-[#1F1A17] block font-mono text-[11px] font-medium">{g.phone || "—"}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-stone-500 mt-0.5">
+                          <Mail size={10} className="text-stone-400 shrink-0" />
+                          <span className="truncate max-w-[150px] font-mono text-stone-600" title={g.email || "Chưa có email"}>
+                            {g.email || "—"}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
@@ -707,7 +720,7 @@ export default function GuestListPage() {
               />
             </div>
             <div>
-              <label className="font-semibold text-stone-700 block mb-1">Địa chỉ Email</label>
+              <label className="font-semibold text-stone-700 block mb-1">Địa chỉ Email (gửi thiệp & tin nhắn)</label>
               <input
                 type="email"
                 value={guestForm.email}

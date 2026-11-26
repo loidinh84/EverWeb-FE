@@ -117,6 +117,10 @@ const FEATURE_TILES = [
     bg: "bg-gradient-to-br from-teal-400 to-cyan-500 text-white",
     route: ROUTE_PATHS.INVITATIONS_STUDIO,
     state: { category: "Thiệp mời" },
+    subItems: [
+      { label: "Mẫu thiệp cưới (Studio)", route: ROUTE_PATHS.INVITATIONS_STUDIO, state: { category: "Thiệp mời" } },
+      { label: "Thiệp mời điện tử (Lễ Thành Hôn)", route: ROUTE_PATHS.INVITATION },
+    ],
   },
   {
     key: "stationery",

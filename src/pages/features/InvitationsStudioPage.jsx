@@ -1,5 +1,5 @@
-﻿import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Camera,
   Check,
@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
+import { ROUTE_PATHS } from "../../constants/roles";
 import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
 import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
 import galleryDining from "../../assets/image/gallery-dining.jpg";
@@ -116,6 +117,7 @@ const CARD_TEMPLATES = [
 
 export default function InvitationsStudioPage() {
   const toast = useToast();
+  const navigate = useNavigate();
   const location = useLocation();
   const { wedding } = useCurrentWedding();
 
@@ -212,26 +214,35 @@ export default function InvitationsStudioPage() {
       subtitle="Save the Dates, Thiệp mời cưới, Thiệp cảm ơn & Ấn phẩm bàn tiệc"
       wedding={wedding}
       actions={
-        <div className="flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
-          {[
-            { key: "designs", label: "Mẫu thiết kế" },
-            { key: "favorites", label: `Yêu thích (${favorites.length})` },
-            { key: "drafts", label: `Bản nháp (${drafts.length})` },
-            { key: "orders", label: "Đang chọn" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTopTab(t.key)}
-              className={`rounded-full px-3 py-1 transition ${
-                topTab === t.key
-                  ? "bg-white text-[#1F1A17] shadow-2xs"
-                  : "text-stone-500 hover:text-[#1F1A17]"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate(ROUTE_PATHS.INVITATION)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-[#1F1A17] hover:bg-stone-50 transition cursor-pointer"
+          >
+            <Heart size={13} className="text-rose-500 fill-rose-500" /> Xem Thiệp điện tử (Lễ Thành Hôn) →
+          </button>
+          <div className="flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
+            {[
+              { key: "designs", label: "Mẫu thiết kế" },
+              { key: "favorites", label: `Yêu thích (${favorites.length})` },
+              { key: "drafts", label: `Bản nháp (${drafts.length})` },
+              { key: "orders", label: "Đang chọn" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTopTab(t.key)}
+                className={`rounded-full px-3 py-1 transition ${
+                  topTab === t.key
+                    ? "bg-white text-[#1F1A17] shadow-2xs"
+                    : "text-stone-500 hover:text-[#1F1A17]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       }
     >

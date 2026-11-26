@@ -11,18 +11,13 @@ import {
   Eye,
   EyeOff,
   Heart,
-  Image as ImageIcon,
-  Layout,
   MapPin,
   Monitor,
-  Palette,
   PanelLeft,
   Plus,
   RotateCcw,
   Smartphone,
-  Sparkles,
   Trash2,
-  Type,
   Upload,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
@@ -31,176 +26,19 @@ import { ROUTE_PATHS } from "../../constants/roles";
 import weddingApi from "../../services/weddingApi";
 import { extractApiError } from "../../services/api";
 import everwebLogo from "../../assets/image/everweb-logo.jpg";
-import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
-import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
-import galleryDining from "../../assets/image/gallery-dining.jpg";
-import heroWedding from "../../assets/image/hero-wedding.jpg";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
-
-const COLOR_THEMES = [
-  {
-    id: "woodgrain",
-    name: "Gỗ Cổ Điển",
-    outerBg: "#4A3423",
-    outerPattern:
-      "repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px), linear-gradient(135deg, #563C28 0%, #3E2A1B 50%, #4E3725 100%)",
-    bg: "#EDE8E1",
-    accent: "#5D4532",
-    text: "#2C2117",
-  },
-  {
-    id: "cobalt",
-    name: "Xanh Hiện Đại",
-    outerBg: "#E6EBF7",
-    outerPattern: "linear-gradient(135deg, #E8EDFA 0%, #DCE3F5 100%)",
-    bg: "#FAF8F5",
-    accent: "#3B52DE",
-    text: "#2C2117",
-  },
-  {
-    id: "champagne",
-    name: "Vàng Champagne",
-    outerBg: "#EFE6D8",
-    outerPattern: "linear-gradient(135deg, #F2EAE0 0%, #E7DBC9 100%)",
-    bg: "#FAF6F0",
-    accent: "#B88E44",
-    text: "#3B2A1A",
-  },
-  {
-    id: "sage",
-    name: "Xanh Olive",
-    outerBg: "#DDE4DA",
-    outerPattern: "linear-gradient(135deg, #E2E8DF 0%, #CFD9CB 100%)",
-    bg: "#F4F6F2",
-    accent: "#5F7161",
-    text: "#243025",
-  },
-  {
-    id: "rose",
-    name: "Hồng Phấn",
-    outerBg: "#F5E2E5",
-    outerPattern: "linear-gradient(135deg, #F8E8EB 0%, #EED5DA 100%)",
-    bg: "#FDF6F6",
-    accent: "#B85D6E",
-    text: "#3B2127",
-  },
-];
-
-const FONT_OPTIONS = [
-  { id: "cormorant", label: "Cormorant Garamond", style: '"Cormorant Garamond", Georgia, serif', tag: "Cổ điển" },
-  { id: "playfair", label: "Playfair Display", style: '"Playfair Display", Georgia, serif', tag: "Sang trọng" },
-  { id: "lora", label: "Lora", style: '"Lora", Georgia, serif', tag: "Thanh lịch" },
-  { id: "merriweather", label: "Merriweather", style: '"Merriweather", Georgia, serif', tag: "Trang trọng" },
-  { id: "vietnam", label: "Be Vietnam Pro", style: '"Be Vietnam Pro", sans-serif', tag: "Hiện đại" },
-  { id: "montserrat", label: "Montserrat", style: '"Montserrat", sans-serif', tag: "Tối giản" },
-  { id: "dancing", label: "Dancing Script", style: '"Dancing Script", cursive', tag: "Chữ ký" },
-];
-
-const COVER_IMAGES = [
-  { id: "hero", label: "Sảnh tiệc hoa", src: heroWedding },
-  { id: "ceremony", label: "Cổng hoa ngoài trời", src: galleryCeremony },
-  { id: "bouquet", label: "Hoa cưới cầm tay", src: galleryBouquet },
-  { id: "dining", label: "Bàn tiệc tối", src: galleryDining },
-];
-
-const ART_STYLES = [
-  { id: "lace", label: "Hoa ren góc cổ điển" },
-  { id: "botanical", label: "Lá Botanical mềm mại" },
-  { id: "deco", label: "Khung Art Deco" },
-  { id: "minimal", label: "Viền tối giản" },
-  { id: "none", label: "Không hoạ tiết" },
-];
-
-const ART_COLORS = ["#FFFFFF", "#E5C687", "#3B52DE", "#5D4532"];
-
-const CSS_SNIPPETS = [
-  {
-    label: "Bo tròn ảnh Album",
-    code: "#everweb-site-preview img { border-radius: 20px; }",
-  },
-  {
-    label: "Nút RSVP đổ bóng nổi",
-    code: "#everweb-site-preview .rsvp-cta-btn { box-shadow: 0 10px 25px rgba(59,82,222,0.35); transform: scale(1.04); }",
-  },
-  {
-    label: "Tiêu đề giãn cách rộng",
-    code: "#everweb-site-preview h3, #everweb-site-preview h4 { letter-spacing: 0.08em; }",
-  },
-];
-
-const INITIAL_PAGES = [
-  { key: "welcome", label: "Chào mừng", visible: true },
-  { key: "story", label: "Chuyện tình yêu", visible: true },
-  { key: "schedule", label: "Lịch trình", visible: true },
-  { key: "stay", label: "Nơi lưu trú", visible: true },
-  { key: "party", label: "Phù dâu & Phù rể", visible: true },
-  { key: "qa", label: "Hỏi đáp (Q&A)", visible: true },
-  { key: "registry", label: "Quà mừng", visible: true },
-  { key: "gallery", label: "Album ảnh", visible: true },
-];
-
-const CHECKLIST = [
-  "Chọn mẫu giao diện & bảng màu",
-  "Chọn ảnh bìa & hoạ tiết góc",
-  "Kiểm tra lịch trình ngày cưới",
-  "Cập nhật địa điểm & lưu trú",
-  "Xuất bản Website cưới",
-];
-
-const DESIGN_TABS = [
-  { key: "layout", label: "Bố cục & Ảnh bìa", icon: Layout },
-  { key: "color", label: "Màu sắc", icon: Palette },
-  { key: "font", label: "Phông chữ", icon: Type },
-  { key: "art", label: "Hoạ tiết", icon: Sparkles },
-  { key: "linkPreview", label: "Ảnh chia sẻ Link", icon: ImageIcon },
-  { key: "pages", label: "Các trang hiển thị", icon: Eye },
-  { key: "css", label: "Tuỳ chỉnh CSS", icon: Layout },
-];
-
-function CornerArtwork({ artId, color, opacity, flip = false }) {
-  if (artId === "none") return null;
-  return (
-    <svg
-      viewBox="0 0 140 140"
-      className={`pointer-events-none sticky top-0 h-28 w-28 ${
-        flip ? "float-right -mr-6 scale-x-[-1]" : "float-left -ml-6"
-      }`}
-      style={{ opacity: opacity / 100 }}
-      fill="none"
-    >
-      {artId === "lace" && (
-        <>
-          <path
-            d="M0 0 C50 10, 90 50, 120 0 M0 0 C10 50, 50 90, 0 120 M15 15 C45 35, 65 55, 95 25"
-            stroke={color}
-            strokeWidth="1.5"
-            strokeDasharray="3 3"
-          />
-          <circle cx="32" cy="32" r="14" stroke={color} strokeWidth="1.2" />
-        </>
-      )}
-      {artId === "botanical" && (
-        <>
-          <path d="M5 5 Q55 15 95 65" stroke={color} strokeWidth="1.4" />
-          <path
-            d="M25 14 C35 2, 48 6, 42 20 M50 30 C65 18, 76 26, 66 40 M72 48 C88 40, 96 52, 82 62"
-            stroke={color}
-            strokeWidth="1.2"
-          />
-        </>
-      )}
-      {artId === "deco" && (
-        <>
-          <path d="M8 8 H115 M8 8 V115" stroke={color} strokeWidth="1.6" />
-          <path d="M20 20 H80 V36 H36 V80 H20 Z" stroke={color} strokeWidth="1.1" />
-        </>
-      )}
-      {artId === "minimal" && (
-        <path d="M12 12 H90 M12 12 V90" stroke={color} strokeWidth="1.2" />
-      )}
-    </svg>
-  );
-}
+import {
+  ART_COLORS,
+  ART_STYLES,
+  CHECKLIST,
+  COLOR_THEMES,
+  COVER_IMAGES,
+  CSS_SNIPPETS,
+  DESIGN_TABS,
+  FONT_OPTIONS,
+  INITIAL_PAGES,
+} from "./website-design/constants";
+import CornerArtwork from "./website-design/CornerArtwork";
 
 export default function WebsiteDesignPage({ previewOnly = false }) {
   const toast = useToast();

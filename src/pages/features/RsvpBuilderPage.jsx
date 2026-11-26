@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -24,112 +24,10 @@ import { ROUTE_PATHS } from "../../constants/roles";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
-
-const INITIAL_QUESTIONS = [
-  {
-    id: "q1",
-    title: "Bạn có thể đến chung vui cùng chúng mình không?",
-    type: "Lựa chọn (Có / Không)",
-    required: true,
-    active: true,
-    desc: "Câu hỏi bắt buộc để xác định số lượng khách tham dự chính thức",
-    followUps: [
-      "Lựa chọn khẩu phần ăn (Món mặn / Món chay / Kiêng dị ứng)",
-      "Bạn có cần hỗ trợ xe đưa đón hoặc đặt phòng khách sạn không?",
-      "Lời nhắn nhủ thân thương gửi đến cô dâu & chú rể",
-    ],
-  },
-  {
-    id: "q2",
-    title: "Số lượng người đi cùng bạn (bao gồm người lớn & trẻ em)?",
-    type: "Số lượng (1 - 5 người)",
-    required: true,
-    active: true,
-    desc: "Giúp sảnh tiệc chuẩn bị đủ ghế ngồi và quà cảm ơn",
-    followUps: [],
-  },
-  {
-    id: "q3",
-    title: "Lựa chọn món ăn chính của bạn và người đi cùng",
-    type: "Chọn món (Mặn / Chay)",
-    required: false,
-    active: true,
-    desc: "Thực đơn tiệc cưới cao cấp được thiết kế riêng",
-    followUps: [],
-  },
-  {
-    id: "q4",
-    title: "Bạn có tham dự tiệc cocktail đón khách lúc 17:30 không?",
-    type: "Lựa chọn (Có / Không)",
-    required: false,
-    active: false,
-    desc: "Thưởng thức rượu vang, bánh ngọt và chụp ảnh check-in cùng CD-CR",
-    followUps: [],
-  },
-];
-
-const INITIAL_ANSWERS = [
-  {
-    id: "ans-1",
-    guest: "Nguyễn Thị Lan Anh",
-    status: "Vui vẻ nhận lời",
-    attending: true,
-    companions: 1,
-    meal: "Món mặn",
-    allergy: "Không dị ứng",
-    tableGroup: "Bạn cô dâu",
-    note: "Chúc hai bạn trăm năm hạnh phúc, sớm đón thiên thần nhỏ nhé!",
-    time: "15 phút trước",
-  },
-  {
-    id: "ans-2",
-    guest: "Trần Văn Minh & Vợ",
-    status: "Vui vẻ nhận lời",
-    attending: true,
-    companions: 1,
-    meal: "Món chay",
-    allergy: "Ăn chay trường",
-    tableGroup: "Đồng nghiệp",
-    note: "Vợ chồng mình sẽ có mặt đúng giờ để chúc phúc cho hai bạn!",
-    time: "1 giờ trước",
-  },
-  {
-    id: "ans-3",
-    guest: "Lê Hoàng Phúc",
-    status: "Vui vẻ nhận lời",
-    attending: true,
-    companions: 0,
-    meal: "Món mặn",
-    allergy: "Kiêng hải sản vỏ cứng",
-    tableGroup: "Bạn đại học",
-    note: "Chờ đợi ngày trọng đại của Khang!",
-    time: "2 giờ trước",
-  },
-  {
-    id: "ans-4",
-    guest: "Nguyễn Văn Hùng",
-    status: "Tiếc quá không dự được",
-    attending: false,
-    companions: 0,
-    meal: "—",
-    allergy: "—",
-    tableGroup: "Bạn cấp 3",
-    note: "Trùng lịch công tác nước ngoài nên anh không về kịp. Chúc hai em mãi bên nhau hạnh phúc nhé!",
-    time: "Hôm qua",
-  },
-  {
-    id: "ans-5",
-    guest: "Gia đình Cô Út Nga",
-    status: "Vui vẻ nhận lời",
-    attending: true,
-    companions: 3,
-    meal: "Món mặn",
-    allergy: "1 suất trẻ em",
-    tableGroup: "Họ hàng nhà gái",
-    note: "Cả nhà cô sẽ đến đông đủ chung vui cùng cháu!",
-    time: "Hôm qua",
-  },
-];
+import {
+  INITIAL_ANSWERS,
+  INITIAL_QUESTIONS,
+} from "./rsvp-builder/constants";
 
 export default function RsvpBuilderPage() {
   const toast = useToast();

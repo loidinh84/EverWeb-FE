@@ -26,73 +26,11 @@ import { extractApiError } from "../../services/api";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
-
-const RECIPIENT_GROUPS = [
-  { id: "missing", label: "Khách chưa có SĐT & Địa chỉ (42 khách)", count: 42 },
-  { id: "all", label: "Toàn bộ danh sách khách mời (142 khách)", count: 142 },
-  { id: "friends", label: "Nhóm Bạn bè & Đồng nghiệp (38 khách)", count: 38 },
-  { id: "family", label: "Họ hàng & Người thân ở xa (26 khách)", count: 26 },
-];
-
-const DEFAULT_FIELDS = [
-  { key: "fullName", label: "Họ và tên khách mời", required: true, enabled: true, desc: "Bắt buộc để in lên bao thư thiệp cưới" },
-  { key: "phone", label: "Số điện thoại di động", required: true, enabled: true, desc: "Gửi SMS nhắc ngày cưới & liên hệ giao thiệp" },
-  { key: "address", label: "Địa chỉ nhận thiệp giấy tận nơi", required: false, enabled: true, desc: "Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành" },
-  { key: "email", label: "Địa chỉ Email", required: false, enabled: true, desc: "Gửi thiệp điện tử (E-invitation) có tương tác" },
-  { key: "companions", label: "Số lượng người đi cùng dự kiến", required: false, enabled: true, desc: "Giúp cô dâu chú rể sắp xếp chỗ ngồi chu đáo" },
-  { key: "wishes", label: "Lời chúc mừng gửi đến đôi uyên ương", required: false, enabled: true, desc: "Lưu giữ kỷ niệm và hiển thị tại bàn tiệc" },
-];
-
-const INITIAL_SUBMISSIONS = [
-  {
-    id: "sub-1",
-    name: "Nguyễn Thị Lan Anh",
-    phone: "0909 123 456",
-    email: "lananh.nguyen@gmail.com",
-    address: "Chung cư Richmond City, 207 Nguyễn Xí, P.26, Q. Bình Thạnh, TP.HCM",
-    companions: 2,
-    group: "Bạn cô dâu",
-    wishes: "Chúc hai bạn trăm năm hạnh phúc, sớm đón thiên thần nhỏ nhé!",
-    time: "12 phút trước",
-    status: "Đã đồng bộ",
-  },
-  {
-    id: "sub-2",
-    name: "Lê Minh Khoa",
-    phone: "0912 345 678",
-    email: "khoa.le@fpt.com.vn",
-    address: "45 Lê Duẩn, P. Bến Nghé, Quận 1, TP.HCM",
-    companions: 1,
-    group: "Đồng nghiệp chú rể",
-    wishes: "Chúc mừng Khang lấy được vợ hiền, mãi hạnh phúc bên nhau nhé!",
-    time: "1 giờ trước",
-    status: "Đã đồng bộ",
-  },
-  {
-    id: "sub-3",
-    name: "Bác Hai - Trần Văn Nam",
-    phone: "0988 765 432",
-    email: "bacnam.ct@gmail.com",
-    address: "124 đường 30/4, P. Hưng Lợi, Q. Ninh Kiều, Cần Thơ",
-    companions: 4,
-    group: "Họ hàng nhà trai",
-    wishes: "Bác và gia đình chắc chắn sẽ lên chung vui cùng hai cháu!",
-    time: "3 giờ trước",
-    status: "Đã đồng bộ",
-  },
-  {
-    id: "sub-4",
-    name: "Phạm Thảo Vy & Bạn trai",
-    phone: "0933 555 789",
-    email: "thaovy.designer@yahoo.com",
-    address: "Vinhomes Grand Park, P. Long Bình, TP. Thủ Đức, TP.HCM",
-    companions: 2,
-    group: "Bạn đại học",
-    wishes: "Háo hức chờ ngày đại tiệc của Khang & Khanh!",
-    time: "Hôm qua",
-    status: "Đã đồng bộ",
-  },
-];
+import {
+  DEFAULT_FIELDS,
+  INITIAL_SUBMISSIONS,
+  RECIPIENT_GROUPS,
+} from "./collect-contacts/constants";
 
 export default function CollectContactsPage() {
   const toast = useToast();

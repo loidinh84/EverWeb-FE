@@ -7,8 +7,6 @@ import {
   Check,
   X,
   MessageSquare,
-  ArrowLeft,
-  Edit3,
   Volume2,
   VolumeX,
   Copy,
@@ -22,7 +20,6 @@ import {
   Share2,
   Globe,
   Eye,
-  BarChart3,
   ExternalLink,
   Download,
   Send,
@@ -46,279 +43,14 @@ import galleryCeremony from "../assets/image/gallery-ceremony.jpg";
 import galleryDining from "../assets/image/gallery-dining.jpg";
 import galleryBouquet from "../assets/image/gallery-bouquet.jpg";
 import slurpeeCouple from "../assets/image/slurpee-couple.jpg";
-
-// Hàm nén ảnh nhẹ nhàng bằng canvas trước khi lưu vào localStorage
-const compressImageFile = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.85) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth || height > maxHeight) {
-          if (width / height > maxWidth / maxHeight) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
-// Dữ liệu mẫu chuẩn phong cách meHappy Mẫu N00 - Ngoại cảnh Biển
-const INITIAL_INVITATION_DATA = {
-  title: "LỄ THÀNH HÔN",
-  groom_name: "Sơn Tùng",
-  bride_name: "Như Ý",
-  quote: "Ở thời điểm phù hợp nhất, mặc lên người bộ váy cưới đẹp nhất, gả cho người đáng tin cậy nhất.",
-  groom_parents: "Ô. Nguyễn Văn Sơn & B. Lê Thị Tám",
-  bride_parents: "Ô. Trần Thái & B. Vũ Thị Thạch",
-  groom_address: "SN 73, Đường Đồng Quế, Phường Thạch Quý, TP. Hà Tĩnh",
-  bride_address: "Đường Nguyễn Công Trứ, Phường Nam Hà, TP. Hà Tĩnh",
-  wedding_date: "2026-11-13T11:00:00.000Z",
-  wedding_date_display: "11:00 · THỨ SÁU, 13.11.2026",
-  date_badge: "13.11.2026",
-  lunar_date: "05 tháng 10 năm Bính Ngọ",
-  venue_name: "Tư gia Nhà Trai",
-  hall_name: "Sảnh Hoa Mai",
-  venue_address: "Số 2, Đại Lộ Xô Viết Nghệ Tĩnh, TP. Hà Tĩnh",
-  map_url: "https://maps.google.com/?q=So+2+Dai+Lo+Xo+Viet+Nghe+Tinh+Ha+Tinh",
-  // Ảnh tùy chỉnh của dâu rể
-  hero_photo: beachHero,
-  groom_photo: slurpeeCouple,
-  bride_photo: beachThumb,
-  // Ngân hàng mừng cưới Chú rể
-  groom_bank: {
-    bank_name: "Vietcombank",
-    bank_id: "VCB",
-    account_no: "1028472918",
-    account_name: "NGUYEN SON TUNG",
-  },
-  // Ngân hàng mừng cưới Cô dâu
-  bride_bank: {
-    bank_name: "MB Bank",
-    bank_id: "MB",
-    account_no: "0987654321",
-    account_name: "TRAN NHU Y",
-  },
-  events: [
-    {
-      title: "LỄ THÀNH HÔN",
-      time: "11:00 Thứ Sáu, 13.11.2026",
-      venue: "Tư gia Nhà Trai - Sảnh Hoa Mai",
-      address: "Số 2, Đại Lộ Xô Viết Nghệ Tĩnh, TP. Hà Tĩnh",
-      photo: beachHero,
-    },
-    {
-      title: "TIỆC CƯỚI NHÀ TRAI",
-      time: "11:30 Thứ Sáu, 13.11.2026",
-      venue: "Tư gia Nhà Trai",
-      address: "SN 73, Đường Đồng Quế, TP. Hà Tĩnh",
-      photo: beachThumb,
-    },
-    {
-      title: "TIỆC CƯỚI NHÀ GÁI",
-      time: "09:00 Thứ Năm, 12.11.2026",
-      venue: "Tư gia Nhà Gái",
-      address: "Đường Nguyễn Công Trứ, TP. Hà Tĩnh",
-      photo: weddingCouple,
-    },
-  ],
-  timeline: [
-    { time: "10:30", label: "Đón khách", desc: "Đón tiếp quý khách & Chụp ảnh lưu niệm" },
-    { time: "11:00", label: "Lễ thành hôn", desc: "Nghi thức hôn lễ trang trọng trước hai họ" },
-    { time: "11:30", label: "Khai tiệc", desc: "Nâng ly chúc mừng và thưởng thức tiệc cưới" },
-    { time: "12:30", label: "Chụp ảnh", desc: "Giao lưu âm nhạc và chụp ảnh kỷ niệm" },
-  ],
-};
-
-const INITIAL_WISHES = [
-  {
-    name: "Minh Trí & Lan Anh",
-    time: "2 giờ trước",
-    relation: "Bạn bè",
-    content: "Chúc Sơn Tùng & Như Ý trăm năm hạnh phúc, đầu bạc răng long, luôn ngập tràn tiếng cười và yêu thương nhé!",
-  },
-  {
-    name: "Cô Chú Bảy (Nhà Trai)",
-    time: "5 giờ trước",
-    relation: "Nhà trai",
-    content: "Mừng ngày hạnh phúc của hai cháu. Chúc gia đình nhỏ luôn ấm êm, thuận hòa, sớm sinh quý tử nhé!",
-  },
-  {
-    name: "Thuỳ Dung (Bạn cô dâu)",
-    time: "1 ngày trước",
-    relation: "Bạn bè",
-    content: "Như Ý hôm nay là cô dâu xinh đẹp nhất! Chúc người bạn thân yêu bước sang trang mới ngập tràn niềm vui!",
-  },
-];
-
-// Dữ liệu theo dõi khách mời & lượt truy cập mở link thiệp
-const INITIAL_GUEST_TRACKING = [
-  {
-    id: "gt-1",
-    name: "Minh Thư",
-    role: "Phù dâu",
-    phone: "0933 222 111",
-    group: "Nhà gái",
-    status: "pending", // "attending" | "declined" | "pending"
-    hasOpened: true,
-    lastOpenedAt: "10:15 hôm nay",
-    viewsCount: 3,
-  },
-  {
-    id: "gt-2",
-    name: "Hoàng Nam",
-    role: "Phù rể",
-    phone: "0977 555 444",
-    group: "Bạn bè",
-    status: "pending",
-    hasOpened: true,
-    lastOpenedAt: "18:40 hôm qua",
-    viewsCount: 2,
-  },
-  {
-    id: "gt-3",
-    name: "Nguyễn Thị Lan Anh",
-    role: "Bạn đại học",
-    phone: "0909 123 456",
-    group: "Nhà gái",
-    status: "attending",
-    attendingCount: 2,
-    hasOpened: true,
-    lastOpenedAt: "14:20 hôm qua",
-    viewsCount: 4,
-  },
-  {
-    id: "gt-4",
-    name: "Trần Văn Minh Khoa",
-    role: "Đồng nghiệp",
-    phone: "0912 345 678",
-    group: "Nhà trai",
-    status: "attending",
-    attendingCount: 2,
-    hasOpened: true,
-    lastOpenedAt: "09:05 hôm nay",
-    viewsCount: 5,
-  },
-  {
-    id: "gt-5",
-    name: "Nguyễn Văn Hùng",
-    role: "Đồng nghiệp",
-    phone: "0908 777 888",
-    group: "Nhà trai",
-    status: "declined",
-    hasOpened: true,
-    lastOpenedAt: "2 ngày trước",
-    viewsCount: 1,
-  },
-  {
-    id: "gt-6",
-    name: "Bác Văn & Gia đình",
-    role: "Họ hàng",
-    phone: "0915 222 333",
-    group: "Nhà trai",
-    status: "pending",
-    hasOpened: true,
-    lastOpenedAt: "08:30 hôm nay",
-    viewsCount: 2,
-  },
-  {
-    id: "gt-7",
-    name: "Kim Liên",
-    role: "Bạn đại học",
-    phone: "0988 333 444",
-    group: "Bạn bè",
-    status: "pending",
-    hasOpened: true,
-    lastOpenedAt: "Hôm qua",
-    viewsCount: 1,
-  },
-  {
-    id: "gt-8",
-    name: "Thanh Phong",
-    role: "Đồng nghiệp",
-    phone: "0902 444 555",
-    group: "Nhà trai",
-    status: "pending",
-    hasOpened: true,
-    lastOpenedAt: "15:20 hôm nay",
-    viewsCount: 2,
-  },
-  {
-    id: "gt-9",
-    name: "Trần Quốc Bảo",
-    role: "Gia đình",
-    phone: "0968 111 222",
-    group: "Nhà trai",
-    status: "attending",
-    attendingCount: 1,
-    hasOpened: true,
-    lastOpenedAt: "Hôm nay",
-    viewsCount: 3,
-  },
-  {
-    id: "gt-10",
-    name: "Thảo Vy",
-    role: "Bạn cô dâu",
-    phone: "0918 333 444",
-    group: "Nhà gái",
-    status: "attending",
-    attendingCount: 1,
-    hasOpened: true,
-    lastOpenedAt: "Hôm qua",
-    viewsCount: 2,
-  },
-  {
-    id: "gt-11",
-    name: "Hải Nam",
-    role: "Bạn thân",
-    phone: "0934 555 666",
-    group: "Bạn bè",
-    status: "pending",
-    hasOpened: false,
-    lastOpenedAt: "Chưa mở link",
-    viewsCount: 0,
-  },
-  {
-    id: "gt-12",
-    name: "Cô Mai (Họ hàng)",
-    role: "Họ hàng",
-    phone: "0919 666 777",
-    group: "Nhà gái",
-    status: "pending",
-    hasOpened: false,
-    lastOpenedAt: "Chưa mở link",
-    viewsCount: 0,
-  },
-  {
-    id: "gt-13",
-    name: "Lê Dũng",
-    role: "Đồng nghiệp",
-    phone: "0945 777 888",
-    group: "Nhà trai",
-    status: "pending",
-    hasOpened: false,
-    lastOpenedAt: "Chưa mở link",
-    viewsCount: 0,
-  },
-];
+import {
+  INITIAL_GUEST_TRACKING,
+  INITIAL_INVITATION_DATA,
+  INITIAL_WISHES,
+} from "./invitation/constants";
+import { compressImageFile } from "./invitation/imageUtils";
+import InvitationToolbar from "./invitation/InvitationToolbar";
+import EnvelopeIntro from "./invitation/EnvelopeIntro";
 
 export default function InvitationPreview() {
   const navigate = useNavigate();
@@ -1102,209 +834,30 @@ export default function InvitationPreview() {
           CHỈ HIỂN THỊ TRONG CHẾ ĐỘ QUẢN TRỊ / CHỈNH SỬA (!isGuestMode)
           ============================================================ */}
       {!isGuestMode && (
-        <aside aria-label="Thanh công cụ quản lý thiệp" className="fixed top-3 left-0 right-0 z-50 px-2 sm:px-4 pointer-events-none">
-          <div className="max-w-2xl mx-auto flex items-center justify-between pointer-events-auto gap-2">
-            {/* Nhóm trái: Nút quay lại, Tên sự kiện hiện tại, và trạng thái Xuất bản Live */}
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-stone-200 text-xs">
-              <button
-                type="button"
-                onClick={() => navigate(ROUTE_PATHS.EVENT_HUB)}
-                className="inline-flex items-center gap-1 font-semibold text-stone-700 hover:text-black transition cursor-pointer"
-                title="Quay lại Trung tâm sự kiện"
-              >
-                <ArrowLeft size={13} />
-                <span className="hidden sm:inline">Hub</span>
-              </button>
-              <span className="h-3.5 w-px bg-stone-200" />
-              <span
-                className="font-bold text-stone-900 hidden sm:inline max-w-[160px] truncate"
-                title={`Sự kiện đang chọn: ${wedding.groom_name} & ${wedding.bride_name}`}
-              >
-                {wedding.groom_name} & {wedding.bride_name}
-              </span>
-              <span className="h-3.5 w-px bg-stone-200 hidden sm:inline" />
-              <button
-                type="button"
-                onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex items-center gap-1.5 cursor-pointer px-1 py-0.5 rounded-full hover:bg-emerald-50 transition"
-                title="Nhấn để xem trạng thái xuất bản & lấy link"
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isPublished ? "bg-emerald-500 animate-pulse" : "bg-stone-400"
-                  }`}
-                />
-                <span
-                  className={`font-semibold text-[11px] ${
-                    isPublished ? "text-emerald-700" : "text-stone-500"
-                  }`}
-                >
-                  {isPublished ? "Đã xuất bản (Live)" : "Bản nháp"}
-                </span>
-              </button>
-            </div>
-
-            {/* Nhóm phải: Thống kê xem/RSVP, Lấy Link & QR, Xem bản khách, Chỉnh sửa thiệp */}
-            <div className="flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md px-2 sm:px-3 py-1.5 rounded-full shadow-lg border border-stone-200 text-xs">
-              {/* Nút Thống kê lượt xem & Khách chưa phản hồi RSVP */}
-              <button
-                type="button"
-                onClick={() => setIsStatsModalOpen(true)}
-                className="inline-flex items-center gap-1 font-semibold text-stone-700 hover:text-stone-900 transition cursor-pointer px-2 py-1 rounded-full hover:bg-amber-50"
-                title="Kiểm tra số người đã click link và khách chưa phản hồi RSVP"
-              >
-                <BarChart3 size={13} className="text-amber-600" />
-                <span className="hidden sm:inline font-medium">Thống kê RSVP</span>
-                <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
-                  45 chờ
-                </span>
-              </button>
-
-              <span className="h-3.5 w-px bg-stone-200" />
-
-              {/* Nút Lấy Link & QR xuất bản */}
-              <button
-                type="button"
-                onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex items-center gap-1.5 font-bold text-[#8C6D3F] hover:text-[#5E4726] transition cursor-pointer px-2.5 py-1 rounded-full bg-amber-50/70 hover:bg-amber-100/80 shadow-2xs"
-                title="Lấy đường link xuất bản và mã QR vào thiệp này"
-              >
-                <QrCode size={13} />
-                <span>Lấy Link & QR</span>
-              </button>
-
-              <span className="h-3.5 w-px bg-stone-200" />
-
-              {/* Nút Xem bản khách (Mở tab mới xem giao diện thực tế của khách - 100% sạch đẹp) */}
-              <button
-                type="button"
-                onClick={() => window.open(publicInvitationUrl, "_blank")}
-                className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:text-emerald-950 transition cursor-pointer px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100/80 shadow-2xs"
-                title="Mở tab mới xem đúng góc nhìn khách mời (sạch 100%, không có bất kỳ nút sửa hay thanh công cụ nào)"
-              >
-                <Eye size={13} className="text-emerald-600" />
-                <span className="hidden md:inline">Xem bản khách</span>
-              </button>
-
-              <span className="h-3.5 w-px bg-stone-200" />
-
-              {/* Nút Chỉnh sửa */}
-              <button
-                type="button"
-                onClick={() => {
-                  setEditForm(wedding);
-                  setIsEditOpen(true);
-                }}
-                className="inline-flex items-center gap-1 font-medium text-stone-700 hover:text-black transition cursor-pointer px-1.5 py-1 rounded-full hover:bg-stone-100"
-                title="Chỉnh sửa nội dung & ảnh thiệp"
-              >
-                <Edit3 size={13} />
-                <span className="hidden md:inline">Sửa thiệp</span>
-              </button>
-            </div>
-          </div>
-        </aside>
+        <InvitationToolbar
+          navigate={navigate}
+          wedding={wedding}
+          isPublished={isPublished}
+          publicInvitationUrl={publicInvitationUrl}
+          onOpenShare={() => setIsShareModalOpen(true)}
+          onOpenStats={() => setIsStatsModalOpen(true)}
+          onOpenEdit={() => {
+            setEditForm(wedding);
+            setIsEditOpen(true);
+          }}
+        />
       )}
 
       {/* ============================================================
           MÀN HÌNH 1: BÌA PHONG THƯ HOA XANH TÍM & CON DẤU VÀNG (IMAGE 1)
           ============================================================ */}
       {!isEnvelopeOpened && (
-        <div className="min-h-screen w-full bg-[#FAF9F5] flex flex-col justify-between items-center py-16 px-4 relative overflow-hidden transition-all duration-700">
-          {/* Header text */}
-          <div className="text-center pt-8 space-y-2 z-10 animate-fade-in">
-            <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#332E2B] font-display font-medium">
-              TRÂN TRỌNG KÍNH MỜI
-            </p>
-            <h1 className="text-4xl sm:text-5xl font-['Dancing_Script'] font-semibold text-[#1F1B18] tracking-wide pt-1">
-              {guestName}
-            </h1>
-          </div>
-
-          {/* Phong bì thiệp hoa xanh tím với con dấu sáp vàng */}
-          <div
-            className={`w-full max-w-sm my-auto relative transition-all duration-700 transform ${
-              isOpeningAnimation ? "scale-105 opacity-0 -translate-y-10" : "scale-100 opacity-100"
-            }`}
-          >
-            {/* Tấm phong bì nằm ngang */}
-            <div
-              onClick={handleOpenEnvelope}
-              className="w-full aspect-[1.45/1] bg-[#FAF8F5] rounded-xl shadow-xl border border-[#E8E2D5] relative cursor-pointer overflow-hidden group hover:shadow-2xl transition-all"
-            >
-              {/* Nếp gấp nắp phong bì hình tam giác */}
-              <div
-                className="absolute top-0 left-0 right-0 h-1/2 bg-[#F3EFE6] border-b border-[#DFD8C9] origin-top transition-transform duration-500"
-                style={{
-                  clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-                }}
-              />
-
-              {/* Nhánh hoa màu xanh tím pastel vẽ màu nước ở góc trái nắp phong bì */}
-              <div className="absolute top-2 left-2 z-20 pointer-events-none w-28 sm:w-32 h-28 sm:h-32 opacity-95">
-                <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-xs">
-                  <path d="M15 95 C 25 70, 35 45, 55 25" stroke="#68846D" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M30 65 C 22 55, 18 42, 22 35 C 30 38, 32 52, 30 65" fill="#7D9882" opacity="0.8" />
-                  <path d="M42 45 C 48 35, 58 32, 60 40 C 52 46, 46 48, 42 45" fill="#7D9882" opacity="0.8" />
-                  <path d="M25 80 C 15 78, 12 68, 18 64 C 24 67, 26 75, 25 80" fill="#68846D" opacity="0.75" />
-
-                  {/* Cụm hoa cẩm tú cầu / lưu ly xanh tím pastel */}
-                  <g transform="translate(18, 50)">
-                    <circle cx="8" cy="8" r="7" fill="#889BE8" opacity="0.85" />
-                    <circle cx="16" cy="10" r="6" fill="#A4B3F5" opacity="0.85" />
-                    <circle cx="12" cy="18" r="6.5" fill="#7C8EE0" opacity="0.85" />
-                    <circle cx="4" cy="15" r="6" fill="#95A6F0" opacity="0.85" />
-                    <circle cx="10" cy="13" r="2" fill="#FFFFFF" />
-                  </g>
-                  <g transform="translate(32, 28)">
-                    <circle cx="8" cy="7" r="7.5" fill="#758BE5" opacity="0.9" />
-                    <circle cx="18" cy="9" r="6.5" fill="#9BAEF5" opacity="0.9" />
-                    <circle cx="14" cy="19" r="7" fill="#6A80E0" opacity="0.9" />
-                    <circle cx="5" cy="16" r="6.5" fill="#8FA4F2" opacity="0.9" />
-                    <circle cx="11" cy="13" r="2.5" fill="#FFFFFF" />
-                  </g>
-                  <g transform="translate(6, 75)">
-                    <circle cx="7" cy="7" r="6.5" fill="#A8A0E8" opacity="0.8" />
-                    <circle cx="15" cy="8" r="5.5" fill="#C2BBFA" opacity="0.8" />
-                    <circle cx="11" cy="16" r="6" fill="#9990E0" opacity="0.8" />
-                    <circle cx="4" cy="14" r="5.5" fill="#B4ABF0" opacity="0.8" />
-                    <circle cx="9" cy="11" r="1.8" fill="#FFFFFF" />
-                  </g>
-                </svg>
-              </div>
-
-              {/* Con dấu sáp vàng đồng dập nổi bông hoa ở chóp nắp tam giác */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-[#E6C265] via-[#D4A034] to-[#996D14] shadow-xl border-2 border-[#FFF0BA] flex items-center justify-center relative group-hover:scale-105 transition-transform">
-                  <div className="w-12 h-12 rounded-full border border-[#B38318] flex items-center justify-center bg-gradient-to-br from-[#D9A738] to-[#AC791A] shadow-inner">
-                    <svg viewBox="0 0 24 24" fill="#664609" className="w-7 h-7 drop-shadow-xs opacity-90">
-                      <path d="M12 2C13 5 15 7 18 8C15 9 13 11 12 14C11 11 9 9 6 8C9 7 11 5 12 2Z" />
-                      <circle cx="12" cy="12" r="3.5" fill="#543703" />
-                      <path d="M12 12m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0" fill="none" stroke="#664609" strokeWidth="1" />
-                    </svg>
-                  </div>
-
-                  {/* Icon bàn tay chỉ ngón trỏ màu trắng chạm mở thiệp */}
-                  <div className="absolute -bottom-2 -right-2 z-40 animate-bounce pointer-events-none">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 drop-shadow-md">
-                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Dòng ngày tháng bên dưới phong bì: 13.11.2026 */}
-          <div className="text-center pb-8 z-10">
-            <p className="text-xl sm:text-2xl font-display font-medium text-[#221F1C] tracking-[0.2em]">
-              {wedding.date_badge}
-            </p>
-          </div>
-        </div>
+        <EnvelopeIntro
+          guestName={guestName}
+          dateBadge={wedding.date_badge}
+          isOpeningAnimation={isOpeningAnimation}
+          onOpenEnvelope={handleOpenEnvelope}
+        />
       )}
 
       {/* ============================================================

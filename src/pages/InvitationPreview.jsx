@@ -31,8 +31,13 @@ import {
 } from "lucide-react";
 import { Modal, useToast } from "../components/common";
 import { ROUTE_PATHS } from "../constants/roles";
-import { getGuestInvitation } from "../services/guestApi.js";
+import {
+  INVITATION_TEMPLATES,
+  getInvitationTemplateById,
+} from "../constants/invitationTemplates";
+import { getGuestInvitation, getGuests } from "../services/guestApi.js";
 import weddingApi from "../services/weddingApi.js";
+import uploadApi from "../services/uploadApi.js";
 
 // Import ảnh chất lượng cao từ assets EverWeb & ảnh mẫu ngoại cảnh biển N00
 import beachHero from "../assets/image/template-beach-hero.webp";
@@ -51,6 +56,7 @@ import {
 import { compressImageFile } from "./invitation/imageUtils";
 import InvitationToolbar from "./invitation/InvitationToolbar";
 import EnvelopeIntro from "./invitation/EnvelopeIntro";
+import TemplateLayouts from "./invitation/TemplateLayouts";
 
 export default function InvitationPreview() {
   const navigate = useNavigate();
@@ -75,8 +81,26 @@ export default function InvitationPreview() {
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
   const [activeGiftTab, setActiveGiftTab] = useState("groom"); // "groom" | "bride"
 
-  // Modal Phóng to ảnh (Lightbox)
+  // Modal Phóng to ảnh (Lightbox) & Modal Chọn mẫu thiệp điện tử & Kho ảnh Cloudinary
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [cloudinaryPhotos, setCloudinaryPhotos] = useState([]);
+  const [cloudinaryTargetField, setCloudinaryTargetField] = useState(null);
+  const [isLoadingCloudinary, setIsLoadingCloudinary] = useState(false);
+
+  const openCloudinaryPicker = async (field) => {
+    setCloudinaryTargetField(field);
+    if (cloudinaryPhotos.length > 0) return;
+    setIsLoadingCloudinary(true);
+    try {
+      const imgs = await uploadApi.getCloudinaryImages("everweb/images");
+      setCloudinaryPhotos(Array.isArray(imgs) ? imgs : []);
+    } catch {
+      toast.error("Không thể tải ảnh từ thư mục everweb/images trên Cloudinary.");
+    } finally {
+      setIsLoadingCloudinary(false);
+    }
+  };
 
   // Hidden File Inputs cho việc thay ảnh nhanh trực tiếp
   const heroFileInputRef = useRef(null);
@@ -222,6 +246,18 @@ export default function InvitationPreview() {
     return false;
   }, [customCard, currentWedding?.id, eventCoupleNames?.groom]);
 
+  // Mẫu thiệp điện tử đang chọn (hỗ trợ param ?template=... hoặc lưu trong customCard)
+  const paramTemplateId = searchParams.get("template");
+  const activeTemplate = useMemo(
+    () =>
+      getInvitationTemplateById(
+        paramTemplateId ||
+          (isCustomCardForThisEvent ? customCard?.template_id : null) ||
+          customCard?.template_id
+      ),
+    [paramTemplateId, isCustomCardForThisEvent, customCard?.template_id]
+  );
+
   // 4. Tổng hợp dữ liệu đám cưới hiển thị trên thiệp:
   // Luôn ưu tiên tên cô dâu chú rể từ sự kiện đã chọn ("Lợi Đinh và Bích Trâm")!
   const wedding = useMemo(() => {
@@ -303,11 +339,15 @@ export default function InvitationPreview() {
       groom_name: resolvedGroom,
       bride_name: resolvedBride,
       quote: customCard?.quote || INITIAL_INVITATION_DATA.quote,
-      hero_photo: customCard?.hero_photo || INITIAL_INVITATION_DATA.hero_photo,
+      hero_photo:
+        (isCustomCardForThisEvent && customCard?.hero_photo) ||
+        activeTemplate.defaultPhotos.hero_photo,
       groom_photo:
-        customCard?.groom_photo || INITIAL_INVITATION_DATA.groom_photo,
+        (isCustomCardForThisEvent && customCard?.groom_photo) ||
+        activeTemplate.defaultPhotos.groom_photo,
       bride_photo:
-        customCard?.bride_photo || INITIAL_INVITATION_DATA.bride_photo,
+        (isCustomCardForThisEvent && customCard?.bride_photo) ||
+        activeTemplate.defaultPhotos.bride_photo,
       groom_parents:
         customCard?.groom_parents || INITIAL_INVITATION_DATA.groom_parents,
       bride_parents:
@@ -384,7 +424,7 @@ export default function InvitationPreview() {
       ],
       timeline: customCard?.timeline || INITIAL_INVITATION_DATA.timeline,
     };
-  }, [eventCoupleNames, customCard, isCustomCardForThisEvent]);
+  }, [eventCoupleNames, customCard, isCustomCardForThisEvent, activeTemplate]);
 
   const [invitationGuest, setInvitationGuest] = useState(null);
   const [loading, setLoading] = useState(Boolean(token));
@@ -561,14 +601,81 @@ export default function InvitationPreview() {
     }
   };
 
-  // Tính toán thống kê khách & RSVP
+  // Tải danh sách khách mời thật từ Neon DB cho popup Thống kê RSVP
+  const [realDbGuests, setRealDbGuests] = useState(null);
+  useEffect(() => {
+    if (!currentWedding?.id || isGuestMode) return;
+    let cancelled = false;
+    getGuests(currentWedding.id)
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setRealDbGuests(rows);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [currentWedding?.id, isGuestMode]);
+
+  const effectiveTrackingGuests = useMemo(() => {
+    if (Array.isArray(realDbGuests) && realDbGuests.length > 0) {
+      return realDbGuests.map((row) => ({
+        id: row.id,
+        name: row.full_name,
+        role: row.group?.name || "Khách mời",
+        phone: row.phone || "Chưa cập nhật",
+        group: row.group?.side === "bride" ? "Nhà gái" : "Nhà trai",
+        status:
+          row.rsvp_status === "accepted" || row.rsvp_status === "attending"
+            ? "attending"
+            : row.rsvp_status === "declined"
+            ? "declined"
+            : "pending",
+        attendingCount: (Number(row.max_companions) || 0) + 1,
+        hasOpened: row.rsvp_status !== "pending",
+        lastOpenedAt: row.rsvp_status !== "pending" ? "Đã phản hồi" : "Chưa mở",
+        viewsCount: row.rsvp_status !== "pending" ? 1 : 0,
+      }));
+    }
+    return trackingGuests;
+  }, [realDbGuests, trackingGuests]);
+
+  // Tính toán thống kê khách & RSVP (từ Neon DB nếu có, fallback dữ liệu mẫu)
   const guestStats = useMemo(() => {
-    const total = 142; // Chuẩn theo hệ thống quản lý EverWeb
+    if (Array.isArray(realDbGuests)) {
+      const total = realDbGuests.length;
+      const attending = realDbGuests.filter(
+        (g) => g.rsvp_status === "accepted" || g.rsvp_status === "attending"
+      ).length;
+      const declined = realDbGuests.filter(
+        (g) => g.rsvp_status === "declined"
+      ).length;
+      const pending = realDbGuests.filter(
+        (g) => g.rsvp_status === "pending"
+      ).length;
+      const viewedNotResponded = 0;
+      const notOpened = pending;
+      const responseRate =
+        total > 0 ? Math.round(((attending + declined) / total) * 100) : 0;
+
+      return {
+        total,
+        attending,
+        declined,
+        pending,
+        viewedNotResponded,
+        notOpened,
+        responseRate,
+      };
+    }
+
+    const total = 142;
     const attending = 85;
     const declined = 12;
     const pending = 45;
-    const viewedNotResponded = 28; // 28 khách đã nhấp vào link nhưng chưa gửi RSVP
-    const notOpened = 17; // 17 khách chưa từng mở link
+    const viewedNotResponded = 28;
+    const notOpened = 17;
     const responseRate = Math.round(((attending + declined) / total) * 100);
 
     return {
@@ -580,11 +687,11 @@ export default function InvitationPreview() {
       notOpened,
       responseRate,
     };
-  }, []);
+  }, [realDbGuests]);
 
   // Lọc danh sách khách theo tab & từ khóa tìm kiếm
   const filteredTrackingGuests = useMemo(() => {
-    return trackingGuests.filter((g) => {
+    return effectiveTrackingGuests.filter((g) => {
       if (statsSearch.trim()) {
         const q = statsSearch.toLowerCase();
         const matchName = g.name.toLowerCase().includes(q);
@@ -607,7 +714,7 @@ export default function InvitationPreview() {
       }
       return true; // "all"
     });
-  }, [trackingGuests, statsFilter, statsSearch]);
+  }, [effectiveTrackingGuests, statsFilter, statsSearch]);
 
   // Đồng hồ đếm ngược ngày cưới
   const [timeLeft, setTimeLeft] = useState({
@@ -733,6 +840,18 @@ export default function InvitationPreview() {
     }
   };
 
+  // Đổi mẫu giao diện thiệp điện tử (N00, N01, N02, N03) & lưu vào Database
+  const handleSelectTemplate = async (tpl) => {
+    const updated = {
+      ...(customCard || {}),
+      wedding_id: currentWedding?.id || null,
+      template_id: tpl.id,
+    };
+    await persistCustomCard(updated);
+    setIsTemplateModalOpen(false);
+    toast.success(`Đã đổi sang mẫu "${tpl.code} - ${tpl.name}"!`);
+  };
+
   // Xử lý thay đổi ảnh nhanh trực tiếp từ giao diện
   const handleQuickImageUpload = async (file, photoKey) => {
     if (!file) return;
@@ -797,7 +916,10 @@ export default function InvitationPreview() {
   )}&accountName=${encodeURIComponent(wedding.bride_bank.account_name)}`;
 
   return (
-    <div className="min-h-screen bg-[#FBFBF9] text-[#221F1C] selection:bg-amber-100 selection:text-stone-900 relative font-sans">
+    <div
+      className="min-h-screen text-[#221F1C] selection:bg-amber-100 selection:text-stone-900 relative font-sans transition-colors duration-500"
+      style={{ backgroundColor: activeTemplate.pageBg }}
+    >
       {/* Audio Element cho nhạc nền cưới */}
       <audio
         ref={audioRef}
@@ -839,8 +961,10 @@ export default function InvitationPreview() {
           wedding={wedding}
           isPublished={isPublished}
           publicInvitationUrl={publicInvitationUrl}
+          activeTemplate={activeTemplate}
           onOpenShare={() => setIsShareModalOpen(true)}
           onOpenStats={() => setIsStatsModalOpen(true)}
+          onOpenTemplates={() => setIsTemplateModalOpen(true)}
           onOpenEdit={() => {
             setEditForm(wedding);
             setIsEditOpen(true);
@@ -849,7 +973,7 @@ export default function InvitationPreview() {
       )}
 
       {/* ============================================================
-          MÀN HÌNH 1: BÌA PHONG THƯ HOA XANH TÍM & CON DẤU VÀNG (IMAGE 1)
+          MÀN HÌNH 1: BÌA PHONG THƯ HOA & CON DẤU SÁP
           ============================================================ */}
       {!isEnvelopeOpened && (
         <EnvelopeIntro
@@ -857,20 +981,41 @@ export default function InvitationPreview() {
           dateBadge={wedding.date_badge}
           isOpeningAnimation={isOpeningAnimation}
           onOpenEnvelope={handleOpenEnvelope}
+          template={activeTemplate}
+          wedding={wedding}
         />
       )}
 
       {/* ============================================================
-          MÀN HÌNH 2: NỘI DUNG TOÀN BỘ MẪU N00 (12 PHÂN ĐOẠN ĐẦY ĐỦ)
+          MÀN HÌNH 2: NỘI DUNG THIỆP (RENDER THEO TỪNG BỐ CỤC MẪU)
           ============================================================ */}
       {isEnvelopeOpened && (
         <main className="max-w-[420px] w-full mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden pb-24 animate-fade-in">
+          {activeTemplate.layoutType !== "beach" ? (
+            <TemplateLayouts
+              template={activeTemplate}
+              wedding={wedding}
+              guestName={guestName}
+              timeLeft={timeLeft}
+              isGuestMode={isGuestMode}
+              onUploadHero={() => heroFileInputRef.current?.click()}
+              onUploadGroom={() => groomFileInputRef.current?.click()}
+              onUploadBride={() => brideFileInputRef.current?.click()}
+              onSelectPhoto={setSelectedPhoto}
+              onCloseEnvelope={() => setIsEnvelopeOpened(false)}
+            />
+          ) : (
+            <>
           {/* Header: Nắp phong bì mở phía trên */}
-          <div className="w-full bg-[#FAF9F5] border-b border-[#E8E2D5] py-4 px-6 text-center relative">
+          <div
+            className="w-full border-b border-[#E8E2D5] py-4 px-6 text-center relative"
+            style={{ backgroundColor: activeTemplate.accentSoft }}
+          >
             <button
               type="button"
               onClick={() => setIsEnvelopeOpened(false)}
-              className="text-xs text-[#8C6D3F] hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
+              className="hover:underline font-medium inline-flex items-center gap-1 cursor-pointer text-xs"
+              style={{ color: activeTemplate.accent }}
             >
               <span>← Đóng lại phong bì thiệp</span>
             </button>
@@ -970,9 +1115,16 @@ export default function InvitationPreview() {
             </div>
           </section>
 
-          {/* 3. KHỐI CỔNG VÒM XÁM GHI (ARCH CARDS - SỰ KIỆN CƯỚI) */}
-          <section id="arch-events-section" className="bg-[#FAF9F5] py-8 px-4 border-t border-[#EAE5D9]">
-            <div className="w-full bg-[#8A8F94] text-white py-4 rounded-t-full text-center mb-6 shadow-xs">
+          {/* 3. KHỐI CỔNG VÒM (ARCH CARDS - SỰ KIỆN CƯỚI) */}
+          <section
+            id="arch-events-section"
+            className="py-8 px-4 border-t border-[#EAE5D9]"
+            style={{ backgroundColor: activeTemplate.accentSoft }}
+          >
+            <div
+              className="w-full text-white py-4 rounded-t-full text-center mb-6 shadow-xs"
+              style={{ backgroundColor: activeTemplate.bannerBg }}
+            >
               <p className="text-[10px] uppercase tracking-[0.25em] font-medium opacity-90">
                 Wedding Celebration
               </p>
@@ -1137,8 +1289,12 @@ export default function InvitationPreview() {
             </div>
           </section>
 
-          {/* 6. DẢI BANNER TỐI MÀU XÁM GHI (OUR STORY / KỶ NIỆM TÌNH YÊU) */}
-          <section id="our-story-section" className="bg-[#595E63] text-white py-10 px-4">
+          {/* 6. DẢI BANNER TỐI MÀU (OUR STORY / KỶ NIỆM TÌNH YÊU) */}
+          <section
+            id="our-story-section"
+            className="text-white py-10 px-4"
+            style={{ backgroundColor: activeTemplate.bannerBg }}
+          >
             <div className="text-center space-y-1 mb-6">
               <p className="text-[10px] uppercase tracking-[0.25em] text-stone-300 font-medium">
                 Memories
@@ -1178,6 +1334,8 @@ export default function InvitationPreview() {
               </div>
             </div>
           </section>
+            </>
+          )}
 
           {/* 8. FORM XÁC NHẬN THAM DỰ (RSVP CHUẨN IMAGE 1) */}
           <section id="rsvp-section" className="p-6 bg-[#FAF9F5] border-b border-[#EAE5D9]">
@@ -1959,6 +2117,13 @@ export default function InvitationPreview() {
                     }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={() => openCloudinaryPicker("hero_photo")}
+                  className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-800 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer"
+                >
+                  Chọn từ Cloudinary
+                </button>
               </div>
 
               {/* Ảnh Chú rể */}
@@ -1986,6 +2151,13 @@ export default function InvitationPreview() {
                     }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={() => openCloudinaryPicker("groom_photo")}
+                  className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-800 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer"
+                >
+                  Chọn từ Cloudinary
+                </button>
               </div>
 
               {/* Ảnh Cô dâu */}
@@ -2013,6 +2185,13 @@ export default function InvitationPreview() {
                     }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={() => openCloudinaryPicker("bride_photo")}
+                  className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-800 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer"
+                >
+                  Chọn từ Cloudinary
+                </button>
               </div>
             </div>
           </div>
@@ -2994,6 +3173,213 @@ export default function InvitationPreview() {
               </div>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* ============================================================
+          MODAL 6: KHO MẪU THIỆP MỜI ĐIỆN TỬ (CHỌN MẪU CHO THỦY/CẶP ĐÔI)
+          ============================================================ */}
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        title="Chọn Mẫu Thiệp Mời Điện Tử"
+        size="lg"
+      >
+        <div className="space-y-4 text-xs text-stone-700">
+          <p className="text-stone-600 leading-relaxed">
+            Chọn phong cách thiệp phù hợp với ngày vui của bạn. Toàn bộ thông tin tên cặp đôi, ngày cưới, ảnh bạn đã tải lên và số tài khoản VietQR đều được giữ nguyên khi đổi mẫu.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {INVITATION_TEMPLATES.map((tpl) => {
+              const isSelected = activeTemplate.id === tpl.id;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => handleSelectTemplate(tpl)}
+                  className={`group text-left rounded-2xl border-2 p-3.5 transition-all cursor-pointer relative overflow-hidden ${
+                    isSelected
+                      ? "border-[#3446EB] bg-indigo-50/40 shadow-md"
+                      : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm"
+                  }`}
+                >
+                  {/* Mini Visual Preview theo đúng kiểu mở đầu của từng mẫu */}
+                  <div
+                    className="h-28 rounded-xl border p-2.5 flex items-center gap-3 mb-3 relative overflow-hidden"
+                    style={{
+                      backgroundColor: tpl.envelopeBg,
+                      borderColor: tpl.envelopeBorder,
+                    }}
+                  >
+                    {tpl.layoutType === "songhy" ? (
+                      <div className="w-20 h-22 rounded-t-full border-2 border-[#D9B36C] bg-[#7D1626] relative shrink-0 flex items-center justify-center shadow-sm">
+                        <div className="absolute inset-y-0 left-1/2 w-px bg-[#D9B36C]/50" />
+                        <span className="w-7 h-7 rounded-full bg-[#F5D78E] text-[#7D1626] font-bold text-xs flex items-center justify-center shadow-xs z-10">
+                          囍
+                        </span>
+                      </div>
+                    ) : tpl.layoutType === "editorial" ? (
+                      <div className="w-20 h-22 bg-white border border-stone-900 p-1.5 flex flex-col justify-between shrink-0 shadow-sm">
+                        <span className="text-[7px] font-bold tracking-widest uppercase border-b border-stone-900 pb-0.5">
+                          MAGAZINE
+                        </span>
+                        <div className="h-11 bg-stone-200 overflow-hidden">
+                          <img
+                            src={tpl.defaultPhotos.hero_photo}
+                            alt={tpl.name}
+                            className="w-full h-full object-cover grayscale"
+                          />
+                        </div>
+                        <span className="h-2.5 rounded-full bg-stone-900 w-full" />
+                      </div>
+                    ) : tpl.layoutType === "botanical" ? (
+                      <div className="w-20 h-22 rounded-t-full border-2 border-[#8FA88E] bg-[#FAFDF8] p-1.5 flex flex-col items-center justify-center shrink-0 shadow-sm">
+                        <div className="w-10 h-12 rounded-t-full overflow-hidden border border-[#CAD6C4]">
+                          <img
+                            src={tpl.defaultPhotos.hero_photo}
+                            alt={tpl.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="text-[7px] font-bold text-[#4A634E] mt-1">
+                          GARDEN
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        className="w-24 h-16 rounded-lg border shadow-sm relative shrink-0 overflow-hidden flex items-center justify-center"
+                        style={{
+                          backgroundColor: tpl.envelopeCardBg,
+                          borderColor: tpl.envelopeBorder,
+                        }}
+                      >
+                        <div
+                          className="absolute top-0 left-0 right-0 h-1/2 border-b"
+                          style={{
+                            backgroundColor: tpl.envelopeFlapBg,
+                            borderColor: tpl.envelopeBorder,
+                            clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+                          }}
+                        />
+                        <span
+                          className="w-5 h-5 rounded-full border border-white/60 shadow-xs z-10"
+                          style={{
+                            backgroundImage: `linear-gradient(135deg, ${tpl.sealFrom}, ${tpl.sealVia}, ${tpl.sealTo})`,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Mini Cover Photo */}
+                    <div className="w-16 h-22 rounded-lg overflow-hidden border border-white shadow-sm shrink-0">
+                      <img
+                        src={tpl.defaultPhotos.hero_photo}
+                        alt={tpl.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Color Palette Dots */}
+                    <div className="flex flex-col gap-1.5 ml-auto">
+                      {[tpl.envelopeCardBg, tpl.bannerBg, tpl.accent, tpl.flowerPrimary].map(
+                        (hex, i) => (
+                          <span
+                            key={i}
+                            className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs"
+                            style={{ backgroundColor: hex }}
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Template Meta */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white"
+                          style={{ backgroundColor: tpl.accent }}
+                        >
+                          {tpl.code}
+                        </span>
+                        <h4 className="font-bold text-stone-900 text-sm">
+                          {tpl.name}
+                        </h4>
+                      </div>
+                      <p className="text-[11px] font-medium text-stone-500 mt-0.5">
+                        {tpl.tag}
+                      </p>
+                    </div>
+
+                    {isSelected && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#3446EB] text-white px-2.5 py-1 text-[10px] font-bold shrink-0">
+                        <Check size={11} />
+                        Đang chọn
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-stone-600 mt-2 leading-relaxed">
+                    {tpl.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Modal>
+
+      {/* ============================================================
+          MODAL 7: KHO ẢNH CLOUDINARY (THƯ MỤC everweb/images)
+          ============================================================ */}
+      <Modal
+        isOpen={Boolean(cloudinaryTargetField)}
+        onClose={() => setCloudinaryTargetField(null)}
+        title="Chọn ảnh từ Cloudinary (everweb/images)"
+        size="lg"
+      >
+        <div className="space-y-3 text-xs">
+          <p className="text-stone-600">
+            Bấm chọn bất kỳ ảnh nào từ thư mục <code className="font-mono bg-stone-100 px-1.5 py-0.5 rounded">everweb/images</code> trên Cloudinary để áp dụng ngay:
+          </p>
+
+          {isLoadingCloudinary ? (
+            <div className="py-12 text-center text-stone-500">
+              Đang tải danh sách ảnh từ Cloudinary...
+            </div>
+          ) : cloudinaryPhotos.length === 0 ? (
+            <div className="py-10 text-center text-stone-500 bg-stone-50 rounded-xl">
+              Chưa tải được ảnh nào từ thư mục <code>everweb/images</code>.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
+              {cloudinaryPhotos.map((img) => (
+                <button
+                  key={img.publicId}
+                  type="button"
+                  onClick={() => {
+                    setEditForm((prev) => ({
+                      ...prev,
+                      [cloudinaryTargetField]: img.url,
+                    }));
+                    toast.success("Đã chọn ảnh từ Cloudinary!");
+                    setCloudinaryTargetField(null);
+                  }}
+                  className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-stone-200 hover:border-[#3446EB] hover:ring-2 hover:ring-[#3446EB]/30 transition cursor-pointer bg-stone-100"
+                  title={img.publicId}
+                >
+                  <img
+                    src={img.url}
+                    alt={img.publicId}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

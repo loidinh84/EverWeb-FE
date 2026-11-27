@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -24,6 +24,8 @@ import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 import weddingCouple from "../../assets/image/wedding-couple.jpg";
 import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
 import { PAPER_DIGITAL_CARDS, QUICK_TEMPLATES } from "./messaging/constants";
+import { getGuests } from "../../services/guestApi";
+import { mapDbGuestsToUi } from "../../utils/guestMapper";
 
 export default function MessagingPage() {
   const toast = useToast();
@@ -77,17 +79,41 @@ export default function MessagingPage() {
         typeof updater === "function" ? updater(prev.sentMessages || []) : updater,
     }));
 
-  // Đồng bộ danh bạ khách mời từ collect_contacts để tính số lượng khách thực tế
+  // Đồng bộ danh bạ khách mời từ bảng `guests` trên Neon PostgreSQL
   const { data: ccData } = useWeddingFeature(
     wedding,
     "collect_contacts",
-    { guestList: [] }
+    { guestList: [], guestMetaById: {} }
   );
 
-  const guestList = useMemo(
-    () => (Array.isArray(ccData?.guestList) && ccData.guestList.length > 0 ? ccData.guestList : []),
-    [ccData]
-  );
+  const [dbGuests, setDbGuests] = useState(null);
+
+  useEffect(() => {
+    if (!wedding?.id) return;
+    let cancelled = false;
+    getGuests(wedding.id)
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setDbGuests(rows);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDbGuests(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding?.id]);
+
+  const guestList = useMemo(() => {
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      return mapDbGuestsToUi(dbGuests, ccData.guestMetaById || {});
+    }
+    if (Array.isArray(ccData.guestList) && ccData.guestList.length > 0) {
+      return ccData.guestList;
+    }
+    return [];
+  }, [dbGuests, ccData.guestMetaById, ccData.guestList, wedding?.id]);
 
   const allGuests = guestList;
   const attendingGuests = useMemo(

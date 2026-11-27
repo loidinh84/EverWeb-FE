@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, Edit3, Eye, QrCode } from "lucide-react";
+import { ArrowLeft, BarChart3, Edit3, Eye, Palette, QrCode } from "lucide-react";
 import { ROUTE_PATHS } from "../../constants/roles";
 
 export default function InvitationToolbar({
@@ -6,8 +6,10 @@ export default function InvitationToolbar({
   wedding,
   isPublished,
   publicInvitationUrl,
+  activeTemplate,
   onOpenShare,
   onOpenStats,
+  onOpenTemplates,
   onOpenEdit,
 }) {
   return (
@@ -90,6 +92,20 @@ export default function InvitationToolbar({
           >
             <Eye size={13} className="text-emerald-600" />
             <span className="hidden md:inline">Xem bản khách</span>
+          </button>
+
+          <span className="h-3.5 w-px bg-stone-200" />
+
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="inline-flex items-center gap-1 font-semibold text-indigo-800 hover:text-indigo-950 transition cursor-pointer px-2 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100/80 shadow-2xs"
+            title="Chọn mẫu giao diện thiệp điện tử khác"
+          >
+            <Palette size={13} className="text-indigo-600" />
+            <span className="hidden md:inline">
+              Mẫu {activeTemplate?.code || "N00"}
+            </span>
           </button>
 
           <span className="h-3.5 w-px bg-stone-200" />

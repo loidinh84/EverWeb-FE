@@ -1,19 +1,55 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
+  FileSpreadsheet,
   Mail,
   Map,
   Plus,
   Search,
   Share2,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
 import { ROUTE_PATHS } from "../../constants/roles";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
+import {
+  createGuest,
+  deleteGuest,
+  getGuests,
+  updateGuest,
+} from "../../services/guestApi";
+import { extractApiError } from "../../services/api";
+import {
+  downloadSampleGuestsExcel,
+  parseGuestsExcelFile,
+} from "../../utils/guestExcel";
+
+function mapDbRsvpToUi(status) {
+  if (status === "attending" || status === "accepted") return "Tham dự";
+  if (status === "declined") return "Từ chối";
+  return "Chờ phản hồi";
+}
+
+function mapUiRsvpToDb(rsvp) {
+  if (rsvp === "Tham dự") return "accepted";
+  if (rsvp === "Từ chối") return "declined";
+  return "pending";
+}
+
+function splitFullName(fullName = "") {
+  const parts = String(fullName).trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) {
+    return { lastName: "", firstName: parts[0] || "" };
+  }
+  return {
+    lastName: parts.slice(0, -1).join(" "),
+    firstName: parts[parts.length - 1],
+  };
+}
 
 const INITIAL_GUESTS = [
   {
@@ -136,12 +172,13 @@ export default function GuestListPage() {
   const navigate = useNavigate();
   const { wedding } = useCurrentWedding();
 
-  // 1. Quản lý danh sách khách mời từ feature "collect_contacts"
+  // 1. Metadata bổ sung & bàn tiệc từ feature configs
   const { data: ccData, saveSection: saveGuestData } = useWeddingFeature(
     wedding,
     "collect_contacts",
     {
-      guestList: INITIAL_GUESTS,
+      guestList: [],
+      guestMetaById: {},
     }
   );
 
@@ -154,10 +191,63 @@ export default function GuestListPage() {
     }
   );
 
-  const guests = useMemo(
-    () => (Array.isArray(ccData.guestList) && ccData.guestList.length > 0 ? ccData.guestList : INITIAL_GUESTS),
-    [ccData.guestList]
+  // 3. Tải danh sách khách mời THẬT từ bảng `guests` trên Neon PostgreSQL
+  const [dbGuests, setDbGuests] = useState(null);
+  const [isSavingGuest, setIsSavingGuest] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importRows, setImportRows] = useState([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+
+  useEffect(() => {
+    if (!wedding?.id) return;
+    let cancelled = false;
+    getGuests(wedding.id)
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setDbGuests(rows);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDbGuests(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding?.id]);
+
+  const guestMetaById = useMemo(
+    () => ccData.guestMetaById || {},
+    [ccData.guestMetaById]
   );
+
+  const guests = useMemo(() => {
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      return dbGuests.map((row) => {
+        const meta = guestMetaById[row.id] || {};
+        const { lastName, firstName } = splitFullName(row.full_name);
+        return {
+          id: row.id,
+          lastName: meta.lastName ?? lastName,
+          firstName: meta.firstName ?? firstName,
+          side: meta.side || (row.group?.side === "bride" ? "Nhà gái" : "Nhà trai"),
+          phone: row.phone || "",
+          email: row.email || "",
+          address: meta.address || "",
+          rsvp: mapDbRsvpToUi(row.rsvp_status),
+          companions: Number(row.max_companions) || 0,
+          tag: meta.tag || row.group?.name || "Bạn bè",
+          tableId: meta.tableId || "",
+          tableName: meta.tableName || "Chưa xếp bàn",
+          inviteToken: row.invite_token || "",
+        };
+      });
+    }
+    if (Array.isArray(ccData.guestList) && ccData.guestList.length > 0) {
+      return ccData.guestList;
+    }
+    return wedding?.id ? [] : INITIAL_GUESTS;
+  }, [dbGuests, guestMetaById, ccData.guestList, wedding?.id]);
 
   const tables = useMemo(
     () => (Array.isArray(webConfig.seatingTables) && webConfig.seatingTables.length > 0 ? webConfig.seatingTables : DEFAULT_TABLES),
@@ -218,7 +308,7 @@ export default function GuestListPage() {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const handleAddGuest = (e) => {
+  const handleAddGuest = async (e) => {
     e.preventDefault();
     if (!guestForm.firstName.trim()) {
       toast.error("Vui lòng nhập tên khách mời");
@@ -226,24 +316,68 @@ export default function GuestListPage() {
     }
 
     const assignedTable = tables.find((t) => t.id === guestForm.tableId);
-    const newG = {
-      id: `g-${Date.now()}`,
-      ...guestForm,
-      companions: Number(guestForm.companions) || 0,
-      tableName: assignedTable ? assignedTable.name : "Chưa xếp bàn",
-    };
+    const fullName = `${guestForm.lastName} ${guestForm.firstName}`.trim();
+    const companionsCount = Number(guestForm.companions) || 0;
 
-    saveGuestData({ guestList: [newG, ...guests] });
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      try {
+        setIsSavingGuest(true);
+        const created = await createGuest({
+          wedding_id: wedding.id,
+          full_name: fullName,
+          phone: guestForm.phone.trim() || null,
+          email: guestForm.email.trim() || null,
+          max_companions: companionsCount,
+        });
+
+        let finalRow = created;
+        const dbStatus = mapUiRsvpToDb(guestForm.rsvp);
+        if (created?.id && dbStatus !== "pending") {
+          finalRow = await updateGuest(created.id, { rsvp_status: dbStatus });
+        }
+
+        if (finalRow?.id) {
+          setDbGuests((prev) => [finalRow, ...(Array.isArray(prev) ? prev : [])]);
+          saveGuestData({
+            guestMetaById: {
+              ...guestMetaById,
+              [finalRow.id]: {
+                lastName: guestForm.lastName.trim(),
+                firstName: guestForm.firstName.trim(),
+                side: guestForm.side,
+                address: guestForm.address.trim(),
+                tag: guestForm.tag,
+                tableId: guestForm.tableId || "",
+                tableName: assignedTable ? assignedTable.name : "Chưa xếp bàn",
+              },
+            },
+          });
+        }
+      } catch (err) {
+        toast.error(extractApiError(err, "Không thể lưu khách mời vào CSDL."));
+        setIsSavingGuest(false);
+        return;
+      } finally {
+        setIsSavingGuest(false);
+      }
+    } else {
+      const newG = {
+        id: `g-${Date.now()}`,
+        ...guestForm,
+        companions: companionsCount,
+        tableName: assignedTable ? assignedTable.name : "Chưa xếp bàn",
+      };
+      saveGuestData({ guestList: [newG, ...guests] });
+    }
 
     if (assignedTable) {
-      const fullName = `${newG.lastName} ${newG.firstName}`.trim();
       const nextTables = tables.map((t) =>
         t.id === assignedTable.id && t.guests.length < t.capacity ? { ...t, guests: [...t.guests, fullName] } : t
       );
       saveSeatingData({ seatingTables: nextTables });
     }
 
-    toast.success("Đã thêm khách mời thành công");
+    toast.success("Đã lưu khách mời vào Neon Database thành công!");
     setGuestForm({
       lastName: "",
       firstName: "",
@@ -259,10 +393,23 @@ export default function GuestListPage() {
     setIsAddGuestOpen(false);
   };
 
-  const handleDeleteGuest = (id) => {
+  const handleDeleteGuest = async (id) => {
     const target = guests.find((g) => g.id === id);
-    const nextGuests = guests.filter((g) => g.id !== id);
-    saveGuestData({ guestList: nextGuests });
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      try {
+        await deleteGuest(id);
+        setDbGuests((prev) => (Array.isArray(prev) ? prev.filter((g) => g.id !== id) : prev));
+        const nextMeta = { ...guestMetaById };
+        delete nextMeta[id];
+        saveGuestData({ guestMetaById: nextMeta });
+      } catch (err) {
+        toast.error(extractApiError(err, "Không thể xóa khách mời."));
+        return;
+      }
+    } else {
+      const nextGuests = guests.filter((g) => g.id !== id);
+      saveGuestData({ guestList: nextGuests });
+    }
 
     if (target) {
       const fullName = `${target.lastName} ${target.firstName}`.trim();
@@ -275,23 +422,53 @@ export default function GuestListPage() {
     toast.info("Đã xóa khách mời khỏi danh sách");
   };
 
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (selectedIds.length === 0) return;
-    const nextGuests = guests.filter((g) => !selectedIds.includes(g.id));
-    saveGuestData({ guestList: nextGuests });
+    const count = selectedIds.length;
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      try {
+        await Promise.all(selectedIds.map((id) => deleteGuest(id)));
+        setDbGuests((prev) =>
+          Array.isArray(prev) ? prev.filter((g) => !selectedIds.includes(g.id)) : prev
+        );
+        const nextMeta = { ...guestMetaById };
+        selectedIds.forEach((id) => delete nextMeta[id]);
+        saveGuestData({ guestMetaById: nextMeta });
+      } catch (err) {
+        toast.error(extractApiError(err, "Không thể xóa hàng loạt khách mời."));
+        return;
+      }
+    } else {
+      const nextGuests = guests.filter((g) => !selectedIds.includes(g.id));
+      saveGuestData({ guestList: nextGuests });
+    }
     setSelectedIds([]);
-    toast.info(`Đã xóa ${selectedIds.length} khách mời đã chọn`);
+    toast.info(`Đã xóa ${count} khách mời đã chọn`);
   };
 
   const handleBatchAssignTable = (targetTableId) => {
     if (selectedIds.length === 0) return;
     const targetTable = tables.find((t) => t.id === targetTableId);
-    const nextGuests = guests.map((g) =>
-      selectedIds.includes(g.id)
-        ? { ...g, tableId: targetTableId || null, tableName: targetTable ? targetTable.name : "Chưa xếp bàn" }
-        : g
-    );
-    saveGuestData({ guestList: nextGuests });
+    const tableName = targetTable ? targetTable.name : "Chưa xếp bàn";
+
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      const nextMeta = { ...guestMetaById };
+      selectedIds.forEach((id) => {
+        nextMeta[id] = {
+          ...(nextMeta[id] || {}),
+          tableId: targetTableId || "",
+          tableName,
+        };
+      });
+      saveGuestData({ guestMetaById: nextMeta });
+    } else {
+      const nextGuests = guests.map((g) =>
+        selectedIds.includes(g.id)
+          ? { ...g, tableId: targetTableId || null, tableName }
+          : g
+      );
+      saveGuestData({ guestList: nextGuests });
+    }
     setSelectedIds([]);
     toast.success(`Đã cập nhật bàn cho ${selectedIds.length} khách mời`);
   };
@@ -302,12 +479,27 @@ export default function GuestListPage() {
     if (!targetGuest) return;
 
     const fullName = `${targetGuest.lastName} ${targetGuest.firstName}`.trim();
-    const nextGuests = guests.map((g) =>
-      g.id === guestId
-        ? { ...g, tableId: newTableId || null, tableName: targetTable ? targetTable.name : "Chưa xếp bàn" }
-        : g
-    );
-    saveGuestData({ guestList: nextGuests });
+    const tableName = targetTable ? targetTable.name : "Chưa xếp bàn";
+
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      saveGuestData({
+        guestMetaById: {
+          ...guestMetaById,
+          [guestId]: {
+            ...(guestMetaById[guestId] || {}),
+            tableId: newTableId || "",
+            tableName,
+          },
+        },
+      });
+    } else {
+      const nextGuests = guests.map((g) =>
+        g.id === guestId
+          ? { ...g, tableId: newTableId || null, tableName }
+          : g
+      );
+      saveGuestData({ guestList: nextGuests });
+    }
 
     // Cập nhật lại trong tables
     const nextTables = tables.map((t) => {
@@ -342,6 +534,112 @@ export default function GuestListPage() {
     toast.success("Đã xuất file CSV danh sách khách mời");
   };
 
+  const handleExcelFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const parsed = await parseGuestsExcelFile(file);
+      if (parsed.length === 0) {
+        toast.error("Không tìm thấy dữ liệu khách mời hợp lệ trong file Excel.");
+        return;
+      }
+      setImportFileName(file.name);
+      setImportRows(parsed);
+      toast.success(`Đã đọc ${parsed.length} khách từ file "${file.name}".`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể đọc file Excel. Vui lòng dùng đúng định dạng .xlsx, .xls hoặc .csv.");
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (importRows.length === 0) return;
+    setIsImporting(true);
+
+    try {
+      if (wedding?.id && Array.isArray(dbGuests)) {
+        const createdRows = [];
+        const nextMeta = { ...guestMetaById };
+        let failedCount = 0;
+
+        for (const item of importRows) {
+          try {
+            const created = await createGuest({
+              wedding_id: wedding.id,
+              full_name: item.fullName,
+              phone: item.phone || null,
+              email: item.email || null,
+              max_companions: item.companions || 0,
+            });
+            let finalRow = created;
+            const dbStatus = mapUiRsvpToDb(item.rsvp);
+            if (created?.id && dbStatus !== "pending") {
+              try {
+                finalRow = await updateGuest(created.id, { rsvp_status: dbStatus });
+              } catch {
+                // Giữ nguyên bản ghi đã tạo nếu cập nhật RSVP phụ gặp lỗi
+              }
+            }
+            if (finalRow?.id) {
+              createdRows.push(finalRow);
+              nextMeta[finalRow.id] = {
+                lastName: item.lastName,
+                firstName: item.firstName,
+                side: item.side,
+                address: item.address,
+                tag: item.tag,
+                tableId: "",
+                tableName: "Chưa xếp bàn",
+              };
+            }
+          } catch {
+            failedCount += 1;
+          }
+        }
+
+        if (createdRows.length > 0) {
+          saveGuestData({ guestMetaById: nextMeta });
+        }
+        const refreshed = await getGuests(wedding.id).catch(() => null);
+        if (Array.isArray(refreshed)) {
+          setDbGuests(refreshed);
+        } else if (createdRows.length > 0) {
+          setDbGuests((prev) => [...createdRows, ...(Array.isArray(prev) ? prev : [])]);
+        }
+
+        if (failedCount > 0) {
+          toast.info(`Đã nhập ${createdRows.length} khách vào Neon (${failedCount} dòng bỏ qua do trùng hoặc sai định dạng SĐT/Email).`);
+        } else {
+          toast.success(`Đã nhập thành công ${createdRows.length} khách mời vào Neon Database!`);
+        }
+      } else {
+        const mappedLocal = importRows.map((item, idx) => ({
+          id: `g-imp-${Date.now()}-${idx}`,
+          lastName: item.lastName,
+          firstName: item.firstName,
+          side: item.side,
+          phone: item.phone,
+          email: item.email,
+          address: item.address,
+          rsvp: item.rsvp,
+          companions: item.companions,
+          tag: item.tag,
+          tableId: "",
+          tableName: "Chưa xếp bàn",
+        }));
+        saveGuestData({ guestList: [...mappedLocal, ...guests] });
+        toast.success(`Đã nhập ${mappedLocal.length} khách mời!`);
+      }
+
+      setIsImportModalOpen(false);
+      setImportRows([]);
+      setImportFileName("");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <FeatureShell
       title="Danh sách khách mời"
@@ -363,6 +661,13 @@ export default function GuestListPage() {
             className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-[#1F1A17] hover:bg-stone-50 transition cursor-pointer"
           >
             <Map size={13} /> Sơ đồ bàn tiệc →
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
+          >
+            <FileSpreadsheet size={13} /> Nhập Excel
           </button>
           <button
             type="button"
@@ -782,12 +1087,134 @@ export default function GuestListPage() {
             </button>
             <button
               type="submit"
-              className="rounded-full bg-[#1F1A17] px-5 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition"
+              disabled={isSavingGuest}
+              className="rounded-full bg-[#1F1A17] px-5 py-2 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-60 transition cursor-pointer"
             >
-              Lưu khách mời
+              {isSavingGuest ? "Đang lưu..." : "Lưu khách mời"}
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* =========================================================================
+          MODAL NHẬP DANH SÁCH KHÁCH MỜI TỪ FILE EXCEL (.xlsx, .xls, .csv)
+         ========================================================================= */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => !isImporting && setIsImportModalOpen(false)}
+        title="Nhập danh sách khách mời từ Excel"
+        size="lg"
+      >
+        <div className="space-y-4 text-xs text-stone-700">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-emerald-950">
+                Hỗ trợ file Excel (.xlsx, .xls) và CSV
+              </p>
+              <p className="text-[11px] text-emerald-800 mt-0.5">
+                Cột chuẩn: Họ và tên lót, Tên (hoặc Họ và tên), Phía gia đình, Số điện thoại, Email, Địa chỉ, Xác nhận RSVP, Người đi cùng, Phân loại.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                downloadSampleGuestsExcel();
+                toast.success("Đã tải file Excel mẫu (30 khách)!");
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-emerald-300 px-3 py-2 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100 transition shrink-0 cursor-pointer"
+            >
+              <Download size={13} />
+              <span>Tải file Excel mẫu (30 khách)</span>
+            </button>
+          </div>
+
+          <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50/60 hover:bg-stone-100/80 p-6 cursor-pointer transition text-center">
+            <Upload className="w-7 h-7 text-stone-500 mb-2" />
+            <span className="font-bold text-stone-800">
+              {importFileName
+                ? `Đã chọn: ${importFileName} (${importRows.length} khách)`
+                : "Nhấn vào đây để chọn file Excel (.xlsx / .xls / .csv)"}
+            </span>
+            <span className="text-[11px] text-stone-500 mt-1">
+              Dữ liệu sẽ được xem trước và lưu thẳng vào Neon Database
+            </span>
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleExcelFileChange}
+              className="hidden"
+            />
+          </label>
+
+          {importRows.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-stone-900">
+                  Xem trước danh sách ({importRows.length} khách):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportRows([]);
+                    setImportFileName("");
+                  }}
+                  className="text-[11px] text-rose-600 hover:underline cursor-pointer"
+                >
+                  Xóa chọn lại
+                </button>
+              </div>
+              <div className="max-h-60 overflow-y-auto rounded-xl border border-stone-200">
+                <table className="w-full text-left border-collapse text-[11px]">
+                  <thead className="bg-stone-100 sticky top-0 text-stone-700 font-semibold">
+                    <tr>
+                      <th className="py-2 px-3">#</th>
+                      <th className="py-2 px-3">Họ và tên</th>
+                      <th className="py-2 px-3">Gia đình</th>
+                      <th className="py-2 px-3">SĐT</th>
+                      <th className="py-2 px-3">RSVP</th>
+                      <th className="py-2 px-3">Đi cùng</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 bg-white">
+                    {importRows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="py-1.5 px-3 text-stone-400">{idx + 1}</td>
+                        <td className="py-1.5 px-3 font-semibold text-stone-900">
+                          {row.fullName}
+                        </td>
+                        <td className="py-1.5 px-3">{row.side}</td>
+                        <td className="py-1.5 px-3 font-mono">{row.phone || "-"}</td>
+                        <td className="py-1.5 px-3">{row.rsvp}</td>
+                        <td className="py-1.5 px-3">+{row.companions}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+            <button
+              type="button"
+              disabled={isImporting}
+              onClick={() => setIsImportModalOpen(false)}
+              className="rounded-full border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              disabled={importRows.length === 0 || isImporting}
+              onClick={handleConfirmImport}
+              className="rounded-full bg-[#1F1A17] hover:bg-black disabled:opacity-50 px-5 py-2 text-xs font-semibold text-white transition cursor-pointer"
+            >
+              {isImporting
+                ? "Đang nhập vào Neon..."
+                : `Nhập ${importRows.length} khách vào danh sách`}
+            </button>
+          </div>
+        </div>
       </Modal>
     </FeatureShell>
   );

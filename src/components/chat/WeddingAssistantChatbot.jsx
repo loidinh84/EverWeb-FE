@@ -12,12 +12,19 @@ import {
   LayoutGrid,
   AlertCircle,
   Sparkles,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+  Gift,
 } from "lucide-react";
 import everwebLogo from "../../assets/image/everweb-logo.jpg";
 import aiApi from "../../services/aiApi";
 import { useToast } from "../common";
 import { useCurrentWedding } from "../../pages/features/useCurrentWedding";
-import { executeAiDirectAction } from "../../services/aiActionDispatcher";
+import {
+  prepareAiDirectAction,
+  executePreparedAiAction,
+} from "../../services/aiActionDispatcher";
 import MarkdownContent from "./MarkdownContent";
 
 const STORAGE_KEY = "everweb_ai_widget_chat";
@@ -30,19 +37,19 @@ function createMessageId(prefix = "msg") {
 
 const QUICK_PROMPTS = [
   {
-    label: "Chuyển khách sang Bàn 2",
-    icon: LayoutGrid,
-    prompt: "Chuyển khách Lan Anh sang Bàn 2",
+    label: "Thêm khách mời",
+    icon: Users,
+    prompt: "Thêm khách mời Nguyễn Minh Anh, SĐT 0909123456 vào danh sách cưới",
+  },
+  {
+    label: "Ghi nhận quà mừng",
+    icon: Gift,
+    prompt: "Ghi nhận quà mừng từ anh Tuấn Kiệt 2000000 đồng với lời chúc trăm năm hạnh phúc",
   },
   {
     label: "Tự động xếp bàn",
     icon: Sparkles,
     prompt: "Tự động xếp chỗ cho toàn bộ khách mời vào bàn",
-  },
-  {
-    label: "Xóa khách khỏi bàn",
-    icon: LayoutGrid,
-    prompt: "Xóa khách Lan Anh khỏi bàn",
   },
   {
     label: "Checklist 6 tháng",
@@ -61,7 +68,7 @@ const INITIAL_MESSAGES = [
     id: "welcome-1",
     role: "assistant",
     content:
-      "Chào bạn, mình là **Trợ lý EverWeb AI**.\n\nMình có thể hỗ trợ bạn thiết kế website cưới, lên lịch trình, tính ngân sách, và **trực tiếp điều khiển sơ đồ bàn tiệc** (chuyển bàn, xóa khách khỏi bàn, tự động xếp chỗ).\n\nChỉ cần đưa ra yêu cầu — đơn giản như một cuộc trò chuyện.",
+      "Chào bạn, mình là **Trợ lý EverWeb AI**.\n\nMình có thể hỗ trợ bạn tư vấn kế hoạch cưới và **trực tiếp thao tác trên hệ thống** (quản lý khách mời, sơ đồ bàn tiệc, quà mừng VietQR, đổi mẫu thiệp, lịch trình, gửi email) kèm **bước xác nhận an toàn** trước khi lưu.\n\nChỉ cần đưa ra yêu cầu — đơn giản như một cuộc trò chuyện.",
     createdAt: new Date().toISOString(),
   },
 ];
@@ -85,6 +92,7 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [executingActionId, setExecutingActionId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [copiedId, setCopiedId] = useState(null);
 
@@ -173,23 +181,17 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
         console.warn("AI chat API notice:", chatErr.message);
       }
 
-      // THỰC THI LỆNH ĐIỀU KHIỂN TRỰC TIẾP TRÊN HỆ THỐNG
-      const actionResult = await executeAiDirectAction({
-        wedding: effectiveWedding,
+      // CHUẨN BỊ THAO TÁC CẦN XÁC NHẬN (CHƯA TỰ Ý GHI DB)
+      const pendingAction = prepareAiDirectAction({
         userPrompt: textToSend,
         aiResponseText: replyText,
       });
 
       let cleanedReply = (replyText || "").replace(/\[ACTION:[^\]]+\]/g, "").trim();
 
-      if (actionResult?.handled && actionResult.success) {
-        if (!cleanedReply) {
-          cleanedReply = `Mình đã thực thi yêu cầu của bạn: ${actionResult.actionResult?.detail || "Đã cập nhật hệ thống thành công."}`;
-        }
-        toast.success(actionResult.actionResult?.title || "Đã thực hiện thành công");
-      } else if (actionResult?.handled && !actionResult.success) {
-        cleanedReply = actionResult.message || cleanedReply;
-        toast.info(actionResult.message);
+      if (pendingAction && !cleanedReply) {
+        cleanedReply =
+          "Mình đã chuẩn bị thao tác bên dưới. Bạn hãy kiểm tra lại thông tin và bấm **Xác nhận thực hiện** để hệ thống lưu thay đổi nhé.";
       } else if (!cleanedReply) {
         cleanedReply = "Mình đã ghi nhận câu hỏi của bạn. Hãy cho mình biết chi tiết thêm nhé!";
       }
@@ -201,7 +203,8 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
           role: "assistant",
           content: cleanedReply,
           model,
-          actionResult: actionResult?.handled && actionResult.success ? actionResult.actionResult : null,
+          pendingAction,
+          actionResult: null,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -227,6 +230,72 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfirmAction = async (msgId, pendingAction) => {
+    if (!pendingAction || executingActionId) return;
+    setExecutingActionId(msgId);
+    try {
+      const effectiveWedding = selectedWedding || currentWedding;
+      const res = await executePreparedAiAction({
+        wedding: effectiveWedding,
+        pendingAction,
+      });
+
+      if (res?.handled && res.success) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? {
+                  ...m,
+                  pendingAction: { ...m.pendingAction, status: "confirmed" },
+                  actionResult: res.actionResult,
+                }
+              : m
+          )
+        );
+        toast.success(res.actionResult?.title || "Đã thực hiện thành công");
+      } else {
+        const errText = res?.message || "Không thể thực hiện thao tác này.";
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? {
+                  ...m,
+                  pendingAction: { ...m.pendingAction, status: "error", error: errText },
+                }
+              : m
+          )
+        );
+        toast.info(errText);
+      }
+    } catch (err) {
+      const errText = err.response?.data?.message || err.message || "Lỗi khi thực thi thao tác.";
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                pendingAction: { ...m.pendingAction, status: "error", error: errText },
+              }
+            : m
+        )
+      );
+      toast.error(errText);
+    } finally {
+      setExecutingActionId(null);
+    }
+  };
+
+  const handleCancelAction = (msgId) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId && m.pendingAction
+          ? { ...m, pendingAction: { ...m.pendingAction, status: "cancelled" } }
+          : m
+      )
+    );
+    toast.info("Đã hủy thao tác.");
   };
 
   return (
@@ -361,17 +430,99 @@ export default function WeddingAssistantChatbot({ selectedWedding }) {
                       <MarkdownContent content={msg.content} />
                     </div>
 
+                    {msg.pendingAction && msg.pendingAction.status === "pending" && (
+                      <div
+                        className={`mt-2.5 rounded-2xl border p-3.5 text-xs shadow-2xs ${
+                          msg.pendingAction.riskLevel === "high"
+                            ? "border-amber-300 bg-amber-50/80"
+                            : "border-stone-200 bg-stone-50/90"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 font-bold text-[#231F1C]">
+                            {msg.pendingAction.riskLevel === "high" ? (
+                              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                            ) : (
+                              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                            )}
+                            <span>{msg.pendingAction.title}</span>
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              msg.pendingAction.riskLevel === "high"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-white text-stone-600 border border-stone-200"
+                            }`}
+                          >
+                            {msg.pendingAction.riskLevel === "high"
+                              ? "Thao tác quan trọng"
+                              : "Chờ xác nhận"}
+                          </span>
+                        </div>
+
+                        <div className="mt-1.5 text-stone-700 leading-relaxed">
+                          <MarkdownContent content={msg.pendingAction.summary} />
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={executingActionId === msg.id}
+                            onClick={() => handleConfirmAction(msg.id, msg.pendingAction)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#231F1C] px-3.5 py-1.5 text-[11px] font-semibold text-white hover:bg-stone-800 active:scale-95 transition disabled:opacity-60 cursor-pointer"
+                          >
+                            {executingActionId === msg.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3" />
+                            )}
+                            <span>
+                              {executingActionId === msg.id
+                                ? "Đang thực thi..."
+                                : "Xác nhận thực hiện"}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={executingActionId === msg.id}
+                            onClick={() => handleCancelAction(msg.id)}
+                            className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-200 px-3 py-1.5 text-[11px] font-medium text-stone-600 hover:bg-stone-100 transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                            <span>Hủy bỏ</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {msg.pendingAction && msg.pendingAction.status === "cancelled" && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-[11px] text-stone-500">
+                        <X className="w-3.5 h-3.5 text-stone-400" />
+                        <span>Đã hủy thao tác: {msg.pendingAction.title}</span>
+                      </div>
+                    )}
+
+                    {msg.pendingAction && msg.pendingAction.status === "error" && (
+                      <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-700">
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>Không thể thực hiện: {msg.pendingAction.title}</span>
+                        </div>
+                        <p className="mt-1">{msg.pendingAction.error}</p>
+                      </div>
+                    )}
+
                     {msg.actionResult && (
                       <div className="mt-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs shadow-2xs">
                         <div className="flex items-center gap-1.5 font-bold text-emerald-800">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{msg.actionResult.title}</span>
                         </div>
-                        <p className="mt-1 text-emerald-700 leading-relaxed font-medium">
-                          {msg.actionResult.detail}
-                        </p>
+                        <div className="mt-1 text-emerald-700 leading-relaxed font-medium">
+                          <MarkdownContent content={msg.actionResult.detail} />
+                        </div>
                         <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/90 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                          <span>Sơ đồ bàn tiệc đã cập nhật trực tiếp</span>
+                          <span>Hệ thống đã cập nhật trực tiếp</span>
                         </div>
                       </div>
                     )}

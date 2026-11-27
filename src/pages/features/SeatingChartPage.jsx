@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
@@ -23,6 +23,8 @@ import {
   INITIAL_GUESTS,
 } from "./seating-chart/constants";
 import RoundTableVisual from "./seating-chart/RoundTableVisual";
+import { getGuests } from "../../services/guestApi";
+import { mapDbGuestsToUi } from "../../utils/guestMapper";
 
 export default function SeatingChartPage() {
   const toast = useToast();
@@ -30,12 +32,13 @@ export default function SeatingChartPage() {
   const { wedding } = useCurrentWedding();
   const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
 
-  // 1. Quản lý danh sách khách mời từ feature "collect_contacts"
+  // 1. Metadata & danh sách khách mời từ Neon DB (`guests` + `collect_contacts.guestMetaById`)
   const { data: ccData } = useWeddingFeature(
     wedding,
     "collect_contacts",
     {
-      guestList: INITIAL_GUESTS,
+      guestList: [],
+      guestMetaById: {},
     }
   );
 
@@ -50,10 +53,34 @@ export default function SeatingChartPage() {
     }
   );
 
-  const guests = useMemo(
-    () => (Array.isArray(ccData.guestList) && ccData.guestList.length > 0 ? ccData.guestList : INITIAL_GUESTS),
-    [ccData.guestList]
-  );
+  const [dbGuests, setDbGuests] = useState(null);
+
+  useEffect(() => {
+    if (!wedding?.id) return;
+    let cancelled = false;
+    getGuests(wedding.id)
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setDbGuests(rows);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDbGuests(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding?.id]);
+
+  const guests = useMemo(() => {
+    if (wedding?.id && Array.isArray(dbGuests)) {
+      return mapDbGuestsToUi(dbGuests, ccData.guestMetaById || {});
+    }
+    if (Array.isArray(ccData.guestList) && ccData.guestList.length > 0) {
+      return ccData.guestList;
+    }
+    return wedding?.id ? [] : INITIAL_GUESTS;
+  }, [dbGuests, ccData.guestMetaById, ccData.guestList, wedding?.id]);
 
   const tables = useMemo(
     () => (Array.isArray(webConfig.seatingTables) && webConfig.seatingTables.length > 0 ? webConfig.seatingTables : DEFAULT_TABLES),

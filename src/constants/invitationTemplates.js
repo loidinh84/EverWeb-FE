@@ -1,0 +1,137 @@
+import beachHero from "../assets/image/template-beach-hero.webp";
+import beachThumb from "../assets/image/template-beach-thumb.webp";
+import slurpeeCouple from "../assets/image/slurpee-couple.jpg";
+import heroWedding from "../assets/image/hero-wedding.jpg";
+import galleryCeremony from "../assets/image/gallery-ceremony.jpg";
+import galleryBouquet from "../assets/image/gallery-bouquet.jpg";
+import galleryDining from "../assets/image/gallery-dining.jpg";
+import weddingCouple from "../assets/image/wedding-couple.jpg";
+
+export const INVITATION_TEMPLATES = [
+  {
+    id: "n00-beach",
+    layoutType: "beach",
+    code: "N00",
+    name: "Ngoại Cảnh Biển",
+    tag: "Mặc định · Phong bì sáp",
+    description:
+      "Phong bì kem hoa xanh tím pastel, cổng vòm xám ghi và bố cục ảnh ngoại cảnh biển.",
+    pageBg: "#FBFBF9",
+    envelopeBg: "#FAF9F5",
+    envelopeCardBg: "#FAF8F5",
+    envelopeFlapBg: "#F3EFE6",
+    envelopeBorder: "#E8E2D5",
+    flowerPrimary: "#889BE8",
+    flowerSecondary: "#A4B3F5",
+    flowerLeaf: "#68846D",
+    sealFrom: "#E5B94C",
+    sealVia: "#D4A034",
+    sealTo: "#9A701C",
+    accent: "#8C6D3F",
+    accentDark: "#5E4726",
+    accentSoft: "#FAF9F5",
+    bannerBg: "#595E63",
+    headingFont: "font-['Dancing_Script']",
+    defaultPhotos: {
+      hero_photo: beachHero,
+      groom_photo: slurpeeCouple,
+      bride_photo: beachThumb,
+    },
+  },
+  {
+    id: "n01-song-hy",
+    layoutType: "songhy",
+    code: "N01",
+    name: "Song Hỷ Truyền Thống",
+    tag: "Cửa Đỏ Song Hỷ · Gia Tiên",
+    description:
+      "Mở đầu bằng cổng đỏ Song Hỷ tách đôi, khung chỉ vàng cung đình, thiệp báo hỷ 2 họ đối xứng.",
+    pageBg: "#FDF6F2",
+    envelopeBg: "#5E111C",
+    envelopeCardBg: "#7D1626",
+    envelopeFlapBg: "#64101D",
+    envelopeBorder: "#D9B36C",
+    flowerPrimary: "#E7C578",
+    flowerSecondary: "#F5DDA3",
+    flowerLeaf: "#C59B38",
+    sealFrom: "#F5D78E",
+    sealVia: "#D4A238",
+    sealTo: "#946B14",
+    accent: "#8F1D2C",
+    accentDark: "#5E111C",
+    accentSoft: "#FDF3EE",
+    bannerBg: "#731522",
+    headingFont: "font-display",
+    defaultPhotos: {
+      hero_photo: heroWedding,
+      groom_photo: weddingCouple,
+      bride_photo: galleryDining,
+    },
+  },
+  {
+    id: "n02-editorial",
+    layoutType: "editorial",
+    code: "N02",
+    name: "Tạp Chí Minimalist",
+    tag: "AT01 · Bìa Tạp Chí Hiện Đại",
+    description:
+      "Bìa tạp chí tối giản đen trắng thanh lịch, ảnh Polaroid chú thích ngày và timeline 1px.",
+    pageBg: "#FFFFFF",
+    envelopeBg: "#F7F6F3",
+    envelopeCardBg: "#FFFFFF",
+    envelopeFlapBg: "#EFECE6",
+    envelopeBorder: "#1F1B18",
+    flowerPrimary: "#231F1C",
+    flowerSecondary: "#78716C",
+    flowerLeaf: "#44403C",
+    sealFrom: "#292524",
+    sealVia: "#1C1917",
+    sealTo: "#0C0A09",
+    accent: "#1C1917",
+    accentDark: "#000000",
+    accentSoft: "#F7F6F3",
+    bannerBg: "#1C1917",
+    headingFont: "font-display",
+    defaultPhotos: {
+      hero_photo: weddingCouple,
+      groom_photo: galleryCeremony,
+      bride_photo: galleryBouquet,
+    },
+  },
+  {
+    id: "n03-botanical-arch",
+    layoutType: "botanical",
+    code: "N03",
+    name: "Vòm Hoa Botanical",
+    tag: "NA01 · Thiệp Vòm Sân Vườn",
+    description:
+      "Thiệp đứng hình cổng vòm hoa lá, ảnh cưới cắt vòm nghệ thuật và bộ đếm ngược vòng tròn.",
+    pageBg: "#F6F8F4",
+    envelopeBg: "#EEF3EB",
+    envelopeCardBg: "#FAFDF8",
+    envelopeFlapBg: "#DFEAD9",
+    envelopeBorder: "#8FA88E",
+    flowerPrimary: "#88A889",
+    flowerSecondary: "#B8D0B9",
+    flowerLeaf: "#4A634E",
+    sealFrom: "#D8BE74",
+    sealVia: "#B89A48",
+    sealTo: "#7E6727",
+    accent: "#4A634E",
+    accentDark: "#2F4232",
+    accentSoft: "#EEF3EB",
+    bannerBg: "#3E5442",
+    headingFont: "font-display",
+    defaultPhotos: {
+      hero_photo: galleryCeremony,
+      groom_photo: galleryBouquet,
+      bride_photo: galleryDining,
+    },
+  },
+];
+
+export function getInvitationTemplateById(id) {
+  return (
+    INVITATION_TEMPLATES.find((t) => t.id === id) || INVITATION_TEMPLATES[0]
+  );
+}

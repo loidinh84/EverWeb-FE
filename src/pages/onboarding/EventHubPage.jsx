@@ -330,9 +330,9 @@ export default function EventHubPage() {
         <div className="flex flex-1 flex-col">
           <button
             type="button"
-            onClick={() => navigate(-1)}
-            title="Quay lại trang trước"
-            className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-[11px] font-semibold text-stone-700 transition hover:border-[#3B52DE] hover:text-[#3B52DE]"
+            onClick={() => navigate(ROUTE_PATHS.CREATE_EVENT)}
+            title="Quay lại trang sự kiện"
+            className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-[11px] font-semibold text-stone-700 transition hover:border-[#3B52DE] hover:text-[#3B52DE] cursor-pointer"
           >
             <ArrowLeft size={12} />
             Quay lại

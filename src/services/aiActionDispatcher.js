@@ -1,26 +1,10 @@
 import weddingApi from "./weddingApi";
 import { getGuests, createGuest, updateGuest, deleteGuest } from "./guestApi";
 import giftApi from "./giftApi";
-
-// Dữ liệu dự phòng mặc định đồng bộ với GuestListPage & SeatingChartPage
-const DEFAULT_TABLES = [
-  { id: "t1", name: "Bàn 1 · Nhà gái", capacity: 8, guests: ["Nguyễn Thị Lan Anh", "Phạm Thị Minh Thư", "Trần Thu Hà", "Mai Linh", "Ánh Kiều", "Bích Ngọc"] },
-  { id: "t2", name: "Bàn 2 · Nhà trai", capacity: 8, guests: ["Trần Văn Minh Khoa", "Trần Quốc Bảo", "Lê Tuấn", "Phạm Nam", "Hoàng Khang", "Đức Toàn"] },
-  { id: "t3", name: "Bàn 3 · Bạn đại học", capacity: 8, guests: ["Hải Nam", "Kim Liên", "Thanh Tùng", "Văn Anh", "Minh Phúc"] },
-  { id: "t4", name: "Bàn 4 · Đồng nghiệp", capacity: 8, guests: ["Đình Long", "Cẩm Tú", "Nhật Quang", "Hồng Thắm"] },
-  { id: "t5", name: "Bàn 5 · Họ hàng", capacity: 10, guests: ["Bác Văn", "Cô Mai", "Thanh Phong", "Lê Dũng", "Kim Ngân", "Hoàng Sơn"] },
-  { id: "t6", name: "Bàn 6 · Khách vip gia đình", capacity: 8, guests: ["Ông Trần Xuân", "Bà Nguyễn Hương", "Bác Quang", "Cô Mỹ Trang"] },
-];
-
-const INITIAL_GUESTS = [
-  { id: "g1", firstName: "Lan Anh", lastName: "Nguyễn Thị", side: "Nhà gái", phone: "0909 123 456", email: "lananh.nguyen@gmail.com", address: "Chung cư Richmond City, Q. Bình Thạnh, TP.HCM", rsvp: "Tham dự", companions: 1, tag: "Bạn đại học", tableId: "t1", tableName: "Bàn 1 · Nhà gái" },
-  { id: "g2", firstName: "Minh Khoa", lastName: "Trần Văn", side: "Nhà trai", phone: "0912 345 678", email: "minhkhoa.tran@fpt.com", address: "45 Lê Duẩn, P. Bến Nghé, Quận 1, TP.HCM", rsvp: "Tham dự", companions: 2, tag: "Đồng nghiệp", tableId: "t2", tableName: "Bàn 2 · Nhà trai" },
-  { id: "g3", firstName: "Hùng", lastName: "Nguyễn Văn", side: "Nhà trai", phone: "0908 777 888", email: "hung.nv@vinamilk.com", address: "TP. Thủ Đức, TP.HCM", rsvp: "Từ chối", companions: 0, tag: "Đồng nghiệp", tableId: null, tableName: "Chưa xếp bàn" },
-  { id: "g4", firstName: "Minh Thư", lastName: "Phạm Thị", side: "Nhà gái", phone: "0933 222 111", email: "thu.pham@gmail.com", address: "12 Võ Văn Tần, Q.3, TP.HCM", rsvp: "Chờ phản hồi", companions: 1, tag: "Phù dâu", tableId: "t1", tableName: "Bàn 1 · Nhà gái" },
-  { id: "g5", firstName: "Hoàng Nam", lastName: "Lê", side: "Bạn bè", phone: "0977 555 444", email: "nam.le@techcombank.com.vn", address: "Khu Sunrise City, Q.7, TP.HCM", rsvp: "Chờ phản hồi", companions: 0, tag: "Phù rể", tableId: null, tableName: "Chưa xếp bàn" },
-  { id: "g6", firstName: "Quốc Bảo", lastName: "Trần", side: "Nhà trai", phone: "0968 111 222", email: "bao.tran@gmail.com", address: "Quận 1, TP.HCM", rsvp: "Tham dự", companions: 1, tag: "Gia đình", tableId: "t2", tableName: "Bàn 2 · Nhà trai" },
-  { id: "g7", firstName: "Thảo Vy", lastName: "Nguyễn", side: "Nhà gái", phone: "0918 333 444", email: "thaovy@gmail.com", address: "Quận Bình Thạnh, TP.HCM", rsvp: "Tham dự", companions: 0, tag: "Bạn cô dâu", tableId: null, tableName: "Chưa xếp bàn" },
-];
+import {
+  DEFAULT_TABLES,
+  INITIAL_GUESTS,
+} from "../pages/features/seating-chart/constants";
 
 const HIGH_RISK_ACTIONS = new Set([
   "DELETE_GUEST",
@@ -362,7 +346,7 @@ export async function executePreparedAiAction({ wedding, pendingAction }) {
     ? [...currentFeatures.collect_contacts.guestList]
     : [...INITIAL_GUESTS];
 
-  let actionResult = null;
+  let actionResult;
 
   switch (parsedIntent.type) {
     case "MOVE_GUEST":

@@ -23,6 +23,7 @@ import {
 import { Modal, useToast } from "../../components/common";
 import weddingApi from "../../services/weddingApi";
 import { extractApiError } from "../../services/api";
+import { buildQrCodeUrl } from "../../utils/weddingHelpers";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
@@ -952,7 +953,7 @@ export default function CollectContactsPage() {
       >
         <div className="space-y-4 text-center text-xs">
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(collectorUrl)}`}
+            src={buildQrCodeUrl(collectorUrl, 260)}
             alt="QR Thu thập liên hệ"
             className="mx-auto h-52 w-52 rounded-2xl border border-stone-200 p-2.5 shadow-2xs"
           />
@@ -970,7 +971,7 @@ export default function CollectContactsPage() {
               Sao chép link
             </button>
             <a
-              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(collectorUrl)}`}
+              href={buildQrCodeUrl(collectorUrl, 500)}
               target="_blank"
               download="QR-Thu-Thap-Lien-He.png"
               rel="noreferrer"

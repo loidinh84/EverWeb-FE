@@ -413,7 +413,7 @@ export default function RegistryPage() {
             type="button"
             onClick={() => {
               navigator.clipboard?.writeText(
-                `https://everweb.vn/${wedding?.slug || "khang-an"}/registry`
+                `${window.location.origin}/w/${wedding?.slug || "khang-an"}`
               );
               toast.success("Đã sao chép đường dẫn Quà mừng");
             }}

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Camera,
   Check,
@@ -26,6 +26,7 @@ import heroWedding from "../../assets/image/hero-wedding.jpg";
 import weddingCouple from "../../assets/image/wedding-couple.jpg";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
+import { buildQrCodeUrl } from "../../utils/weddingHelpers";
 
 const DEFAULT_ALBUMS = [
   {
@@ -86,8 +87,8 @@ export default function PhotoMomentsPage() {
 
   const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
   const photoSlug = wedding?.slug || "khang-an";
-  const shareUrl = `https://everweb.vn/${photoSlug}/photos`;
-  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shareUrl)}`;
+  const shareUrl = `${window.location.origin}/w/${photoSlug}`;
+  const qrImgUrl = buildQrCodeUrl(shareUrl, 300);
 
   const { data: webConfig, saveSection } = useWeddingFeature(
     wedding,

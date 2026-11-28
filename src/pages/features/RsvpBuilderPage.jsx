@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Modal, useToast } from "../../components/common";
 import { ROUTE_PATHS } from "../../constants/roles";
-import heroWedding from "../../assets/image/hero-wedding.jpg";
+import { CLOUD_ASSETS } from "../../constants/cloudAssets";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 import {
@@ -36,7 +36,7 @@ export default function RsvpBuilderPage() {
 
   const coupleNames = (wedding?.title || "Trần Thanh Khang & Mai Khanh").normalize("NFC");
   const rsvpSlug = wedding?.slug || "khang-an";
-  const rsvpUrl = `https://everweb.vn/${rsvpSlug}/rsvp`;
+  const rsvpUrl = `${window.location.origin}/rsvp/${rsvpSlug}`;
 
   const { data: rsvpData, saveSection } = useWeddingFeature(
     wedding,
@@ -528,9 +528,9 @@ export default function RsvpBuilderPage() {
 
               <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-xs">
                 <img
-                  src={heroWedding}
+                  src={CLOUD_ASSETS.RSVP_ARCH_029}
                   alt="Wedding"
-                  className="h-28 w-full object-cover"
+                  className="h-32 w-full object-cover object-top"
                 />
                 <div className="p-4 space-y-4">
                   <div className="text-center">
@@ -915,9 +915,9 @@ export default function RsvpBuilderPage() {
       >
         <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white text-xs">
           <img
-            src={heroWedding}
+            src={CLOUD_ASSETS.RSVP_ARCH_029}
             alt="Cover"
-            className="h-32 w-full object-cover"
+            className="h-36 w-full object-cover object-top"
           />
           <div className="p-5 space-y-4">
             <div className="text-center">

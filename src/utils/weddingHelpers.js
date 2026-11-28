@@ -223,6 +223,41 @@ export function buildPublicWeddingUrl(slug) {
   return clean ? `${origin}/w/${clean}` : origin;
 }
 
+export function buildQrCodeUrl(data, size = 300, margin = 0) {
+  const marginParam = margin > 0 ? `&margin=${margin}` : "";
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}${marginParam}&data=${encodeURIComponent(
+    String(data || "")
+  )}`;
+}
+
+export const PENDING_WEDDING_STORAGE_KEY = "everweb_pending_wedding";
+
+export function readCachedWedding() {
+  try {
+    const raw =
+      sessionStorage.getItem(PENDING_WEDDING_STORAGE_KEY) ||
+      localStorage.getItem(PENDING_WEDDING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedWedding(wedding) {
+  try {
+    if (!wedding) {
+      sessionStorage.removeItem(PENDING_WEDDING_STORAGE_KEY);
+      localStorage.removeItem(PENDING_WEDDING_STORAGE_KEY);
+      return;
+    }
+    const serialized = JSON.stringify(wedding);
+    sessionStorage.setItem(PENDING_WEDDING_STORAGE_KEY, serialized);
+    localStorage.setItem(PENDING_WEDDING_STORAGE_KEY, serialized);
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
 function buildShortName(name) {
   const parts = String(name || "")
     .trim()

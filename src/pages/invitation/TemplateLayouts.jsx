@@ -14,6 +14,7 @@ import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
 import galleryDining from "../../assets/image/gallery-dining.jpg";
 import weddingCouple from "../../assets/image/wedding-couple.jpg";
 import beachHero from "../../assets/image/template-beach-hero.webp";
+import RoyalRibbonLayout from "./RoyalRibbonLayout";
 
 const LOVE_STORY_MILESTONES = [
   {
@@ -106,6 +107,18 @@ export default function TemplateLayouts({
   onCloseEnvelope,
 }) {
   const layoutType = template.layoutType;
+
+  if (layoutType === "royal-ribbon") {
+    return (
+      <RoyalRibbonLayout
+        wedding={wedding}
+        timeLeft={timeLeft}
+        isGuestMode={isGuestMode}
+        onUploadHero={onUploadHero}
+        onCloseEnvelope={onCloseEnvelope}
+      />
+    );
+  }
 
   // =========================================================================
   // MẪU N01: SONG HỶ TRUYỀN THỐNG HIỆN ĐẠI (GIA TIÊN & TIỆC CƯỚI SẢNH)

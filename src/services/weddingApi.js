@@ -164,6 +164,16 @@ export const weddingApi = {
     const response = await api.get("/weddings/public/invitation", { params });
     return response.data?.data ?? response.data;
   },
+
+  async getPublicWeddingSite(slug) {
+    const response = await api.get(`/weddings/public/site/${slug}`);
+    return response.data?.data ?? response.data;
+  },
+
+  async submitPublicRsvp(slug, payload) {
+    const response = await api.post(`/weddings/public/rsvp/${slug}`, payload);
+    return response.data?.data ?? response.data;
+  },
 };
 
 export default weddingApi;

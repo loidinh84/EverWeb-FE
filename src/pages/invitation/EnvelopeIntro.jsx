@@ -11,6 +11,238 @@ export default function EnvelopeIntro({
 }) {
   const layoutType = template?.layoutType || "beach";
 
+  // 0. MẪU N04: PHONG BÌ 3D 2 CÁNH THẮT NƠ RUY-BĂNG & HOA XANH NAVY
+  if (layoutType === "royal-ribbon") {
+    const groomName = wedding?.groom_name || "Chú rể";
+    const brideName = wedding?.bride_name || "Cô dâu";
+    return (
+      <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top,#FBF9F5_0%,#EFE9DD_100%)] flex flex-col justify-between items-center py-12 px-4 relative overflow-hidden">
+        <div className="text-center pt-4 space-y-1.5 z-20 animate-fade-in">
+          <p className="text-[10px] uppercase tracking-[0.35em] text-[#6B82A3] font-medium">
+            TRÂN TRỌNG KÍNH MỜI · {guestName}
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-display italic font-medium text-[#1B365D]">
+            {groomName} &amp; {brideName}
+          </h1>
+        </div>
+
+        {/* Khung 3D Perspective cho phong bì 2 cánh mở ngang */}
+        <div
+          onClick={onOpenEnvelope}
+          style={{ perspective: "1400px" }}
+          className="w-full max-w-[340px] aspect-[3/4] my-auto relative cursor-pointer group z-20"
+        >
+          {/* Đổ bóng 3D xuống mặt bàn */}
+          <div
+            className={`w-full h-full relative rounded-xl transition-transform duration-700 ease-out [transform-style:preserve-3d] ${
+              isOpeningAnimation
+                ? "scale-105 [transform:rotateX(4deg)]"
+                : "group-hover:[transform:rotateX(3deg)_rotateY(-4deg)]"
+            }`}
+            style={{
+              boxShadow:
+                "0 28px 55px -15px rgba(27, 36, 52, 0.28), 0 10px 24px -8px rgba(27, 36, 52, 0.14)",
+            }}
+          >
+            {/* Hộp/Khay thiệp 3D bên trong lộ ra khi 2 cánh mở */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-[#E7DFD1] to-[#EFE8DA] p-3.5 shadow-[inset_0_4px_18px_rgba(0,0,0,0.16)] overflow-hidden">
+              {/* Viền hoa xanh navy bên trong */}
+              <div
+                className={`w-full h-full bg-[#FAF8F4] border-2 border-[#224578]/45 rounded-sm flex flex-col items-center justify-center text-center p-5 relative overflow-hidden shadow-md transition-transform duration-700 ${
+                  isOpeningAnimation ? "scale-105" : "scale-95"
+                }`}
+              >
+                <svg
+                  viewBox="0 0 180 180"
+                  fill="none"
+                  className="w-32 h-32 absolute -top-3 -left-3 opacity-80 pointer-events-none"
+                >
+                  <path d="M10 150 C30 105, 60 65, 110 35" stroke="#224578" strokeWidth="1.5" />
+                  <circle cx="52" cy="64" r="12" fill="#224578" opacity="0.25" />
+                  <circle cx="88" cy="44" r="9" fill="#224578" opacity="0.3" />
+                  <circle cx="34" cy="105" r="10" fill="#224578" opacity="0.22" />
+                </svg>
+                <svg
+                  viewBox="0 0 180 180"
+                  fill="none"
+                  className="w-32 h-32 absolute -bottom-3 -right-3 scale-[-1] opacity-80 pointer-events-none"
+                >
+                  <path d="M10 150 C30 105, 60 65, 110 35" stroke="#224578" strokeWidth="1.5" />
+                  <circle cx="52" cy="64" r="12" fill="#224578" opacity="0.25" />
+                  <circle cx="88" cy="44" r="9" fill="#224578" opacity="0.3" />
+                  <circle cx="34" cy="105" r="10" fill="#224578" opacity="0.22" />
+                </svg>
+
+                <div className="relative z-10 border border-[#DCE4F0] px-4 py-6 bg-[#FAF8F4]/90 space-y-2">
+                  <p className="text-[9px] uppercase tracking-[0.28em] text-[#4E688E]">
+                    TRÂN TRỌNG KÍNH MỜI
+                  </p>
+                  <p className="font-display text-2xl font-semibold text-[#1B365D]">
+                    {groomName} &amp; {brideName}
+                  </p>
+                  <div className="w-8 h-px bg-[#B8C7DD] mx-auto" />
+                  <p className="text-[11px] tracking-[0.2em] text-[#6B82A3]">
+                    {dateBadge}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cánh Trái 3D (xoay quanh bản lề trái) */}
+            <div
+              className={`will-change-transform absolute inset-y-0 left-0 w-1/2 origin-left rounded-l-xl border-r border-[#CFC4B2] transition-transform duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] overflow-hidden [backface-visibility:hidden] ${
+                isOpeningAnimation
+                  ? "[transform:rotateY(-132deg)]"
+                  : "[transform:rotateY(0deg)]"
+              }`}
+              style={{
+                background:
+                  "linear-gradient(105deg, #FBF8F1 0%, #F4EDE0 70%, #EAE0D0 100%)",
+                boxShadow: "inset -6px 0 14px rgba(120,100,70,0.08)",
+              }}
+            >
+              {/* Nếp gấp V nhẹ trên cánh trái giống bìa thư thật */}
+              <div
+                className="absolute inset-0 opacity-35 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(38deg, transparent 49.4%, rgba(165,148,124,0.35) 50%, transparent 50.6%), linear-gradient(-38deg, transparent 49.4%, rgba(165,148,124,0.35) 50%, transparent 50.6%)",
+                }}
+              />
+            </div>
+
+            {/* Cánh Phải 3D (xoay quanh bản lề phải + hoa dập nổi) */}
+            <div
+              className={`will-change-transform absolute inset-y-0 right-0 w-1/2 origin-right rounded-r-xl border-l border-[#DFD5C5] transition-transform duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] overflow-hidden [backface-visibility:hidden] ${
+                isOpeningAnimation
+                  ? "[transform:rotateY(132deg)]"
+                  : "[transform:rotateY(0deg)]"
+              }`}
+              style={{
+                background:
+                  "linear-gradient(255deg, #FBF8F1 0%, #F4EDE0 70%, #EDE3D3 100%)",
+                boxShadow: "inset 6px 0 14px rgba(120,100,70,0.08), -3px 0 10px rgba(0,0,0,0.06)",
+              }}
+            >
+              {/* Hoa dập nổi (debossed/embossed) trên cánh phải */}
+              <svg
+                viewBox="0 0 140 160"
+                fill="none"
+                className="w-32 h-36 absolute top-10 right-1 opacity-45 pointer-events-none"
+              >
+                <path
+                  d="M120 10 C95 40, 80 75, 55 120 M105 40 C85 38, 72 48, 82 60 C92 68, 108 56, 105 40 Z M86 78 C65 74, 54 88, 66 98 C76 104, 92 92, 86 78 Z"
+                  stroke="#C9BCA8"
+                  strokeWidth="1.6"
+                  fill="#EFE7D9"
+                />
+              </svg>
+            </div>
+
+            {/* Dải ruy-băng lụa 3D + Nơ xám bạc có bóng đổ lên giấy */}
+            <div
+              className={`absolute inset-x-0 top-1/2 -translate-y-1/2 z-30 transition-all duration-500 ease-in ${
+                isOpeningAnimation
+                  ? "translate-y-28 opacity-0 scale-95"
+                  : "opacity-100"
+              }`}
+            >
+              {/* Bóng đổ của dây ruy-băng xuống giấy */}
+              <div className="absolute inset-x-0 top-1.5 h-5 bg-black/15 blur-[3px] pointer-events-none" />
+
+              {/* Dải ruy-băng lụa ánh satin */}
+              <div
+                className="h-5 w-full relative border-y border-white/70"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #C7CDD6 0%, #F2F5F8 35%, #D3D9E2 68%, #A5AEBC 100%)",
+                }}
+              />
+
+              {/* Chiếc nơ lụa 3D */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg
+                  viewBox="0 0 160 110"
+                  className="w-36 h-24"
+                  style={{
+                    filter: "drop-shadow(0 8px 10px rgba(35, 30, 25, 0.28))",
+                  }}
+                  fill="none"
+                >
+                  <defs>
+                    <linearGradient id="silkLeft" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#F5F7FA" />
+                      <stop offset="50%" stopColor="#D3D9E2" />
+                      <stop offset="100%" stopColor="#9EA7B6" />
+                    </linearGradient>
+                    <linearGradient id="silkRight" x1="1" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#F8FAFC" />
+                      <stop offset="55%" stopColor="#D8DEE7" />
+                      <stop offset="100%" stopColor="#A3ACBA" />
+                    </linearGradient>
+                    <linearGradient id="silkTail" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#B8C0CE" />
+                      <stop offset="45%" stopColor="#E6EBF2" />
+                      <stop offset="100%" stopColor="#AAB3C2" />
+                    </linearGradient>
+                  </defs>
+                  {/* Đuôi nơ */}
+                  <path d="M72 52 L42 100 L60 96 L78 58 Z" fill="url(#silkTail)" />
+                  <path d="M88 52 L118 100 L100 96 L82 58 Z" fill="url(#silkTail)" />
+                  {/* Cánh nơ trái */}
+                  <path
+                    d="M78 48 C46 14, 12 22, 18 50 C24 72, 54 66, 78 48 Z"
+                    fill="url(#silkLeft)"
+                    stroke="#A6AFBE"
+                    strokeWidth="0.9"
+                  />
+                  <path d="M72 48 C50 38, 32 42, 26 50" stroke="#9AA3B2" strokeWidth="1" opacity="0.6" />
+                  {/* Cánh nơ phải */}
+                  <path
+                    d="M82 48 C114 14, 148 22, 142 50 C136 72, 106 66, 82 48 Z"
+                    fill="url(#silkRight)"
+                    stroke="#A6AFBE"
+                    strokeWidth="0.9"
+                  />
+                  <path d="M88 48 C110 38, 128 42, 134 50" stroke="#9AA3B2" strokeWidth="1" opacity="0.6" />
+                  {/* Nút thắt ở giữa */}
+                  <rect
+                    x="70"
+                    y="38"
+                    width="20"
+                    height="18"
+                    rx="6"
+                    fill="url(#silkRight)"
+                    stroke="#98A1B0"
+                    strokeWidth="1"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Chữ chạm để mở thiệp */}
+            <div
+              className={`absolute bottom-7 inset-x-0 text-center z-30 transition-opacity duration-300 ${
+                isOpeningAnimation ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.28em] font-semibold text-[#5C544B]">
+                <Sparkles size={11} />
+                Chạm để mở thiệp
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center pb-4 z-20">
+          <p className="text-lg font-display font-medium text-[#1B365D] tracking-[0.22em]">
+            {dateBadge}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // 1. MẪU N01: CỔNG ĐỎ SONG HỶ TÁCH ĐÔI (TRUYỀN THỐNG HIỆN ĐẠI)
   if (layoutType === "songhy") {
     return (

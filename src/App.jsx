@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   Navigate,
   Route,
@@ -6,32 +7,6 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import Landing from "./pages/landing/Landing";
-import InvitationPreview from "./pages/InvitationPreview";
-import PublicContactPage from "./pages/PublicContactPage";
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import CreateEventPage from "./pages/onboarding/CreateEventPage";
-import WeddingSetupPage from "./pages/onboarding/WeddingSetupPage";
-import EventHubPage from "./pages/onboarding/EventHubPage";
-import WebsitePreviewPage from "./pages/onboarding/WebsitePreviewPage";
-import EventSettingsPage from "./pages/onboarding/EventSettingsPage";
-import WebsiteDesignPage from "./pages/features/WebsiteDesignPage";
-import CollectContactsPage from "./pages/features/CollectContactsPage";
-import RsvpBuilderPage from "./pages/features/RsvpBuilderPage";
-import MessagingPage from "./pages/features/MessagingPage";
-import TravelPage from "./pages/features/TravelPage";
-import InvitationsStudioPage from "./pages/features/InvitationsStudioPage";
-import RegistryPage from "./pages/features/RegistryPage";
-import ScheduleEditorPage from "./pages/features/ScheduleEditorPage";
-import GuestListPage from "./pages/features/GuestListPage";
-import SeatingChartPage from "./pages/features/SeatingChartPage";
-import PhotoMomentsPage from "./pages/features/PhotoMomentsPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import UnauthorizedPage from "./pages/errors/UnauthorizedPage";
-import NotFoundPage from "./pages/errors/NotFoundPage";
-import WeddingAssistantChatbot from "./components/chat/WeddingAssistantChatbot";
 import {
   ADMIN_ALLOWED_ROLES,
   DASHBOARD_ALLOWED_ROLES,
@@ -41,6 +16,48 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
+
+const Landing = lazy(() => import("./pages/landing/Landing"));
+const InvitationPreview = lazy(() => import("./pages/InvitationPreview"));
+const PublicContactPage = lazy(() => import("./pages/PublicContactPage"));
+const PublicWeddingPage = lazy(() => import("./pages/PublicWeddingPage"));
+const PublicRsvpPage = lazy(() => import("./pages/PublicRsvpPage"));
+const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/auth/ForgotPasswordPage"));
+const CreateEventPage = lazy(() => import("./pages/onboarding/CreateEventPage"));
+const WeddingSetupPage = lazy(() => import("./pages/onboarding/WeddingSetupPage"));
+const EventHubPage = lazy(() => import("./pages/onboarding/EventHubPage"));
+const WebsitePreviewPage = lazy(() => import("./pages/onboarding/WebsitePreviewPage"));
+const EventSettingsPage = lazy(() => import("./pages/onboarding/EventSettingsPage"));
+const WebsiteDesignPage = lazy(() => import("./pages/features/WebsiteDesignPage"));
+const CollectContactsPage = lazy(() => import("./pages/features/CollectContactsPage"));
+const RsvpBuilderPage = lazy(() => import("./pages/features/RsvpBuilderPage"));
+const MessagingPage = lazy(() => import("./pages/features/MessagingPage"));
+const TravelPage = lazy(() => import("./pages/features/TravelPage"));
+const InvitationsStudioPage = lazy(() => import("./pages/features/InvitationsStudioPage"));
+const RegistryPage = lazy(() => import("./pages/features/RegistryPage"));
+const ScheduleEditorPage = lazy(() => import("./pages/features/ScheduleEditorPage"));
+const GuestListPage = lazy(() => import("./pages/features/GuestListPage"));
+const SeatingChartPage = lazy(() => import("./pages/features/SeatingChartPage"));
+const PhotoMomentsPage = lazy(() => import("./pages/features/PhotoMomentsPage"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const UnauthorizedPage = lazy(() => import("./pages/errors/UnauthorizedPage"));
+const NotFoundPage = lazy(() => import("./pages/errors/NotFoundPage"));
+const WeddingAssistantChatbot = lazy(() =>
+  import("./components/chat/WeddingAssistantChatbot")
+);
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-stone-500">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-stone-300 border-t-[#1F1A17]" />
+        <span className="text-xs font-medium tracking-wide">Đang tải...</span>
+      </div>
+    </div>
+  );
+}
 
 function HomeRoute() {
   const [searchParams] = useSearchParams();
@@ -72,10 +89,11 @@ function App() {
   const isInvitationOrWebsite =
     location.pathname.startsWith(ROUTE_PATHS.INVITATION) ||
     location.pathname.startsWith("/w/") ||
+    location.pathname.startsWith("/rsvp/") ||
     location.pathname.startsWith("/contact/");
 
   return (
-    <>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path={ROUTE_PATHS.HOME} element={<HomeRoute />} />
         <Route path={ROUTE_PATHS.INVITATION} element={<InvitationPreview />} />
@@ -84,11 +102,12 @@ function App() {
           element={<InvitationPreview />}
         />
         <Route path="/contact/:slug" element={<PublicContactPage />} />
+        <Route path="/w/:slug" element={<PublicWeddingPage />} />
+        <Route path="/rsvp/:slug" element={<PublicRsvpPage />} />
         <Route
           path={ROUTE_PATHS.WEBSITE_PREVIEW}
           element={<WebsitePreviewPage />}
         />
-        <Route path="/w/:slug" element={<WebsitePreviewPage />} />
         <Route path={ROUTE_PATHS.UNAUTHORIZED} element={<UnauthorizedPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
@@ -111,10 +130,6 @@ function App() {
           <Route path={ROUTE_PATHS.CREATE_EVENT} element={<CreateEventPage />} />
           <Route path={ROUTE_PATHS.WEDDING_SETUP} element={<WeddingSetupPage />} />
           <Route path={ROUTE_PATHS.EVENT_HUB} element={<EventHubPage />} />
-          <Route
-            path={ROUTE_PATHS.WEBSITE_PREVIEW}
-            element={<WebsitePreviewPage />}
-          />
           <Route
             path={ROUTE_PATHS.EVENT_SETTINGS}
             element={<EventSettingsPage />}
@@ -171,8 +186,12 @@ function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      {!isInvitationOrWebsite && <WeddingAssistantChatbot />}
-    </>
+      {!isInvitationOrWebsite && (
+        <Suspense fallback={null}>
+          <WeddingAssistantChatbot />
+        </Suspense>
+      )}
+    </Suspense>
   );
 }
 

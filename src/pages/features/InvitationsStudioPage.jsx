@@ -13,6 +13,7 @@ import galleryBouquet from "../../assets/image/gallery-bouquet.jpg";
 import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
 import galleryDining from "../../assets/image/gallery-dining.jpg";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
+import { CLOUD_ASSETS } from "../../constants/cloudAssets";
 import FeatureShell from "./FeatureShell";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
 
@@ -60,7 +61,7 @@ const CARD_TEMPLATES = [
     style: "Sang trọng",
     matchesSite: false,
     isFree: false,
-    image: heroWedding,
+    image: CLOUD_ASSETS.INVITATION_CARD_004,
     colors: ["#1F1A17", "#C5A059", "#B85D6E"],
   },
   {

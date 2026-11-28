@@ -35,8 +35,13 @@ import { useAuth } from "../../hooks/useAuth";
 import weddingApi from "../../services/weddingApi";
 import CollaboratorsModal from "./CollaboratorsModal";
 import FeedbackModal from "./FeedbackModal";
-import galleryCeremony from "../../assets/image/gallery-ceremony.jpg";
 import heroWedding from "../../assets/image/hero-wedding.jpg";
+import { CLOUD_ASSETS } from "../../constants/cloudAssets";
+import {
+  COLOR_THEMES,
+  COVER_IMAGES,
+  FONT_OPTIONS,
+} from "../features/website-design/constants";
 
 const FEATURE_TILES = [
   {
@@ -190,22 +195,60 @@ export default function EventHubPage() {
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [allWeddings, setAllWeddings] = useState([]);
+  const [hubFeatures, setHubFeatures] = useState(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const gridRef = useRef(null);
 
   useEffect(() => {
-    if (wedding) return undefined;
+    let cancelled = false;
+    if (!wedding) {
+      weddingApi
+        .getAll()
+        .then((items) => {
+          if (!cancelled && items.length > 0) setWedding(items[0]);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (wedding?.id && !String(wedding.id).startsWith("local-")) {
+      weddingApi
+        .getFeatures(wedding.id)
+        .then((data) => {
+          if (!cancelled && data) setHubFeatures(data);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [wedding]);
+
+  const activeWeddingId = wedding?.id;
+  useEffect(() => {
+    if (!activeWeddingId || String(activeWeddingId).startsWith("local-")) {
+      return undefined;
+    }
     let cancelled = false;
     weddingApi
-      .getAll()
-      .then((items) => {
-        if (!cancelled && items.length > 0) setWedding(items[0]);
+      .getById(activeWeddingId)
+      .then((fresh) => {
+        if (!cancelled && fresh) {
+          setWedding(fresh);
+          sessionStorage.setItem(
+            "everweb_pending_wedding",
+            JSON.stringify(fresh)
+          );
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [wedding]);
+  }, [activeWeddingId]);
 
   useEffect(() => {
     if (!isMenuOpen && !openTileKey) return undefined;
@@ -247,7 +290,27 @@ export default function EventHubPage() {
   const venueParts = rawVenue.includes(" - ") ? rawVenue.split(" - ") : [rawVenue];
   const displayVenue = venueParts[0];
   const displayCity = venueParts[1] || "TP. Hồ Chí Minh";
-  const publicUrl = `everweb.vn/${wedding?.slug || "khang-an"}`;
+  const publicUrl = `${window.location.origin}/w/${wedding?.slug || "khang-an"}`;
+  const isWebsitePublished =
+    wedding?.status === "published" || wedding?.status === "active";
+
+  const webConfig = hubFeatures?.website_config || {};
+  const stationeryConfig = hubFeatures?.stationery_config || {};
+  const hubTheme =
+    COLOR_THEMES.find((t) => t.id === webConfig.themeId) || COLOR_THEMES[0];
+  const hubFont =
+    FONT_OPTIONS.find((f) => f.id === webConfig.fontId) || FONT_OPTIONS[0];
+  const hubCoverSrc =
+    webConfig.customCoverUrl ||
+    (COVER_IMAGES.find((c) => c.id === webConfig.coverId)?.src) ||
+    heroWedding;
+  const hubOverlayOpacity = webConfig.overlayOpacity ?? 25;
+  const hubInvitationSrc =
+    stationeryConfig?.customCard?.hero_photo || CLOUD_ASSETS.INVITATION_CARD_004;
+  const hubRsvpCoverSrc =
+    webConfig.customCoverUrl ||
+    (COVER_IMAGES.find((c) => c.id === webConfig.coverId)?.src) ||
+    CLOUD_ASSETS.RSVP_ARCH_029;
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -645,17 +708,23 @@ export default function EventHubPage() {
               transform: `rotateY(${parallax.x * 2.5}deg) rotateX(${-parallax.y * 2.5}deg) translate3d(${parallax.x * 4}px, ${parallax.y * 4}px, 0)`,
             }}
           >
-            <div className="relative aspect-[16/10] overflow-hidden">
+            <div
+              className="relative aspect-[16/10] overflow-hidden"
+              style={{ fontFamily: hubFont.style }}
+            >
               <img
-                src={heroWedding}
+                src={hubCoverSrc}
                 alt="Website cưới"
                 className="ew-ken-burns h-full w-full object-cover"
               />
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/25 p-6 text-center text-white">
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white"
+                style={{ backgroundColor: `rgba(0,0,0,${hubOverlayOpacity / 100})` }}
+              >
                 <p className="text-[10px] tracking-[0.25em] uppercase opacity-90">
                   Save The Date
                 </p>
-                <h2 className="mt-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+                <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
                   {coupleName}
                 </h2>
                 <p className="mt-1 text-[11px] opacity-90">
@@ -700,25 +769,22 @@ export default function EventHubPage() {
 
           {/* Printed Invitation Card + Envelope (Bottom-Left Overlap) */}
           <div
-            className="relative z-10 -mt-20 ml-2 w-[46%] transition-transform duration-300 ease-out hover:-translate-y-1.5 sm:-mt-28"
+            className="relative z-10 -mt-20 ml-2 w-[38%] sm:w-[34%] transition-transform duration-300 ease-out hover:-translate-y-1.5 sm:-mt-32"
             style={{
               transform: `translate3d(${parallax.x * 10}px, ${parallax.y * 10}px, 0)`,
             }}
           >
             {/* Subtle envelope backing */}
             <div className="absolute -top-3 -left-3 h-full w-full rounded-lg border border-[#E5DEC9] bg-[#FAF8F4] shadow-sm" />
-            <div className="ew-card-sheen relative rounded-lg border border-[#E5DEC9] bg-white p-5 text-center shadow-xl">
-              <p className="text-[9px] tracking-[0.25em] text-stone-500 uppercase">
-                Trân trọng kính mời
-              </p>
-              <p className="mt-3 font-display text-base leading-snug font-semibold text-[#1F1A17]">
-                {coupleName}
-              </p>
-              <div className="mx-auto my-3 h-px w-10 bg-[#E7E5E4]" />
-              <p className="text-[10px] text-stone-500">{displayDate}</p>
-              <p className="mt-0.5 truncate text-[10px] text-stone-500">
-                {displayVenue}
-              </p>
+            <div
+              className="ew-card-sheen relative aspect-[3/4] overflow-hidden rounded-lg border border-[#E5DEC9] shadow-xl"
+              style={{ backgroundColor: hubTheme.bg }}
+            >
+              <img
+                src={hubInvitationSrc}
+                alt={`Thiệp mời ${coupleName}`}
+                className="h-full w-full object-contain"
+              />
               <div className="group/cardplus absolute right-2.5 bottom-2.5 flex items-center overflow-hidden rounded-full border border-stone-200 bg-white text-[#1F1A17] shadow-sm transition-all duration-300 hover:shadow-md">
                 <button
                   type="button"
@@ -754,20 +820,26 @@ export default function EventHubPage() {
               transform: `translate3d(${parallax.x * 14}px, ${parallax.y * 14}px, 0)`,
             }}
           >
-            <div className="relative">
+            <div className="relative" style={{ fontFamily: hubFont.style }}>
               <img
-                src={galleryCeremony}
+                src={hubRsvpCoverSrc}
                 alt="Thiệp trên điện thoại"
-                className="h-28 w-full object-cover"
+                className="h-32 w-full object-cover object-top"
               />
-              <div className="p-2.5 text-center">
-                <p className="truncate font-display text-[11px] font-semibold text-[#1F1A17]">
+              <div className="p-2.5 text-center" style={{ backgroundColor: hubTheme.bg }}>
+                <p
+                  className="truncate text-[11px] font-semibold"
+                  style={{ color: hubTheme.text }}
+                >
                   {coupleName}
                 </p>
                 <p className="mt-0.5 text-[9px] text-stone-500">
                   {displayDate}
                 </p>
-                <span className="mt-2 inline-block rounded-full border border-[#1F1A17] px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-[#1F1A17] uppercase">
+                <span
+                  className="mt-2 inline-block rounded-full border px-2.5 py-0.5 text-[9px] font-semibold tracking-wider uppercase"
+                  style={{ borderColor: hubTheme.accent, color: hubTheme.accent }}
+                >
                   RSVP
                 </span>
               </div>
@@ -800,11 +872,11 @@ export default function EventHubPage() {
         <div className="mt-2 flex items-center gap-2.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs text-stone-700 shadow-2xs">
           <span
             className={`h-2 w-2 rounded-full ${
-              wedding?.status === "published" ? "bg-emerald-500" : "bg-amber-500"
+              isWebsitePublished ? "bg-emerald-500" : "bg-amber-500"
             }`}
           />
           <span>
-            {wedding?.status === "published" ? "Đã xuất bản" : "Chưa xuất bản"}
+            {isWebsitePublished ? "Đã xuất bản" : "Chưa xuất bản"}
           </span>
           <span className="font-semibold text-[#1F1A17]">{publicUrl}</span>
           <div className="ml-1 flex items-center gap-1.5 border-l border-stone-200 pl-2.5 text-stone-600">
@@ -822,7 +894,7 @@ export default function EventHubPage() {
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard?.writeText(`https://${publicUrl}`);
+                navigator.clipboard?.writeText(publicUrl);
                 toast.success(`Đã sao chép: ${publicUrl}`);
               }}
               title="Sao chép đường dẫn"

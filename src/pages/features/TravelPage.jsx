@@ -244,7 +244,7 @@ export default function TravelPage() {
           </button>
           <button
             type="button"
-            onClick={() => handleCopy(`https://everweb.vn/${wedding?.slug || "khang-an"}#travel`, "link cẩm nang")}
+            onClick={() => handleCopy(`${window.location.origin}/w/${wedding?.slug || "khang-an"}`, "link cẩm nang")}
             className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1F1A17] hover:border-[#3B52DE] hover:bg-stone-50 transition"
           >
             <Share2 size={13} /> Chia sẻ

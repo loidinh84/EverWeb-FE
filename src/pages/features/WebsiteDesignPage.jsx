@@ -24,6 +24,7 @@ import { Modal, useToast } from "../../components/common";
 import PublicRsvpModal from "../../components/common/PublicRsvpModal";
 import { ROUTE_PATHS } from "../../constants/roles";
 import weddingApi from "../../services/weddingApi";
+import uploadApi from "../../services/uploadApi";
 import { extractApiError } from "../../services/api";
 import everwebLogo from "../../assets/image/everweb-logo.jpg";
 import { useCurrentWedding, useWeddingFeature } from "./useCurrentWedding";
@@ -135,8 +136,19 @@ export default function WebsiteDesignPage({ previewOnly = false }) {
   const isPublished =
     wedding?.status === "published" || wedding?.status === "active";
 
-  const handleImageUpload = (file, fieldName) => {
+  const handleImageUpload = async (file, fieldName) => {
     if (!file) return;
+    try {
+      toast.info("Đang tải ảnh lên Cloudinary...");
+      const uploaded = await uploadApi.uploadImage(file, "everweb/images");
+      if (uploaded?.url) {
+        saveSection({ [fieldName]: uploaded.url });
+        toast.success("Đã tải ảnh lên Cloudinary & lưu vào hệ thống!");
+        return;
+      }
+    } catch {
+      // Fallback sang FileReader nếu mạng/Cloud lỗi
+    }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") {

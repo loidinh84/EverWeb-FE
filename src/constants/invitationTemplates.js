@@ -128,6 +128,36 @@ export const INVITATION_TEMPLATES = [
       bride_photo: galleryDining,
     },
   },
+  {
+    id: "n04-royal-ribbon",
+    layoutType: "royal-ribbon",
+    code: "N04",
+    name: "Ruy-băng & Hoa Xanh Navy",
+    tag: "Mới · Phong bì 2 cánh thắt nơ",
+    description:
+      "Phong bì kem mở 2 cánh thắt nơ ruy-băng lụa, họa tiết hoa xanh navy cổ điển, tháp ly champagne và nút ẩn/hiện STK.",
+    pageBg: "#FAF8F4",
+    envelopeBg: "#F7F4EE",
+    envelopeCardBg: "#F3EDE2",
+    envelopeFlapBg: "#EAE1D3",
+    envelopeBorder: "#D9CFC0",
+    flowerPrimary: "#224578",
+    flowerSecondary: "#6B82A3",
+    flowerLeaf: "#1B365D",
+    sealFrom: "#C4C9D2",
+    sealVia: "#AEB5C0",
+    sealTo: "#8A929E",
+    accent: "#1B365D",
+    accentDark: "#132744",
+    accentSoft: "#F3F6FA",
+    bannerBg: "#1B365D",
+    headingFont: "font-display",
+    defaultPhotos: {
+      hero_photo: heroWedding,
+      groom_photo: weddingCouple,
+      bride_photo: galleryCeremony,
+    },
+  },
 ];
 
 export function getInvitationTemplateById(id) {

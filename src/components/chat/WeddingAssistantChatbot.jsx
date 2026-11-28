@@ -9,7 +9,6 @@ import {
   Copy,
   ClipboardList,
   Wallet,
-  LayoutGrid,
   AlertCircle,
   Sparkles,
   ShieldAlert,

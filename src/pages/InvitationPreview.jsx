@@ -38,6 +38,7 @@ import {
 import { getGuestInvitation, getGuests } from "../services/guestApi.js";
 import weddingApi from "../services/weddingApi.js";
 import uploadApi from "../services/uploadApi.js";
+import { buildQrCodeUrl } from "../utils/weddingHelpers";
 
 // Import ảnh chất lượng cao từ assets EverWeb & ảnh mẫu ngoại cảnh biển N00
 import beachHero from "../assets/image/template-beach-hero.webp";
@@ -69,9 +70,10 @@ export default function InvitationPreview() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef(null);
 
-  // Hiệu ứng mở phong bì thiệp cưới tương tác
+  // Hiệu ứng mở phong bì thiệp cưới tương tác (cross-fade mượt không khựng)
   const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(false);
   const [isOpeningAnimation, setIsOpeningAnimation] = useState(false);
+  const [isEnvelopeFadingOut, setIsEnvelopeFadingOut] = useState(false);
 
   // Menu Speed-dial góc dưới phải (Image 1) & Modal Danh mục thiệp cưới (Image 2)
   const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
@@ -149,14 +151,9 @@ export default function InvitationPreview() {
         }
         if (res.customCard) {
           setCustomCard(res.customCard);
-          try {
-            localStorage.setItem(
-              "everweb_custom_invitation_card",
-              JSON.stringify(res.customCard)
-            );
-          } catch {
-            // ignore quota errors
-          }
+        }
+        if (typeof res.stationeryConfig?.isPublished === "boolean") {
+          setIsPublished(res.stationeryConfig.isPublished);
         }
       })
       .catch(() => {
@@ -220,15 +217,8 @@ export default function InvitationPreview() {
     };
   }, [currentWedding]);
 
-  // 3. Tải customCard đã lưu
-  const [customCard, setCustomCard] = useState(() => {
-    try {
-      const saved = localStorage.getItem("everweb_custom_invitation_card");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // 3. Cấu hình customCard đồng bộ từ Database PostgreSQL (stationery_config)
+  const [customCard, setCustomCard] = useState(null);
 
   // Kiểm tra customCard có thuộc về sự kiện hiện tại không
   const isCustomCardForThisEvent = useMemo(() => {
@@ -556,21 +546,19 @@ export default function InvitationPreview() {
   }, [personalizedName, publicInvitationUrl, currentWedding?.id]);
 
   // Mã QR công khai & cá nhân hóa (Dẫn thẳng tới bản thiệp xuất bản sạch đẹp cho khách)
-  const publicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=${encodeURIComponent(
-    publicInvitationUrl
-  )}`;
-  const personalizedQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=12&data=${encodeURIComponent(
-    personalizedInvitationUrl
-  )}`;
+  const publicQrUrl = buildQrCodeUrl(publicInvitationUrl, 400, 12);
+  const personalizedQrUrl = buildQrCodeUrl(personalizedInvitationUrl, 400, 12);
 
-  // Toggle xuất bản thiệp cưới
-  const togglePublish = () => {
+  // Toggle xuất bản thiệp cưới (đồng bộ trực tiếp lên Database)
+  const togglePublish = async () => {
     const nextState = !isPublished;
     setIsPublished(nextState);
-    try {
-      localStorage.setItem("everweb_invitation_published", nextState.toString());
-    } catch (e) {
-      console.error(e);
+    if (currentWedding?.id) {
+      await weddingApi
+        .updateFeatureSection(currentWedding.id, "stationery_config", {
+          isPublished: nextState,
+        })
+        .catch(() => {});
     }
     if (nextState) {
       toast.success("Thiệp cưới đã được XUẤT BẢN công khai! Khách mời có thể truy cập qua link và mã QR.");
@@ -768,8 +756,9 @@ export default function InvitationPreview() {
       });
   }, [token]);
 
-  // Xử lý mở phong thư tương tác
+  // Xử lý mở phong thư tương tác (overlap cross-fade để chuyển cảnh mượt)
   const handleOpenEnvelope = () => {
+    if (isOpeningAnimation || isEnvelopeOpened) return;
     setIsOpeningAnimation(true);
     try {
       if (audioRef.current) {
@@ -784,9 +773,14 @@ export default function InvitationPreview() {
     }
 
     setTimeout(() => {
+      setIsEnvelopeFadingOut(true);
       setIsEnvelopeOpened(true);
+    }, 520);
+
+    setTimeout(() => {
       setIsOpeningAnimation(false);
-    }, 600);
+      setIsEnvelopeFadingOut(false);
+    }, 860);
   };
 
   const toggleAudio = () => {
@@ -820,27 +814,37 @@ export default function InvitationPreview() {
     }, 100);
   };
 
-  // Lưu cấu hình thiệp số vào cả localStorage và Database (stationery_config)
+  // Lưu cấu hình thiệp số trực tiếp lên Database (stationery_config)
   const persistCustomCard = async (updated) => {
     setCustomCard(updated);
-    try {
-      localStorage.setItem(
-        "everweb_custom_invitation_card",
-        JSON.stringify(updated)
-      );
-    } catch {
-      // ignore quota errors
-    }
     if (currentWedding?.id) {
       await weddingApi
         .updateFeatureSection(currentWedding.id, "stationery_config", {
           customCard: updated,
         })
-        .catch(() => {});
+        .catch(() => {
+          toast.error("Không thể đồng bộ cấu hình thiệp lên máy chủ.");
+        });
     }
   };
 
-  // Đổi mẫu giao diện thiệp điện tử (N00, N01, N02, N03) & lưu vào Database
+  // Upload ảnh lên Cloudinary (ưu tiên Cloud URL, chỉ dự phòng nén local khi lỗi mạng)
+  const uploadPhotoToCloud = async (file) => {
+    try {
+      const uploaded = await uploadApi.uploadImage(file, "everweb/images");
+      if (uploaded?.url) {
+        setCloudinaryPhotos((prev) =>
+          prev.length > 0 ? [uploaded, ...prev] : prev
+        );
+        return uploaded.url;
+      }
+    } catch {
+      // fallback to compressed data URL
+    }
+    return compressImageFile(file);
+  };
+
+  // Đổi mẫu giao diện thiệp điện tử (N00, N01, N02, N03, N04) & lưu vào Database
   const handleSelectTemplate = async (tpl) => {
     const updated = {
       ...(customCard || {}),
@@ -849,23 +853,23 @@ export default function InvitationPreview() {
     };
     await persistCustomCard(updated);
     setIsTemplateModalOpen(false);
-    toast.success(`Đã đổi sang mẫu "${tpl.code} - ${tpl.name}"!`);
+    toast.success(`Đã đổi sang mẫu "${tpl.code} - ${tpl.name}" và lưu lên hệ thống!`);
   };
 
-  // Xử lý thay đổi ảnh nhanh trực tiếp từ giao diện
+  // Xử lý thay đổi ảnh nhanh trực tiếp từ giao diện (đẩy thẳng lên Cloudinary + lưu DB)
   const handleQuickImageUpload = async (file, photoKey) => {
     if (!file) return;
     try {
-      toast.info("Đang xử lý ảnh...");
-      const compressedDataUrl = await compressImageFile(file);
+      toast.info("Đang tải ảnh lên Cloudinary...");
+      const photoUrl = await uploadPhotoToCloud(file);
       const updated = {
         ...wedding,
         ...customCard,
         wedding_id: currentWedding?.id || null,
-        [photoKey]: compressedDataUrl,
+        [photoKey]: photoUrl,
       };
       await persistCustomCard(updated);
-      toast.success("Đã cập nhật & lưu ảnh lên hệ thống thành công!");
+      toast.success("Đã tải ảnh lên Cloudinary & lưu vào Database thành công!");
     } catch (err) {
       console.error(err);
       toast.error("Không thể tải ảnh lên. Vui lòng thử lại!");
@@ -975,22 +979,30 @@ export default function InvitationPreview() {
       {/* ============================================================
           MÀN HÌNH 1: BÌA PHONG THƯ HOA & CON DẤU SÁP
           ============================================================ */}
-      {!isEnvelopeOpened && (
-        <EnvelopeIntro
-          guestName={guestName}
-          dateBadge={wedding.date_badge}
-          isOpeningAnimation={isOpeningAnimation}
-          onOpenEnvelope={handleOpenEnvelope}
-          template={activeTemplate}
-          wedding={wedding}
-        />
+      {(!isEnvelopeOpened || isEnvelopeFadingOut) && (
+        <div
+          className={`${
+            isEnvelopeFadingOut
+              ? "fixed inset-0 z-40 opacity-0 scale-[1.03] pointer-events-none transition-all duration-300 ease-out"
+              : "relative z-20 transition-all duration-300 ease-out"
+          }`}
+        >
+          <EnvelopeIntro
+            guestName={guestName}
+            dateBadge={wedding.date_badge}
+            isOpeningAnimation={isOpeningAnimation}
+            onOpenEnvelope={handleOpenEnvelope}
+            template={activeTemplate}
+            wedding={wedding}
+          />
+        </div>
       )}
 
       {/* ============================================================
           MÀN HÌNH 2: NỘI DUNG THIỆP (RENDER THEO TỪNG BỐ CỤC MẪU)
           ============================================================ */}
       {isEnvelopeOpened && (
-        <main className="max-w-[420px] w-full mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden pb-24 animate-fade-in">
+        <main className="max-w-[420px] w-full mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden pb-24 animate-invitation-reveal">
           {activeTemplate.layoutType !== "beach" ? (
             <TemplateLayouts
               template={activeTemplate}
@@ -2110,9 +2122,10 @@ export default function InvitationPreview() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const compressed = await compressImageFile(file);
-                        setEditForm({ ...editForm, hero_photo: compressed });
-                        toast.success("Đã chọn ảnh bìa mới!");
+                        toast.info("Đang tải ảnh bìa lên Cloudinary...");
+                        const url = await uploadPhotoToCloud(file);
+                        setEditForm((prev) => ({ ...prev, hero_photo: url }));
+                        toast.success("Đã tải ảnh bìa lên Cloudinary!");
                       }
                     }}
                   />
@@ -2144,9 +2157,10 @@ export default function InvitationPreview() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const compressed = await compressImageFile(file);
-                        setEditForm({ ...editForm, groom_photo: compressed });
-                        toast.success("Đã chọn ảnh Chú rể mới!");
+                        toast.info("Đang tải ảnh Chú rể lên Cloudinary...");
+                        const url = await uploadPhotoToCloud(file);
+                        setEditForm((prev) => ({ ...prev, groom_photo: url }));
+                        toast.success("Đã tải ảnh Chú rể lên Cloudinary!");
                       }
                     }}
                   />
@@ -2178,9 +2192,10 @@ export default function InvitationPreview() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const compressed = await compressImageFile(file);
-                        setEditForm({ ...editForm, bride_photo: compressed });
-                        toast.success("Đã chọn ảnh Cô dâu mới!");
+                        toast.info("Đang tải ảnh Cô dâu lên Cloudinary...");
+                        const url = await uploadPhotoToCloud(file);
+                        setEditForm((prev) => ({ ...prev, bride_photo: url }));
+                        toast.success("Đã tải ảnh Cô dâu lên Cloudinary!");
                       }
                     }}
                   />

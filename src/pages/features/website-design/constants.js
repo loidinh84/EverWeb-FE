@@ -10,6 +10,7 @@ import galleryBouquet from "../../../assets/image/gallery-bouquet.jpg";
 import galleryCeremony from "../../../assets/image/gallery-ceremony.jpg";
 import galleryDining from "../../../assets/image/gallery-dining.jpg";
 import heroWedding from "../../../assets/image/hero-wedding.jpg";
+import { CLOUD_ASSETS } from "../../../constants/cloudAssets";
 
 export const COLOR_THEMES = [
   {
@@ -75,6 +76,11 @@ export const COVER_IMAGES = [
   { id: "ceremony", label: "Cổng hoa ngoài trời", src: galleryCeremony },
   { id: "bouquet", label: "Hoa cưới cầm tay", src: galleryBouquet },
   { id: "dining", label: "Bàn tiệc tối", src: galleryDining },
+  {
+    id: "cloud-arch",
+    label: "Cổng hoa kính (Cloud)",
+    src: CLOUD_ASSETS.RSVP_ARCH_029,
+  },
 ];
 
 export const ART_STYLES = [
